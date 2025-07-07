@@ -168,7 +168,7 @@ export async function getUsers(): Promise<User[]> {
 export async function getUserById(id: string): Promise<User | null> {
     try {
         const userRef = doc(db, 'users', id);
-        const userSnap = await getDoc(userSnap);
+        const userSnap = await getDoc(userRef);
         return docToData<User>(userSnap);
     } catch (error) {
         console.error("Error fetching user by ID:", error);
