@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { tickets } from "@/lib/data"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { users } from "@/lib/data"
+import Link from "next/link"
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   'New': 'secondary',
@@ -29,7 +30,7 @@ export function RecentTickets() {
     <Card>
       <CardHeader>
         <CardTitle>Recent Tickets</CardTitle>
-        <CardDescription>A list of the most recently updated tickets.</CardDescription>
+        <CardDescription>A list of the most recently updated tickets. Click a row to view details.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -45,7 +46,7 @@ export function RecentTickets() {
             {recentTickets.map((ticket) => {
                 const assignee = userMap.get(ticket.assignee);
                 return(
-              <TableRow key={ticket.id}>
+              <TableRow key={ticket.id} className="relative hover:bg-muted/50 cursor-pointer">
                 <TableCell>
                   <div className="font-medium">{ticket.title}</div>
                   <div className="text-sm text-muted-foreground">{ticket.id}</div>
@@ -65,6 +66,9 @@ export function RecentTickets() {
                     </div>
                     ) : ticket.assignee }
                 </TableCell>
+                <Link href={`/tickets/view/${ticket.id}`} className="absolute inset-0">
+                    <span className="sr-only">View ticket {ticket.id}</span>
+                </Link>
               </TableRow>
             )})}
           </TableBody>

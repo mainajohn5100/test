@@ -1,23 +1,43 @@
+"use client";
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { tickets, projects } from "@/lib/data";
-import { Ticket, BarChart2, CheckCircle, Briefcase } from "lucide-react";
+import { Ticket, BarChart2, FilePlus2, Briefcase } from "lucide-react";
+import { isToday } from "date-fns";
+import React from "react";
 
 export function StatsCards() {
-  const totalTickets = tickets.length;
-  const activeTickets = tickets.filter(t => t.status === 'Active' || t.status === 'New').length;
-  const closedTickets = tickets.filter(t => t.status === 'Closed').length;
-  const totalProjects = projects.length;
+  const [stats, setStats] = React.useState({
+    totalTickets: 0,
+    openTickets: 0,
+    newTicketsToday: 0,
+    totalProjects: 0,
+  });
 
-  const stats = [
-    { title: "Total Tickets", value: totalTickets, icon: Ticket, color: "text-blue-500" },
-    { title: "Active Tickets", value: activeTickets, icon: BarChart2, color: "text-green-500" },
-    { title: "Closed Tickets", value: closedTickets, icon: CheckCircle, color: "text-purple-500" },
-    { title: "Total Projects", value: totalProjects, icon: Briefcase, color: "text-orange-500" },
+  React.useEffect(() => {
+    const totalTickets = tickets.length;
+    const openTickets = tickets.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length;
+    const newTicketsToday = tickets.filter(t => isToday(new Date(t.createdAt))).length;
+    const totalProjects = projects.length;
+
+    setStats({
+      totalTickets,
+      openTickets,
+      newTicketsToday,
+      totalProjects,
+    });
+  }, []);
+
+  const statItems = [
+    { title: "Total Tickets", value: stats.totalTickets, icon: Ticket, color: "text-blue-500" },
+    { title: "Open Tickets", value: stats.openTickets, icon: BarChart2, color: "text-green-500" },
+    { title: "New Tickets Today", value: stats.newTicketsToday, icon: FilePlus2, color: "text-purple-500" },
+    { title: "Total Projects", value: stats.totalProjects, icon: Briefcase, color: "text-orange-500" },
   ];
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat, index) => (
+      {statItems.map((stat, index) => (
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>

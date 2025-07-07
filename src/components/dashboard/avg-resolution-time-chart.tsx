@@ -19,6 +19,7 @@ export function AvgResolutionTimeChart() {
               fontSize={12}
               tickLine={false}
               axisLine={false}
+              type="category"
             />
             <YAxis
               stroke="#888888"
@@ -35,7 +36,7 @@ export function AvgResolutionTimeChart() {
               }}
               formatter={(value: number) => [`${value.toFixed(1)} days`, "Avg. Time"]}
             />
-            <Line type="monotone" dataKey="days" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4, fill: "var(--chart-1)" }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="days" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4, fill: "var(--chart-1)" }} activeDot={{ r: 6 }} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>
