@@ -1,4 +1,4 @@
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User } from './data';
 
@@ -49,5 +49,20 @@ export async function getUsers(): Promise<User[]> {
   } catch (error) {
     console.error("Error fetching users:", error);
     return [];
+  }
+}
+
+export async function addTicket(ticketData: Partial<Ticket>): Promise<string> {
+  try {
+    const docRef = await addDoc(collection(db, 'tickets'), {
+      ...ticketData,
+      status: 'New',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error("Error adding ticket:", error);
+    throw new Error("Failed to create ticket.");
   }
 }

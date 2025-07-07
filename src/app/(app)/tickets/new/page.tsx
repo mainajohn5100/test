@@ -10,19 +10,86 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, FileUp, Send, XCircle, Loader } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
+import { createTicketAction, ticketSchema } from "./actions";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { getProjects, getUsers } from "@/lib/firestore";
+import type { Project, User } from "@/lib/data";
 
 export default function NewTicketPage() {
   const { toast } = useToast();
-  const [description, setDescription] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  const [isPending, startTransition] = useTransition();
+
   const [tagInput, setTagInput] = useState('');
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  
+  const [projects, setProjects] = React.useState<Project[]>([]);
+  const [users, setUsers] = React.useState<User[]>([]);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [projectsData, usersData] = await Promise.all([
+          getProjects(),
+          getUsers()
+        ]);
+        setProjects(projectsData);
+        // Filter for users who can be assigned tickets
+        setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
+      } catch (error) {
+        console.error("Failed to fetch projects or users", error);
+        toast({
+          title: "Error",
+          description: "Could not load data for projects and assignees.",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchData();
+  }, [toast]);
+
+
+  const form = useForm<z.infer<typeof ticketSchema>>({
+    resolver: zodResolver(ticketSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      reporter: "",
+      email: "",
+      priority: "medium",
+      project: "",
+      assignee: "",
+      tags: [],
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof ticketSchema>) => {
+    startTransition(async () => {
+      const result = await createTicketAction(values);
+      if (result?.error) {
+        toast({
+          title: "Error creating ticket",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Ticket created successfully!",
+          description: "Redirecting you to the new ticket...",
+        });
+        // Redirect is handled in the server action
+      }
+    });
+  };
 
   const handleSuggestTags = async () => {
+    const description = form.getValues("description");
     if (!description) {
       toast({
         title: "Description needed",
@@ -34,7 +101,8 @@ export default function NewTicketPage() {
     setIsSuggesting(true);
     try {
       const result = await suggestTags({ ticketContent: description });
-      const newSuggestions = result.tags.filter(t => !tags.includes(t));
+      const currentTags = form.getValues("tags") || [];
+      const newSuggestions = result.tags.filter(t => !currentTags.includes(t));
       setSuggestedTags(newSuggestions);
       if(newSuggestions.length === 0) {
         toast({ title: "No new tags suggested." });
@@ -53,8 +121,9 @@ export default function NewTicketPage() {
 
   const addTag = (tag: string) => {
     const trimmedTag = tag.trim();
-    if (trimmedTag && !tags.includes(trimmedTag)) {
-      setTags([...tags, trimmedTag]);
+    const currentTags = form.getValues("tags") || [];
+    if (trimmedTag && !currentTags.includes(trimmedTag)) {
+      form.setValue("tags", [...currentTags, trimmedTag]);
       setSuggestedTags(suggestedTags.filter(t => t !== trimmedTag));
     }
   };
@@ -68,9 +137,11 @@ export default function NewTicketPage() {
   };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    const currentTags = form.getValues("tags") || [];
+    form.setValue("tags", currentTags.filter(tag => tag !== tagToRemove));
   };
-
+  
+  const currentTags = form.watch("tags") || [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,150 +149,209 @@ export default function NewTicketPage() {
         title="Create New Ticket"
         description="Fill in the details below to submit a new ticket."
       />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ticket Information</CardTitle>
-              <CardDescription>Fill in the details for the new support ticket.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="customer-name">Customer Name</Label>
-                    <Input id="customer-name" placeholder="John Doe" />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ticket Information</CardTitle>
+                <CardDescription>Fill in the details for the new support ticket.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="reporter"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Customer Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Customer Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="john.doe@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="customer-email">Customer Email</Label>
-                    <Input id="customer-email" type="email" placeholder="john.doe@example.com" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="title">Ticket Title</Label>
-                <Input id="title" placeholder="e.g., Login issue on website" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Detailed description of the issue..." 
-                  className="min-h-32"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ticket Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Login issue on website" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>Attachments</Label>
-                <div className="flex items-center justify-center w-full">
-                    <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <FileUp className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                            <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
-                        </div>
-                        <Input id="dropzone-file" type="file" className="hidden" />
-                    </label>
-                </div> 
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Properties</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select defaultValue="medium">
-                  <SelectTrigger id="priority">
-                    <SelectValue placeholder="Set priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="project">Project (Optional)</Label>
-                <Select>
-                  <SelectTrigger id="project">
-                    <SelectValue placeholder="Select a project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="website-redesign">Website Redesign</SelectItem>
-                    <SelectItem value="api-v2">API V2</SelectItem>
-                    <SelectItem value="reporting-module">Reporting Module</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="assignee">Assignee (Optional)</Label>
-                <Select>
-                  <SelectTrigger id="assignee">
-                    <SelectValue placeholder="Assign to an agent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    <SelectItem value="alex-johnson">Alex Johnson</SelectItem>
-                    <SelectItem value="maria-garcia">Maria Garcia</SelectItem>
-                    <SelectItem value="james-smith">James Smith</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Tags</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="tags-input">Add Tags</Label>
-                        <Input 
-                          id="tags-input" 
-                          placeholder="Type & press Enter" 
-                          value={tagInput}
-                          onChange={(e) => setTagInput(e.target.value)}
-                          onKeyDown={handleTagInputKeyDown}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Detailed description of the issue..." 
+                          className="min-h-32"
+                          {...field}
                         />
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          {tags.map(tag => (
-                            <Badge key={tag} variant="secondary" className="flex items-center gap-1.5">
-                              {tag}
-                              <XCircle className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
-                            </Badge>
-                          ))}
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Button variant="outline" size="sm" className="w-full" onClick={handleSuggestTags} disabled={isSuggesting}>
-                          {isSuggesting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                          Suggest Tags with AI
-                        </Button>
-                        {suggestedTags.length > 0 && (
-                          <div className="flex flex-wrap gap-2 pt-2">
-                              {suggestedTags.map(tag => (
-                                  <Badge key={tag} variant="outline" className="cursor-pointer" onClick={() => addTag(tag)}>{tag}</Badge>
-                              ))}
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="space-y-2">
+                  <Label>Attachments</Label>
+                  <div className="flex items-center justify-center w-full">
+                      <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <FileUp className="w-8 h-8 mb-4 text-muted-foreground" />
+                              <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                              <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
                           </div>
-                        )}
-                    </div>
+                          <Input id="dropzone-file" type="file" className="hidden" disabled />
+                      </label>
+                  </div> 
                 </div>
-            </CardContent>
-          </Card>
-          <Button size="lg" className="w-full">
-            <Send className="mr-2 h-4 w-4"/>
-            Submit Ticket
-          </Button>
-        </div>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Properties</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Set priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="urgent">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="project"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                         <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a project" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {projects.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="assignee"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assignee (Optional)</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                         <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Assign to an agent" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Unassigned</SelectItem>
+                          {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Tags</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <div className="space-y-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="tags-input">Add Tags</Label>
+                          <Input 
+                            id="tags-input" 
+                            placeholder="Type & press Enter" 
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={handleTagInputKeyDown}
+                          />
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {currentTags.map(tag => (
+                              <Badge key={tag} variant="secondary" className="flex items-center gap-1.5">
+                                {tag}
+                                <XCircle className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                              </Badge>
+                            ))}
+                          </div>
+                      </div>
+                      <div className="space-y-2">
+                          <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleSuggestTags} disabled={isSuggesting || isPending}>
+                            {isSuggesting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                            Suggest Tags with AI
+                          </Button>
+                          {suggestedTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {suggestedTags.map(tag => (
+                                    <Badge key={tag} variant="outline" className="cursor-pointer" onClick={() => addTag(tag)}>+ {tag}</Badge>
+                                ))}
+                            </div>
+                          )}
+                      </div>
+                  </div>
+              </CardContent>
+            </Card>
+            <Button type="submit" size="lg" className="w-full" disabled={isPending}>
+              {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
+              Submit Ticket
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }
