@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, Maximize } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { users } from "@/lib/data";
@@ -84,6 +84,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-9" />
             </div>
+            <Button variant="ghost" size="icon" className="rounded-full">
+                <Maximize className="h-5 w-5" />
+                <span className="sr-only">Full screen</span>
+            </Button>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Bell className="h-5 w-5" />
               <span className="sr-only">Notifications</span>

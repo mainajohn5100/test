@@ -61,7 +61,7 @@ export function TicketsOverviewChart() {
                         borderRadius: "var(--radius)",
                       }}
                     />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="var(--chart-2)" /> 
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="hsl(var(--chart-2))" /> 
                 </BarChart>
             ) : (
                 <LineChart data={pieChartData}>
@@ -87,7 +87,7 @@ export function TicketsOverviewChart() {
                         borderRadius: "var(--radius)",
                       }}
                     />
-                    <Line type="monotone" dataKey="value" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 4, fill: "var(--chart-2)" }} activeDot={{ r: 6 }} connectNulls />
+                    <Line type="monotone" dataKey="value" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }} connectNulls />
                 </LineChart>
             )}
         </ResponsiveContainer>

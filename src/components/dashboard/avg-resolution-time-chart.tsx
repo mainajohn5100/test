@@ -36,7 +36,7 @@ export function AvgResolutionTimeChart() {
               }}
               formatter={(value: number) => [`${value.toFixed(1)} days`, "Avg. Time"]}
             />
-            <Line type="monotone" dataKey="days" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4, fill: "var(--chart-1)" }} activeDot={{ r: 6 }} connectNulls />
+            <Line type="monotone" dataKey="days" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>
