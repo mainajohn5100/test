@@ -11,9 +11,8 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { tickets } from "@/lib/data"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-import { users } from "@/lib/data"
+import type { Ticket, User } from "@/lib/data";
 import { useRouter } from "next/navigation"
 import Link from "next/link";
 
@@ -26,10 +25,16 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
   'Terminated': 'destructive',
 };
 
-export function RecentTickets() {
+interface RecentTicketsProps {
+    tickets: Ticket[];
+    userMap: Map<string, User>;
+}
+
+export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
   const router = useRouter();
-  const recentTickets = tickets.slice(0, 5);
-  const userMap = new Map(users.map(u => [u.name, u]));
+  const recentTickets = tickets
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 5);
 
   return (
     <Card>
@@ -48,7 +53,7 @@ export function RecentTickets() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {recentTickets.map((ticket) => {
+            {recentTickets.length > 0 ? recentTickets.map((ticket) => {
                 const assignee = userMap.get(ticket.assignee);
                 return(
               <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
@@ -74,7 +79,13 @@ export function RecentTickets() {
                     ) : ticket.assignee }
                 </TableCell>
               </TableRow>
-            )})}
+            )}) : (
+                <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                    No recent tickets found.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>
