@@ -21,6 +21,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import React from "react";
 
@@ -47,6 +53,8 @@ export default function ViewTicketPage() {
   const userMap = new Map(users.map(u => [u.name, u]));
   
   const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
+  const [currentStatus, setCurrentStatus] = React.useState(ticket?.status);
+
 
   React.useEffect(() => {
     if (ticket) {
@@ -62,7 +70,7 @@ export default function ViewTicketPage() {
     }
   }, [ticket, userMap]);
   
-  if (!ticket) {
+  if (!ticket || !currentStatus) {
     notFound();
   }
 
@@ -150,7 +158,20 @@ export default function ViewTicketPage() {
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Status</span>
-                        <Badge variant={statusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="p-0 h-auto justify-end">
+                                    <Badge variant={statusVariantMap[currentStatus] || 'default'} className="cursor-pointer">{currentStatus}</Badge>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {Object.keys(statusVariantMap).map(status => (
+                                    <DropdownMenuItem key={status} onSelect={() => setCurrentStatus(status as any)}>
+                                        {status}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Priority</span>
