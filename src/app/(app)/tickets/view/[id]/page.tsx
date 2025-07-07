@@ -49,11 +49,13 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
 export default function ViewTicketPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const ticket = tickets.find(t => t.id === params.id);
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), []);
+  
+  const ticket = tickets.find(t => t.id === params.id);
   
   const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
   const [currentStatus, setCurrentStatus] = React.useState(ticket?.status);
+  const [currentPriority, setCurrentPriority] = React.useState(ticket?.priority);
 
 
   React.useEffect(() => {
@@ -70,7 +72,7 @@ export default function ViewTicketPage() {
     }
   }, [ticket, userMap]);
   
-  if (!ticket || !currentStatus) {
+  if (!ticket || !currentStatus || !currentPriority) {
     notFound();
   }
 
@@ -175,7 +177,20 @@ export default function ViewTicketPage() {
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Priority</span>
-                        <Badge className={`font-medium ${priorityVariantMap[ticket.priority]}`}>{ticket.priority}</Badge>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="p-0 h-auto justify-end">
+                                    <Badge className={`font-medium ${priorityVariantMap[currentPriority]}`}>{currentPriority}</Badge>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {Object.keys(priorityVariantMap).map(p => (
+                                    <DropdownMenuItem key={p} onSelect={() => setCurrentPriority(p as any)}>
+                                        {p}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                     {ticket.project && (
                         <div className="flex justify-between items-center">
