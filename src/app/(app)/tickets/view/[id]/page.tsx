@@ -50,7 +50,7 @@ export default function ViewTicketPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const ticket = tickets.find(t => t.id === params.id);
-  const userMap = new Map(users.map(u => [u.name, u]));
+  const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), []);
   
   const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
   const [currentStatus, setCurrentStatus] = React.useState(ticket?.status);
