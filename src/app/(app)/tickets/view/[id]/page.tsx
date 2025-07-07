@@ -138,7 +138,7 @@ export default function ViewTicketPage() {
   }
   
   const assignee = userMap.get(ticket.assignee);
-  const reporter = userMap.get(ticket.reporter) || { id: 'anon', name: ticket.reporter, email: '', avatar: ''};
+  const reporter = userMap.get(ticket.reporter);
 
   const handleSmartReply = async () => {
     setIsSuggestingReply(true);
@@ -395,7 +395,7 @@ export default function ViewTicketPage() {
                           <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete this
                             ticket and remove its data from our servers.
-                          </Description>
+                          </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
