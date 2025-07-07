@@ -1,7 +1,6 @@
 
 'use client';
 
-import { projects, users, tickets as allTickets } from "@/lib/data";
 import { notFound, useParams, useRouter } from "next/navigation";
 import React from "react";
 import { PageHeader } from "@/components/page-header";
@@ -11,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader, Trash2 } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -44,6 +43,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getProjectById, getTicketsByProject, getUsers } from "@/lib/firestore";
+import type { Project, Ticket, User } from "@/lib/data";
 
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -65,18 +66,59 @@ const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destru
 export default function ViewProjectPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const userMap = React.useMemo(() => new Map(users.map(u => [u.id, u])), []);
 
-  const project = projects.find(p => p.id === params.id);
-  const [currentStatus, setCurrentStatus] = React.useState(project?.status);
+  const [project, setProject] = React.useState<Project | null>(null);
+  const [users, setUsers] = React.useState<User[]>([]);
+  const [associatedTickets, setAssociatedTickets] = React.useState<Ticket[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  const [currentStatus, setCurrentStatus] = React.useState<string | undefined>();
+  
+  const userMap = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
+
+  React.useEffect(() => {
+    if (!params.id) return;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [projectData, usersData] = await Promise.all([
+            getProjectById(params.id as string),
+            getUsers()
+        ]);
+
+        if (projectData) {
+          setProject(projectData);
+          setCurrentStatus(projectData.status);
+          const ticketsData = await getTicketsByProject(projectData.name);
+          setAssociatedTickets(ticketsData);
+        } else {
+            notFound();
+        }
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Failed to fetch project data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [params.id]);
+
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!project || !currentStatus) {
     notFound();
   }
 
   const manager = userMap.get(project.manager);
-  const teamMembers = project.team.map(userId => userMap.get(userId)).filter(Boolean) as typeof users;
-  const associatedTickets = allTickets.filter(t => t.project === project.name);
+  const teamMembers = project.team.map(userId => userMap.get(userId)).filter(Boolean) as User[];
   
   return (
     <div className="flex flex-col gap-6">

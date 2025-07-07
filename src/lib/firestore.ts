@@ -1,5 +1,5 @@
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User } from './data';
 
@@ -20,6 +20,23 @@ function snapshotToData<T>(snapshot: any): T[] {
   });
 }
 
+function docToData<T>(docSnap: any): T | null {
+    if (!docSnap.exists()) {
+        console.log('No such document!');
+        return null;
+    }
+    const data = docSnap.data();
+    const result: { [key: string]: any } = { id: docSnap.id };
+    for (const key in data) {
+        if (data[key] && typeof data[key].toDate === 'function') {
+            result[key] = data[key].toDate().toISOString();
+        } else {
+            result[key] = data[key];
+        }
+    }
+    return result as T;
+}
+
 export async function getTickets(): Promise<Ticket[]> {
   try {
     const ticketsCol = collection(db, 'tickets');
@@ -35,27 +52,49 @@ export async function getTicketById(id: string): Promise<Ticket | null> {
   try {
     const ticketRef = doc(db, 'tickets', id);
     const ticketSnap = await getDoc(ticketRef);
-
-    if (!ticketSnap.exists()) {
-      console.log('No such document!');
-      return null;
-    }
-
-    const data = ticketSnap.data();
-    const result: { [key: string]: any } = { id: ticketSnap.id };
-    for (const key in data) {
-      if (data[key] && typeof data[key].toDate === 'function') {
-        result[key] = data[key].toDate().toISOString();
-      } else {
-        result[key] = data[key];
-      }
-    }
-    return result as Ticket;
+    return docToData<Ticket>(ticketSnap);
   } catch (error) {
     console.error("Error fetching ticket by ID:", error);
     return null;
   }
 }
+
+export async function getTicketsByProject(projectName: string): Promise<Ticket[]> {
+    try {
+        const ticketsCol = collection(db, 'tickets');
+        const q = query(ticketsCol, where("project", "==", projectName));
+        const ticketSnapshot = await getDocs(q);
+        return snapshotToData<Ticket>(ticketSnapshot);
+    } catch (error) {
+        console.error("Error fetching tickets by project:", error);
+        return [];
+    }
+}
+
+export async function getTicketsByAssignee(assigneeName: string): Promise<Ticket[]> {
+    try {
+        const ticketsCol = collection(db, 'tickets');
+        const q = query(ticketsCol, where("assignee", "==", assigneeName));
+        const ticketSnapshot = await getDocs(q);
+        return snapshotToData<Ticket>(ticketSnapshot);
+    } catch (error) {
+        console.error("Error fetching tickets by assignee:", error);
+        return [];
+    }
+}
+
+export async function getTicketsByReporter(reporterName: string): Promise<Ticket[]> {
+    try {
+        const ticketsCol = collection(db, 'tickets');
+        const q = query(ticketsCol, where("reporter", "==", reporterName));
+        const ticketSnapshot = await getDocs(q);
+        return snapshotToData<Ticket>(ticketSnapshot);
+    } catch (error) {
+        console.error("Error fetching tickets by reporter:", error);
+        return [];
+    }
+}
+
 
 export async function getProjects(): Promise<Project[]> {
   try {
@@ -68,6 +107,29 @@ export async function getProjects(): Promise<Project[]> {
   }
 }
 
+export async function getProjectById(id: string): Promise<Project | null> {
+    try {
+        const projectRef = doc(db, 'projects', id);
+        const projectSnap = await getDoc(projectRef);
+        return docToData<Project>(projectSnap);
+    } catch (error) {
+        console.error("Error fetching project by ID:", error);
+        return null;
+    }
+}
+
+export async function getProjectsByManager(managerId: string): Promise<Project[]> {
+    try {
+        const projectsCol = collection(db, 'projects');
+        const q = query(projectsCol, where("manager", "==", managerId));
+        const projectSnapshot = await getDocs(q);
+        return snapshotToData<Project>(projectSnapshot);
+    } catch (error) {
+        console.error("Error fetching projects by manager:", error);
+        return [];
+    }
+}
+
 export async function getUsers(): Promise<User[]> {
   try {
     const usersCol = collection(db, 'users');
@@ -77,6 +139,17 @@ export async function getUsers(): Promise<User[]> {
     console.error("Error fetching users:", error);
     return [];
   }
+}
+
+export async function getUserById(id: string): Promise<User | null> {
+    try {
+        const userRef = doc(db, 'users', id);
+        const userSnap = await getDoc(userRef);
+        return docToData<User>(userSnap);
+    } catch (error) {
+        console.error("Error fetching user by ID:", error);
+        return null;
+    }
 }
 
 export async function addTicket(ticketData: Partial<Ticket>): Promise<string> {

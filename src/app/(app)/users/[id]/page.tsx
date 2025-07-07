@@ -1,14 +1,13 @@
 
 'use client';
 
-import { tickets, users, projects } from "@/lib/data";
 import { notFound, useParams, useRouter } from "next/navigation";
 import React from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, KeyRound, ShieldCheck } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader, ShieldCheck } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -30,6 +29,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getUserById, getTicketsByAssignee, getTicketsByReporter, getProjectsByManager } from "@/lib/firestore";
+import type { User, Ticket, Project } from "@/lib/data";
 
 
 const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -45,15 +46,51 @@ export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
 
-  const user = users.find(u => u.id === params.id);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [assignedTickets, setAssignedTickets] = React.useState<Ticket[]>([]);
+  const [reportedTickets, setReportedTickets] = React.useState<Ticket[]>([]);
+  const [managedProjects, setManagedProjects] = React.useState<Project[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!params.id) return;
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const userData = await getUserById(params.id as string);
+            if (userData) {
+                setUser(userData);
+                const [assigned, reported, managed] = await Promise.all([
+                    getTicketsByAssignee(userData.name),
+                    getTicketsByReporter(userData.name),
+                    getProjectsByManager(userData.id)
+                ]);
+                setAssignedTickets(assigned);
+                setReportedTickets(reported);
+                setManagedProjects(managed);
+            } else {
+                notFound();
+            }
+        } catch (error) {
+            console.error("Failed to fetch user profile data", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchData();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!user) {
     notFound();
   }
-
-  const assignedTickets = tickets.filter(t => t.assignee === user.name);
-  const reportedTickets = tickets.filter(t => t.reporter === user.name);
-  const managedProjects = projects.filter(p => p.manager === user.id);
 
   return (
     <div className="flex flex-col gap-6">
