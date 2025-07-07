@@ -46,12 +46,19 @@ export default function ViewTicketPage() {
   const ticket = tickets.find(t => t.id === params.id);
   const userMap = new Map(users.map(u => [u.name, u]));
   
-  const [pageDescription, setPageDescription] = React.useState("");
+  const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
 
   React.useEffect(() => {
     if (ticket) {
       const reporter = userMap.get(ticket.reporter) || { name: ticket.reporter, email: '', avatar: ''};
-      setPageDescription(`Opened by ${reporter.name} on ${format(new Date(ticket.createdAt), "PPp")}. Last updated on ${format(new Date(ticket.updatedAt), "PPp")}`);
+      const reporterEmail = reporter.email ? `(${reporter.email})` : '';
+
+      setPageDescription(
+        <>
+          <div>Opened by {reporter.name} {reporterEmail} on {format(new Date(ticket.createdAt), "PPp")}.</div>
+          <div>Last updated on {format(new Date(ticket.updatedAt), "PPp")}.</div>
+        </>
+      );
     }
   }, [ticket, userMap]);
   
