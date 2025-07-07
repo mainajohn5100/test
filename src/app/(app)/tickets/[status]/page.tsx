@@ -8,7 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function TicketsPage({ params }: { params: { status: string } }) {
   const { status } = params;
-  const pageTitle = `${status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')} Tickets`;
+  const pageTitle = status
+    ? `${status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')} Tickets`
+    : "Tickets";
 
   return (
     <div className="flex flex-col gap-6">
