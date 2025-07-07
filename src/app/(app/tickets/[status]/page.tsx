@@ -4,22 +4,32 @@ import { TicketClient } from "@/components/tickets/ticket-client";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
-import { getTickets, getUsers } from "@/lib/firestore";
+import { getTickets, getTicketsByStatus, getUsers } from "@/lib/firestore";
 import { users as mockUsers } from "@/lib/data";
 
 export default async function TicketsPage({ params }: { params: { status: string } }) {
   const statusFilter = params.status || 'all';
 
-  let pageTitle = "Tickets";
+  let pageTitle = "All Tickets";
+  let normalizedStatus = "all";
+  
   if (statusFilter && statusFilter !== 'all') {
     if (statusFilter === 'new-status') {
       pageTitle = "New Tickets";
+      normalizedStatus = "New";
     } else {
-      pageTitle = `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1).replace('-', ' ')} Tickets`;
+      normalizedStatus = statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1).replace('-', ' ');
+      pageTitle = `${normalizedStatus} Tickets`;
     }
   }
   
-  const tickets = await getTickets();
+  const tickets = await (async () => {
+    if (normalizedStatus === 'all') {
+      return getTickets();
+    }
+    return getTicketsByStatus(normalizedStatus);
+  })();
+
   const users = await getUsers();
 
   return (

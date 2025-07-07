@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { getProjects } from "@/lib/firestore";
+import { getProjects, getProjectsByStatus } from "@/lib/firestore";
 import { ArrowRight, ListFilter, PlusCircle, Search } from "lucide-react";
 import { format } from 'date-fns';
 import Link from "next/link";
@@ -22,21 +22,19 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
 
     let pageTitle = "All Projects";
     let pageDescription = "Browse and manage all your projects.";
+    let normalizedStatus = 'all';
 
     if (statusFilter && statusFilter !== 'all') {
-        const statusName = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-        pageTitle = `${statusName} Projects`;
+        normalizedStatus = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        pageTitle = `${normalizedStatus} Projects`;
         pageDescription = `Browse and manage all ${statusFilter.replace('-', ' ')} projects.`
     }
-
-    const allProjects = await getProjects();
     
-    const projects = (() => {
-        if (statusFilter === 'all') {
-            return allProjects;
+    const projects = await (async () => {
+        if (normalizedStatus === 'all') {
+            return getProjects();
         }
-        const normalizedFilter = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-        return allProjects.filter(p => p.status === normalizedFilter);
+        return getProjectsByStatus(normalizedStatus);
     })();
 
 

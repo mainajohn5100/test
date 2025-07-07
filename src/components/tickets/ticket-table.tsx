@@ -50,21 +50,12 @@ export function TicketTable({ tickets: allTickets, users, statusFilter, searchTe
   const tickets = React.useMemo(() => {
     let filteredTickets = allTickets;
 
-    // 1. Filter by status from URL/toolbar
-    if (statusFilter && statusFilter !== 'all') {
-      let normalizedFilter = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      if (statusFilter === 'new-status') {
-        normalizedFilter = 'New';
-      }
-      filteredTickets = filteredTickets.filter(t => t.status === normalizedFilter);
-    }
-
-    // 2. Filter by priority from toolbar
+    // Filter by priority from toolbar
     if (priorityFilter && priorityFilter !== 'all') {
       filteredTickets = filteredTickets.filter(t => t.priority.toLowerCase() === priorityFilter);
     }
 
-    // 3. Filter by search term
+    // Filter by search term
     if (searchTerm) {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
       filteredTickets = filteredTickets.filter(t => 
@@ -75,7 +66,7 @@ export function TicketTable({ tickets: allTickets, users, statusFilter, searchTe
     }
     
     return filteredTickets;
-  }, [allTickets, statusFilter, searchTerm, priorityFilter]);
+  }, [allTickets, searchTerm, priorityFilter]);
 
   return (
     <div className="w-full overflow-hidden">

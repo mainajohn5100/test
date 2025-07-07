@@ -1,5 +1,5 @@
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User } from './data';
 
@@ -46,6 +46,18 @@ export async function getTickets(): Promise<Ticket[]> {
     console.error("Error fetching tickets:", error);
     return [];
   }
+}
+
+export async function getTicketsByStatus(status: string): Promise<Ticket[]> {
+    try {
+        const ticketsCol = collection(db, 'tickets');
+        const q = query(ticketsCol, where("status", "==", status));
+        const ticketSnapshot = await getDocs(q);
+        return snapshotToData<Ticket>(ticketSnapshot);
+    } catch (error) {
+        console.error("Error fetching tickets by status:", error);
+        return [];
+    }
 }
 
 export async function getTicketById(id: string): Promise<Ticket | null> {
@@ -107,6 +119,18 @@ export async function getProjects(): Promise<Project[]> {
   }
 }
 
+export async function getProjectsByStatus(status: string): Promise<Project[]> {
+    try {
+        const projectsCol = collection(db, 'projects');
+        const q = query(projectsCol, where("status", "==", status));
+        const projectSnapshot = await getDocs(q);
+        return snapshotToData<Project>(projectSnapshot);
+    } catch (error) {
+        console.error("Error fetching projects by status:", error);
+        return [];
+    }
+}
+
 export async function getProjectById(id: string): Promise<Project | null> {
     try {
         const projectRef = doc(db, 'projects', id);
@@ -144,7 +168,7 @@ export async function getUsers(): Promise<User[]> {
 export async function getUserById(id: string): Promise<User | null> {
     try {
         const userRef = doc(db, 'users', id);
-        const userSnap = await getDoc(userRef);
+        const userSnap = await getDoc(userSnap);
         return docToData<User>(userSnap);
     } catch (error) {
         console.error("Error fetching user by ID:", error);
@@ -152,7 +176,7 @@ export async function getUserById(id: string): Promise<User | null> {
     }
 }
 
-export async function addTicket(ticketData: Partial<Ticket>): Promise<string> {
+export async function addTicket(ticketData: Partial<Omit<Ticket, 'id' | 'status' | 'createdAt' | 'updatedAt'>>): Promise<string> {
   try {
     const docRef = await addDoc(collection(db, 'tickets'), {
       ...ticketData,
