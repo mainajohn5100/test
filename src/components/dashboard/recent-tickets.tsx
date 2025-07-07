@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableBody,
@@ -11,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { tickets } from "@/lib/data"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { users } from "@/lib/data"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   'New': 'secondary',
@@ -23,6 +25,7 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
 };
 
 export function RecentTickets() {
+  const router = useRouter();
   const recentTickets = tickets.slice(0, 5);
   const userMap = new Map(users.map(u => [u.name, u]));
 
@@ -46,7 +49,7 @@ export function RecentTickets() {
             {recentTickets.map((ticket) => {
                 const assignee = userMap.get(ticket.assignee);
                 return(
-              <TableRow key={ticket.id} className="relative hover:bg-muted/50 cursor-pointer">
+              <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
                 <TableCell>
                   <div className="font-medium">{ticket.title}</div>
                   <div className="text-sm text-muted-foreground">{ticket.id}</div>
@@ -66,9 +69,6 @@ export function RecentTickets() {
                     </div>
                     ) : ticket.assignee }
                 </TableCell>
-                <Link href={`/tickets/view/${ticket.id}`} className="absolute inset-0">
-                    <span className="sr-only">View ticket {ticket.id}</span>
-                </Link>
               </TableRow>
             )})}
           </TableBody>
