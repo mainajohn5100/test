@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -60,7 +61,7 @@ function TicketVolumeTrendsChart() {
         </div>
         <ChartToolbar supportedTypes={["line", "bar"]} chartType={chartType} setChartType={setChartType} />
       </CardHeader>
-      <CardContent>
+      <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={300}>
           {chartType === 'line' ? (
             <LineChart data={chartData}>
@@ -100,7 +101,7 @@ function TicketsByStatusChart() {
         </div>
         <ChartToolbar supportedTypes={["pie", "bar"]} chartType={chartType} setChartType={setChartType} />
       </CardHeader>
-      <CardContent>
+      <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={300}>
             {chartType === 'pie' ? (
                 <PieChart>
@@ -136,7 +137,7 @@ function ReportAvgResolutionTimeChart() {
         </div>
         <ChartToolbar supportedTypes={["line", "bar"]} chartType={chartType} setChartType={setChartType} />
       </CardHeader>
-      <CardContent>
+      <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={300}>
            {chartType === 'line' ? (
              <LineChart data={avgResolutionTimeData}>
@@ -172,7 +173,7 @@ function ProjectsByStatusChart() {
         </div>
         <ChartToolbar supportedTypes={["pie", "bar"]} chartType={chartType} setChartType={setChartType} />
       </CardHeader>
-      <CardContent>
+      <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={300}>
             {chartType === 'pie' ? (
                 <PieChart>
@@ -222,7 +223,7 @@ function TicketStatusTrendsChart() {
           <ChartToolbar supportedTypes={["bar", "line"]} chartType={chartType} setChartType={setChartType} />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>
            {chartType === 'bar' ? (
             <BarChart data={data}>
@@ -264,3 +265,5 @@ export function ReportCharts() {
     </div>
   );
 }
+
+    
