@@ -11,6 +11,7 @@ import { ArrowRight, ListFilter, PlusCircle, Search } from "lucide-react";
 import { format } from 'date-fns';
 import { useParams } from "next/navigation";
 import React from "react";
+import Link from "next/link";
 
 const projectStatusVariantMap: { [key: string]: string } = {
   'Active': 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
@@ -97,10 +98,12 @@ export default function ProjectsByStatusPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full">
-                View Project
-                <ArrowRight className="ml-2" />
-              </Button>
+              <Link href={`/projects/view/${project.id}`} passHref className="w-full">
+                <Button variant="outline" className="w-full">
+                  View Project
+                  <ArrowRight className="ml-2" />
+                </Button>
+              </Link>
             </CardFooter>
           </Card>
         )) : (

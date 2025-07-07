@@ -130,10 +130,11 @@ export const tickets: Ticket[] = [
 ];
 
 export const projects: Project[] = [
-  { id: 'proj_1', name: 'Website Redesign', status: 'Active', manager: 'Alex Johnson', team: ['usr_2', 'usr_3'], deadline: '2024-07-30', createdAt: '2024-01-15' },
-  { id: 'proj_2', name: 'API V2', status: 'Active', manager: 'Alex Johnson', team: ['usr_1', 'usr_2'], deadline: '2024-06-15', createdAt: '2024-02-01' },
-  { id: 'proj_3', name: 'Reporting Module', status: 'On Hold', manager: 'James Smith', team: ['usr_3'], deadline: '2024-08-20', createdAt: '2024-03-10' },
-  { id: 'proj_4', name: 'Mobile App Q3', status: 'Completed', manager: 'Maria Garcia', team: ['usr_2'], deadline: '2024-03-31', createdAt: '2023-12-01' },
+  { id: 'proj_1', name: 'Website Redesign', status: 'Active', manager: 'usr_1', team: ['usr_2', 'usr_3'], deadline: '2024-07-30', createdAt: '2024-01-15' },
+  { id: 'proj_2', name: 'API V2', status: 'Active', manager: 'usr_1', team: ['usr_1', 'usr_2'], deadline: '2024-06-15', createdAt: '2024-02-01' },
+  { id: 'proj_3', name: 'Reporting Module', status: 'On Hold', manager: 'usr_3', team: ['usr_3'], deadline: '2024-08-20', createdAt: '2024-03-10' },
+  { id: 'proj_4', name: 'Mobile App Q3', status: 'Completed', manager: 'usr_2', team: ['usr_2'], deadline: '2024-03-31', createdAt: '2023-12-01' },
+  { id: 'proj_5', name: 'New Project', status: 'New', manager: 'usr_2', team: ['usr_1', 'usr_3'], deadline: '2025-07-08', createdAt: '2024-05-20' },
 ];
 
 export const chartData = [
@@ -168,6 +169,7 @@ export const projectsByStatusData = [
   { name: 'Active', value: 2, fill: 'hsl(var(--chart-1))' },
   { name: 'On Hold', value: 1, fill: 'hsl(var(--chart-2))' },
   { name: 'Completed', value: 1, fill: 'hsl(var(--chart-3))' },
+  { name: 'New', value: 1, fill: 'hsl(var(--chart-4))' },
 ];
 
 export const ticketTrendsData = {
