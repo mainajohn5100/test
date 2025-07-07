@@ -1,4 +1,5 @@
-import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User } from './data';
 
@@ -27,6 +28,32 @@ export async function getTickets(): Promise<Ticket[]> {
   } catch (error) {
     console.error("Error fetching tickets:", error);
     return [];
+  }
+}
+
+export async function getTicketById(id: string): Promise<Ticket | null> {
+  try {
+    const ticketRef = doc(db, 'tickets', id);
+    const ticketSnap = await getDoc(ticketRef);
+
+    if (!ticketSnap.exists()) {
+      console.log('No such document!');
+      return null;
+    }
+
+    const data = ticketSnap.data();
+    const result: { [key: string]: any } = { id: ticketSnap.id };
+    for (const key in data) {
+      if (data[key] && typeof data[key].toDate === 'function') {
+        result[key] = data[key].toDate().toISOString();
+      } else {
+        result[key] = data[key];
+      }
+    }
+    return result as Ticket;
+  } catch (error) {
+    console.error("Error fetching ticket by ID:", error);
+    return null;
   }
 }
 

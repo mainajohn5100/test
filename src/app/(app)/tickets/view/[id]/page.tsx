@@ -1,7 +1,6 @@
 
 'use client';
 
-import { tickets, users } from "@/lib/data";
 import { notFound, useRouter, useParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -34,6 +33,8 @@ import React from "react";
 import { generateSmartReply } from "@/ai/flows/smart-replies";
 import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
+import { getTicketById, getUsers } from "@/lib/firestore";
+import type { Ticket, User } from "@/lib/data";
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -55,21 +56,59 @@ export default function ViewTicketPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
-  const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), []);
   
-  const ticket = tickets.find(t => t.id === params.id);
-  
+  const [ticket, setTicket] = React.useState<Ticket | null>(null);
+  const [users, setUsers] = React.useState<User[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
   const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
-  const [currentStatus, setCurrentStatus] = React.useState(ticket?.status);
-  const [currentPriority, setCurrentPriority] = React.useState(ticket?.priority);
+  const [currentStatus, setCurrentStatus] = React.useState<string | undefined>(undefined);
+  const [currentPriority, setCurrentPriority] = React.useState<string | undefined>(undefined);
   const [reply, setReply] = React.useState("");
   const [isSuggestingReply, setIsSuggestingReply] = React.useState(false);
-  const [currentTags, setCurrentTags] = React.useState(ticket?.tags || []);
+  const [currentTags, setCurrentTags] = React.useState<string[]>([]);
   const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [isSuggestingTags, setIsSuggestingTags] = React.useState(false);
 
+  const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
+
   React.useEffect(() => {
-    if (ticket) {
+    const fetchData = async () => {
+      if (!params.id) return;
+      setLoading(true);
+      try {
+        const [ticketData, usersData] = await Promise.all([
+          getTicketById(params.id as string),
+          getUsers()
+        ]);
+
+        if (ticketData) {
+          setTicket(ticketData);
+          setCurrentStatus(ticketData.status);
+          setCurrentPriority(ticketData.priority);
+          setCurrentTags(ticketData.tags || []);
+        } else {
+          notFound();
+        }
+        setUsers(usersData);
+
+      } catch (error) {
+        console.error("Failed to fetch ticket or users", error);
+        toast({
+          title: "Error",
+          description: "Could not load ticket data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [params.id, toast]);
+  
+
+  React.useEffect(() => {
+    if (ticket && userMap.size > 0) {
       const reporterUser = userMap.get(ticket.reporter);
       const reporterName = reporterUser ? (
         <Link href={`/users/${reporterUser.id}`} className="font-medium hover:underline">{reporterUser.name}</Link>
@@ -86,28 +125,33 @@ export default function ViewTicketPage() {
     }
   }, [ticket, userMap]);
   
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   if (!ticket || !currentStatus || !currentPriority) {
     notFound();
   }
-
+  
   const assignee = userMap.get(ticket.assignee);
   const reporter = userMap.get(ticket.reporter) || { id: 'anon', name: ticket.reporter, email: '', avatar: ''};
 
   const handleSmartReply = async () => {
     setIsSuggestingReply(true);
     try {
-      const userHistory = tickets
-        .filter(t => t.reporter === ticket.reporter && t.id !== ticket.id)
-        .map(t => `- Title: ${t.title}\n  Status: ${t.status}`)
-        .join('\n');
-        
+      // Note: In a real app, this data would be fetched from the DB
+      const userHistory = "No previous tickets for this user.";
       const cannedResponses = "1. Thank you for your patience. We are looking into it.\n2. Could you please provide more details?\n3. This issue has been resolved and the fix will be deployed shortly.";
       
-      const conversation = `User: ${ticket.description}\nAgent: Hey, I've started looking into this. It seems to be an issue with the latest Safari update. I'll keep you posted.\nUser: Thanks for the update, Maria!`;
+      const conversation = `User: ${ticket.description}`;
 
       const result = await generateSmartReply({
         ticketContent: conversation,
-        userHistory: userHistory || "No previous tickets for this user.",
+        userHistory: userHistory,
         cannedResponses: cannedResponses,
       });
 
@@ -178,41 +222,8 @@ export default function ViewTicketPage() {
                     <CardTitle>Conversation History</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex gap-3">
-                        {assignee ? (
-                          <Link href={`/users/${assignee.id}`}>
-                            <Avatar>
-                                <AvatarImage src={assignee?.avatar} />
-                                <AvatarFallback>{assignee?.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                          </Link>
-                        ) : <Avatar><AvatarFallback>?</AvatarFallback></Avatar>}
-                        <div className="flex-1">
-                            <div className="flex justify-between">
-                                {assignee ? (
-                                    <Link href={`/users/${assignee.id}`} className="font-semibold hover:underline">{assignee.name}</Link>
-                                ) : <span className="font-semibold">Unassigned</span>}
-                                <span className="text-xs text-muted-foreground">2 days ago</span>
-                            </div>
-                            <p className="text-muted-foreground">Hey, I've started looking into this. It seems to be an issue with the latest Safari update. I'll keep you posted.</p>
-                        </div>
-                    </div>
-                    <Separator />
-                     <div className="flex gap-3">
-                        <Link href={`/users/${reporter.id}`}>
-                            <Avatar>
-                                <AvatarImage src={reporter?.avatar} />
-                                <AvatarFallback>{reporter?.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                        </Link>
-                        <div className="flex-1">
-                            <div className="flex justify-between">
-                                <Link href={`/users/${reporter.id}`} className="font-semibold hover:underline">{reporter.name}</Link>
-                                <span className="text-xs text-muted-foreground">1 day ago</span>
-                            </div>
-                            <p className="text-muted-foreground">Thanks for the update, Maria!</p>
-                        </div>
-                    </div>
+                    {/* Conversation history would be rendered here from DB */}
+                    <p className="text-sm text-muted-foreground text-center">No conversation history yet.</p>
                 </CardContent>
             </Card>
             <Card>
@@ -384,7 +395,7 @@ export default function ViewTicketPage() {
                           <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete this
                             ticket and remove its data from our servers.
-                          </AlertDialogDescription>
+                          </Description>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
