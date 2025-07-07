@@ -30,7 +30,7 @@ const menuItems = [
     icon: Ticket,
     subItems: [
       { label: "All Tickets", href: "/tickets/all" },
-      { label: "New Tickets", href: "/tickets/new-list" }, // Differentiating from create new
+      { label: "New Tickets", href: "/tickets/new" }, // Differentiating from create new
       { label: "Pending Tickets", href: "/tickets/pending" },
       { label: "On Hold", href: "/tickets/on-hold" },
       { label: "Closed", href: "/tickets/closed" },
@@ -48,7 +48,7 @@ const menuItems = [
     icon: Briefcase,
     subItems: [
       { label: "All Projects", href: "/projects/all" },
-      { label: "New", href: "/projects/new-list" },
+      { label: "New", href: "/projects/new" },
       { label: "Active", href: "/projects/active" },
       { label: "On Hold", href: "/projects/on-hold" },
       { label: "Completed", href: "/projects/completed" },

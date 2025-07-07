@@ -1,15 +1,15 @@
 'use client';
 
 import { tickets, users } from "@/lib/data";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2 } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -39,6 +40,7 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
 };
 
 export default function ViewTicketPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const ticket = tickets.find(t => t.id === params.id);
   const userMap = new Map(users.map(u => [u.name, u]));
   
@@ -49,9 +51,15 @@ export default function ViewTicketPage({ params }: { params: { id: string } }) {
   const assignee = userMap.get(ticket.assignee);
   const reporter = userMap.get(ticket.reporter) || { name: ticket.reporter, email: '', avatar: ''};
 
+  const pageDescription = `Opened by ${reporter.name} on ${format(new Date(ticket.createdAt), "PPp")}. Last updated on ${format(new Date(ticket.updatedAt), "PPp")}`;
+
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={ticket.title} description={`Ticket ID: ${ticket.id}`}>
+      <PageHeader title={ticket.title} description={pageDescription}>
+        <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to List
+        </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/50">
@@ -80,16 +88,13 @@ export default function ViewTicketPage({ params }: { params: { id: string } }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Description</CardTitle>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <p className="text-muted-foreground">{ticket.description}</p>
                 </CardContent>
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Comments</CardTitle>
+                    <CardTitle>Conversation History</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex gap-3">
@@ -121,13 +126,35 @@ export default function ViewTicketPage({ params }: { params: { id: string } }) {
                     </div>
                 </CardContent>
             </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Add Reply</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Textarea placeholder="Type your response..." className="min-h-24"/>
+                </CardContent>
+                <CardFooter className="justify-between">
+                    <Button variant="ghost">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Smart Reply
+                    </Button>
+                    <Button>
+                        <Send className="mr-2 h-4 w-4" />
+                        Send Reply
+                    </Button>
+                </CardFooter>
+            </Card>
         </div>
         <div className="lg:col-span-1 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Properties</CardTitle>
+                    <CardTitle>Ticket Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">ID</span>
+                        <code>{ticket.id}</code>
+                    </div>
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Status</span>
                         <Badge variant={statusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
@@ -136,10 +163,12 @@ export default function ViewTicketPage({ params }: { params: { id: string } }) {
                         <span className="text-muted-foreground">Priority</span>
                         <Badge className={`font-medium ${priorityVariantMap[ticket.priority]}`}>{ticket.priority}</Badge>
                     </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Project</span>
-                        <span>{ticket.project}</span>
-                    </div>
+                    {ticket.project && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Project</span>
+                            <span>{ticket.project}</span>
+                        </div>
+                    )}
                     <Separator />
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Assignee</span>
@@ -178,27 +207,22 @@ export default function ViewTicketPage({ params }: { params: { id: string } }) {
                         <span className="text-muted-foreground">Updated</span>
                         <span>{format(new Date(ticket.updatedAt), "MMM d, yyyy")}</span>
                     </div>
-                    <Separator />
-                    <div className="space-y-2">
-                        <span className="text-muted-foreground">Tags</span>
-                        <div className="flex flex-wrap gap-2">
-                            {ticket.tags.map(tag => (
-                                <Badge key={tag} variant="secondary">{tag}</Badge>
-                            ))}
-                        </div>
-                    </div>
                 </CardContent>
             </Card>
              <Card>
-                <CardHeader>
-                    <CardTitle>Smart Reply</CardTitle>
-                    <CardDescription>Use AI to generate a contextual reply.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                    <CardTitle>Tags</CardTitle>
+                     <Button variant="ghost" size="sm">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Suggest
+                    </Button>
                 </CardHeader>
                 <CardContent>
-                    <Button className="w-full">
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Generate Reply
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        {ticket.tags.map(tag => (
+                            <Badge key={tag} variant="secondary">{tag}</Badge>
+                        ))}
+                    </div>
                 </CardContent>
             </Card>
         </div>

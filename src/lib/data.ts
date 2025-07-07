@@ -9,7 +9,7 @@ export type Ticket = {
   createdAt: string;
   updatedAt: string;
   tags: string[];
-  project: string;
+  project?: string;
 };
 
 export type User = {
@@ -113,7 +113,6 @@ export const tickets: Ticket[] = [
     createdAt: '2024-04-28T12:00:00Z',
     updatedAt: '2024-04-29T10:00:00Z',
     tags: ['email', 'outage', 'backend'],
-    project: 'API V2'
   },
   {
     id: 'TKT-007',
@@ -126,7 +125,6 @@ export const tickets: Ticket[] = [
     createdAt: '2024-04-15T16:00:00Z',
     updatedAt: '2024-04-20T11:45:00Z',
     tags: ['onboarding', 'feature-request', 'ux'],
-    project: 'Reporting Module'
   }
 ];
 

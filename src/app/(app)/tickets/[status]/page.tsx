@@ -36,7 +36,7 @@ export default function TicketsPage({ params }: { params: { status: string } }) 
 }
 
 export function generateStaticParams() {
-    const statuses = ['all', 'new-list', 'pending', 'on-hold', 'closed', 'active', 'terminated'];
+    const statuses = ['all', 'new', 'pending', 'on-hold', 'closed', 'active', 'terminated'];
     return statuses.map((status) => ({
       status: status,
     }))
