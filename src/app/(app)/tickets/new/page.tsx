@@ -1,3 +1,6 @@
+
+'use client';
+
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -6,10 +9,68 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, FileUp, Send } from "lucide-react";
+import { Sparkles, FileUp, Send, XCircle, Loader } from "lucide-react";
+import React, { useState } from "react";
+import { suggestTags } from "@/ai/flows/suggest-tags";
+import { useToast } from "@/hooks/use-toast";
 
 export default function NewTicketPage() {
-  const suggestedTags = ['UI', 'Bug', 'Backend', 'Feature Request'];
+  const { toast } = useToast();
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+
+  const handleSuggestTags = async () => {
+    if (!description) {
+      toast({
+        title: "Description needed",
+        description: "Please write a description before suggesting tags.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsSuggesting(true);
+    try {
+      const result = await suggestTags({ ticketContent: description });
+      const newSuggestions = result.tags.filter(t => !tags.includes(t));
+      setSuggestedTags(newSuggestions);
+      if(newSuggestions.length === 0) {
+        toast({ title: "No new tags suggested." });
+      }
+    } catch (error) {
+      console.error("Error suggesting tags:", error);
+      toast({
+        title: "Error",
+        description: "Could not suggest tags at this time.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
+  const addTag = (tag: string) => {
+    const trimmedTag = tag.trim();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags([...tags, trimmedTag]);
+      setSuggestedTags(suggestedTags.filter(t => t !== trimmedTag));
+    }
+  };
+    
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      addTag(tagInput.trim());
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,7 +102,13 @@ export default function NewTicketPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea id="description" placeholder="Detailed description of the issue..." className="min-h-32"/>
+                <Textarea 
+                  id="description" 
+                  placeholder="Detailed description of the issue..." 
+                  className="min-h-32"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Attachments</Label>
@@ -117,18 +184,34 @@ export default function NewTicketPage() {
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="tags-input">Add Tags</Label>
-                        <Input id="tags-input" placeholder="e.g., 'bug', 'v2.1'" />
+                        <Input 
+                          id="tags-input" 
+                          placeholder="Type & press Enter" 
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={handleTagInputKeyDown}
+                        />
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {tags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="flex items-center gap-1.5">
+                              {tag}
+                              <XCircle className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                            </Badge>
+                          ))}
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        <Button variant="outline" size="sm" className="w-full">
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Suggest Tags with AI
+                        <Button variant="outline" size="sm" className="w-full" onClick={handleSuggestTags} disabled={isSuggesting}>
+                          {isSuggesting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                          Suggest Tags with AI
                         </Button>
-                        <div className="flex flex-wrap gap-2 pt-2">
-                            {suggestedTags.map(tag => (
-                                <Badge key={tag} variant="secondary" className="cursor-pointer">{tag}</Badge>
-                            ))}
-                        </div>
+                        {suggestedTags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-2">
+                              {suggestedTags.map(tag => (
+                                  <Badge key={tag} variant="outline" className="cursor-pointer" onClick={() => addTag(tag)}>{tag}</Badge>
+                              ))}
+                          </div>
+                        )}
                     </div>
                 </div>
             </CardContent>

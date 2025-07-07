@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -31,6 +31,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import React from "react";
+import { generateSmartReply } from "@/ai/flows/smart-replies";
+import { useToast } from "@/hooks/use-toast";
+import { suggestTags } from "@/ai/flows/suggest-tags";
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -51,6 +54,7 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
 export default function ViewTicketPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const { toast } = useToast();
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), []);
   
   const ticket = tickets.find(t => t.id === params.id);
@@ -58,7 +62,11 @@ export default function ViewTicketPage() {
   const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
   const [currentStatus, setCurrentStatus] = React.useState(ticket?.status);
   const [currentPriority, setCurrentPriority] = React.useState(ticket?.priority);
-
+  const [reply, setReply] = React.useState("");
+  const [isSuggestingReply, setIsSuggestingReply] = React.useState(false);
+  const [currentTags, setCurrentTags] = React.useState(ticket?.tags || []);
+  const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
+  const [isSuggestingTags, setIsSuggestingTags] = React.useState(false);
 
   React.useEffect(() => {
     if (ticket) {
@@ -84,6 +92,70 @@ export default function ViewTicketPage() {
 
   const assignee = userMap.get(ticket.assignee);
   const reporter = userMap.get(ticket.reporter) || { id: 'anon', name: ticket.reporter, email: '', avatar: ''};
+
+  const handleSmartReply = async () => {
+    setIsSuggestingReply(true);
+    try {
+      const userHistory = tickets
+        .filter(t => t.reporter === ticket.reporter && t.id !== ticket.id)
+        .map(t => `- Title: ${t.title}\n  Status: ${t.status}`)
+        .join('\n');
+        
+      const cannedResponses = "1. Thank you for your patience. We are looking into it.\n2. Could you please provide more details?\n3. This issue has been resolved and the fix will be deployed shortly.";
+      
+      const conversation = `User: ${ticket.description}\nAgent: Hey, I've started looking into this. It seems to be an issue with the latest Safari update. I'll keep you posted.\nUser: Thanks for the update, Maria!`;
+
+      const result = await generateSmartReply({
+        ticketContent: conversation,
+        userHistory: userHistory || "No previous tickets for this user.",
+        cannedResponses: cannedResponses,
+      });
+
+      setReply(result.suggestedReply);
+    } catch (error) {
+      console.error("Error generating smart reply:", error);
+      toast({
+        title: "Error",
+        description: "Could not generate a smart reply.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSuggestingReply(false);
+    }
+  };
+
+  const handleSuggestTags = async () => {
+    setIsSuggestingTags(true);
+    try {
+      const result = await suggestTags({ ticketContent: ticket.description });
+      const newSuggestions = result.tags.filter(t => !currentTags.includes(t));
+      setSuggestedTags(newSuggestions);
+      if (newSuggestions.length === 0) {
+        toast({ title: "No new tags to suggest." });
+      }
+    } catch(e) {
+      console.error("Error suggesting tags:", e);
+      toast({
+        title: "Error",
+        description: "Could not suggest tags at this time.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSuggestingTags(false);
+    }
+  };
+
+  const addTag = (tag: string) => {
+    if (!currentTags.includes(tag)) {
+      setCurrentTags([...currentTags, tag]);
+      setSuggestedTags(suggestedTags.filter(t => t !== tag));
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setCurrentTags(currentTags.filter(tag => tag !== tagToRemove));
+  };
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -148,11 +220,16 @@ export default function ViewTicketPage() {
                     <CardTitle>Add Reply</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Textarea placeholder="Type your response..." className="min-h-24"/>
+                    <Textarea 
+                      placeholder="Type your response..." 
+                      className="min-h-24"
+                      value={reply}
+                      onChange={(e) => setReply(e.target.value)}
+                    />
                 </CardContent>
                 <CardFooter className="justify-between">
-                    <Button variant="ghost">
-                        <Sparkles className="mr-2 h-4 w-4" />
+                    <Button variant="ghost" onClick={handleSmartReply} disabled={isSuggestingReply}>
+                        {isSuggestingReply ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
                         Smart Reply
                     </Button>
                     <Button>
@@ -194,7 +271,7 @@ export default function ViewTicketPage() {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="p-0 h-auto justify-end">
-                                    <Badge className={`font-medium ${priorityVariantMap[currentPriority]}`}>{currentPriority}</Badge>
+                                    <Badge className={`font-medium ${priorityVariantMap[currentPriority]} cursor-pointer`}>{currentPriority}</Badge>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -259,17 +336,33 @@ export default function ViewTicketPage() {
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
                     <CardTitle>Tags</CardTitle>
-                     <Button variant="ghost" size="sm">
-                        <Sparkles className="mr-2 h-4 w-4" />
+                     <Button variant="ghost" size="sm" onClick={handleSuggestTags} disabled={isSuggestingTags}>
+                        {isSuggestingTags ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
                         Suggest
                     </Button>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-wrap gap-2">
-                        {ticket.tags.map(tag => (
-                            <Badge key={tag} variant="secondary">{tag}</Badge>
+                        {currentTags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="flex items-center gap-1.5">
+                              {tag}
+                              <XCircle className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                            </Badge>
                         ))}
                     </div>
+                    {suggestedTags.length > 0 && (
+                      <>
+                        <Separator className="my-4" />
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground">Suggestions</p>
+                          <div className="flex flex-wrap gap-2">
+                            {suggestedTags.map(tag => (
+                              <Badge key={tag} variant="outline" className="cursor-pointer" onClick={() => addTag(tag)}>+ {tag}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                 </CardContent>
             </Card>
             <Card className="border-destructive/50">
