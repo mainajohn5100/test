@@ -1,21 +1,23 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Ticket } from "@/lib/data";
-import { MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
+import { MoreHorizontal, Eye } from "lucide-react";
 
 interface TicketTableRowActionsProps {
   ticket: Ticket;
 }
 
 export function TicketTableRowActions({ ticket }: TicketTableRowActionsProps) {
+  const router = useRouter();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -25,18 +27,9 @@ export function TicketTableRowActions({ ticket }: TicketTableRowActionsProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
           <Eye className="mr-2 h-4 w-4" />
           View Details
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Edit className="mr-2 h-4 w-4" />
-          Edit Ticket
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete Ticket
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
