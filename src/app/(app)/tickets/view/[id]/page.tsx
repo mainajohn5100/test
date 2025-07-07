@@ -22,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import React from "react";
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -45,14 +46,21 @@ export default function ViewTicketPage() {
   const ticket = tickets.find(t => t.id === params.id);
   const userMap = new Map(users.map(u => [u.name, u]));
   
+  const [pageDescription, setPageDescription] = React.useState("");
+
+  React.useEffect(() => {
+    if (ticket) {
+      const reporter = userMap.get(ticket.reporter) || { name: ticket.reporter, email: '', avatar: ''};
+      setPageDescription(`Opened by ${reporter.name} on ${format(new Date(ticket.createdAt), "PPp")}. Last updated on ${format(new Date(ticket.updatedAt), "PPp")}`);
+    }
+  }, [ticket, userMap]);
+  
   if (!ticket) {
     notFound();
   }
 
   const assignee = userMap.get(ticket.assignee);
   const reporter = userMap.get(ticket.reporter) || { name: ticket.reporter, email: '', avatar: ''};
-
-  const pageDescription = `Opened by ${reporter.name} on ${format(new Date(ticket.createdAt), "PPp")}. Last updated on ${format(new Date(ticket.updatedAt), "PPp")}`;
 
   return (
     <div className="flex flex-col gap-6">
