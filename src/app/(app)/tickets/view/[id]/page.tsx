@@ -1,7 +1,7 @@
 'use client';
 
 import { tickets, users } from "@/lib/data";
-import { notFound, useRouter } from "next/navigation";
+import { notFound, useRouter, useParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,8 +39,9 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
   'Terminated': 'destructive',
 };
 
-export default function ViewTicketPage({ params }: { params: { id: string } }) {
+export default function ViewTicketPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
   const ticket = tickets.find(t => t.id === params.id);
   const userMap = new Map(users.map(u => [u.name, u]));
   
