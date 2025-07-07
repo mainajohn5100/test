@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { tickets as allTickets, users } from "@/lib/data";
+import type { Ticket, User } from "@/lib/data";
 import { TicketTableRowActions } from "./ticket-table-row-actions";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
@@ -36,14 +36,16 @@ const priorityVariantMap: { [key: string]: string } = {
 };
 
 interface TicketTableProps {
+    tickets: Ticket[];
+    users: User[];
     statusFilter?: string;
     searchTerm?: string;
     priorityFilter?: string;
 }
 
-export function TicketTable({ statusFilter, searchTerm, priorityFilter }: TicketTableProps) {
+export function TicketTable({ tickets: allTickets, users, statusFilter, searchTerm, priorityFilter }: TicketTableProps) {
   const router = useRouter();
-  const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), []);
+  const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
   
   const tickets = React.useMemo(() => {
     let filteredTickets = allTickets;
@@ -73,7 +75,7 @@ export function TicketTable({ statusFilter, searchTerm, priorityFilter }: Ticket
     }
     
     return filteredTickets;
-  }, [statusFilter, searchTerm, priorityFilter]);
+  }, [allTickets, statusFilter, searchTerm, priorityFilter]);
 
   return (
     <div className="w-full overflow-hidden">
