@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch, Timestamp } from 'firebase/firestore';
 import { users, projects, tickets } from './data';
 import dotenv from 'dotenv';
 
@@ -31,11 +31,11 @@ async function seedDatabase() {
   const projectsCollection = collection(db, 'projects');
   projects.forEach(project => {
     const projectRef = doc(projectsCollection, project.id);
-    // Convert string dates to JS Date objects for Firestore Timestamps
+    // Convert string dates to Firestore Timestamp objects
     const projectData = {
         ...project,
-        createdAt: new Date(project.createdAt),
-        deadline: new Date(project.deadline)
+        createdAt: Timestamp.fromDate(new Date(project.createdAt)),
+        deadline: Timestamp.fromDate(new Date(project.deadline))
     };
     batch.set(projectRef, projectData);
   });
@@ -46,11 +46,11 @@ async function seedDatabase() {
   const ticketsCollection = collection(db, 'tickets');
   tickets.forEach(ticket => {
     const ticketRef = doc(ticketsCollection, ticket.id);
-    // Convert string dates to JS Date objects for Firestore Timestamps
+    // Convert string dates to Firestore Timestamp objects
     const ticketData = {
         ...ticket,
-        createdAt: new Date(ticket.createdAt),
-        updatedAt: new Date(ticket.updatedAt),
+        createdAt: Timestamp.fromDate(new Date(ticket.createdAt)),
+        updatedAt: Timestamp.fromDate(new Date(ticket.updatedAt)),
     };
     batch.set(ticketRef, ticketData);
   });
