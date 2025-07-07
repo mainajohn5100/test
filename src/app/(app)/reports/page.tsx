@@ -9,11 +9,11 @@ export default function ReportsPage() {
       <PageHeader title="Reports" description="Analyze trends and performance with detailed reports.">
         <Button variant="outline">
           <Printer className="mr-2 h-4 w-4" />
-          Print
+          Print Reports
         </Button>
         <Button>
           <Download className="mr-2 h-4 w-4" />
-          Download
+          Download All
         </Button>
       </PageHeader>
       <ReportCharts />

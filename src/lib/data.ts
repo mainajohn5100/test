@@ -146,11 +146,11 @@ export const chartData = [
 ];
 
 export const pieChartData = [
-    { name: 'New', value: 1, fill: 'var(--chart-1)'},
-    { name: 'Active', value: 3, fill: 'var(--chart-2)' },
-    { name: 'Pending', value: 1, fill: 'var(--chart-3)' },
-    { name: 'On Hold', value: 1, fill: 'var(--chart-4)' },
-    { name: 'Closed', value: 1, fill: 'var(--chart-5)' },
+    { name: 'New', value: 1, fill: 'hsl(var(--chart-1))'},
+    { name: 'Active', value: 3, fill: 'hsl(var(--chart-2))' },
+    { name: 'Pending', value: 1, fill: 'hsl(var(--chart-3))' },
+    { name: 'On Hold', value: 1, fill: 'hsl(var(--chart-4))' },
+    { name: 'Closed', value: 1, fill: 'hsl(var(--chart-5))' },
 ]
 
 export const avgResolutionTimeData = [
@@ -162,3 +162,35 @@ export const avgResolutionTimeData = [
   { name: 'Jun', days: 1.7 },
   { name: 'Jul', days: 1.4 },
 ];
+
+export const projectsByStatusData = [
+  { name: 'Active', value: 2, fill: 'hsl(var(--chart-1))' },
+  { name: 'On Hold', value: 1, fill: 'hsl(var(--chart-2))' },
+  { name: 'Completed', value: 1, fill: 'hsl(var(--chart-3))' },
+];
+
+export const ticketTrendsData = {
+  monthly: [
+    { name: 'Jan', New: 30, Active: 40, Pending: 20, Closed: 50 },
+    { name: 'Feb', New: 20, Active: 30, Pending: 15, Closed: 40 },
+    { name: 'Mar', New: 50, Active: 60, Pending: 25, Closed: 80 },
+    { name: 'Apr', New: 40, Active: 50, Pending: 30, Closed: 70 },
+    { name: 'May', New: 60, Active: 70, Pending: 35, Closed: 90 },
+    { name: 'Jun', New: 55, Active: 65, Pending: 40, Closed: 85 },
+  ],
+  weekly: [
+    { name: 'W1', New: 10, Active: 15, Pending: 5, Closed: 20 },
+    { name: 'W2', New: 8, Active: 12, Pending: 7, Closed: 18 },
+    { name: 'W3', New: 15, Active: 20, Pending: 10, Closed: 25 },
+    { name: 'W4', New: 12, Active: 18, Pending: 8, Closed: 22 },
+  ],
+  daily: [
+    { name: 'Mon', New: 2, Active: 5, Pending: 1, Closed: 4 },
+    { name: 'Tue', New: 3, Active: 4, Pending: 2, Closed: 5 },
+    { name: 'Wed', New: 1, Active: 6, Pending: 1, Closed: 3 },
+    { name: 'Thu', New: 4, Active: 3, Pending: 3, Closed: 6 },
+    { name: 'Fri', New: 2, Active: 7, Pending: 2, Closed: 5 },
+    { name: 'Sat', New: 1, Active: 2, Pending: 1, Closed: 2 },
+    { name: 'Sun', New: 0, Active: 1, Pending: 0, Closed: 1 },
+  ]
+};
