@@ -82,7 +82,7 @@ export default function ProjectsByStatusPage() {
                   <Badge className={projectStatusVariantMap[project.status] || 'bg-gray-100'}>{project.status}</Badge>
               </div>
               <CardDescription>
-                Created: {format(new Date(), 'PP')}
+                Created: {format(new Date(project.createdAt), 'PP')}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
