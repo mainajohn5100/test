@@ -154,3 +154,13 @@ export const pieChartData = [
     { name: 'On Hold', value: 1, fill: 'var(--chart-4)' },
     { name: 'Closed', value: 1, fill: 'var(--chart-5)' },
 ]
+
+export const avgResolutionTimeData = [
+  { name: 'Jan', days: 1.5 },
+  { name: 'Feb', days: 1.2 },
+  { name: 'Mar', days: 1.8 },
+  { name: 'Apr', days: 1.6 },
+  { name: 'May', days: 1.3 },
+  { name: 'Jun', days: 1.7 },
+  { name: 'Jul', days: 1.4 },
+];

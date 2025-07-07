@@ -5,6 +5,7 @@ import { TicketsOverviewChart } from "@/components/dashboard/tickets-overview-ch
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
+import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
 
 export default function DashboardPage() {
   return (
@@ -24,8 +25,9 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <RecentTickets />
         </div>
-        <div>
+        <div className="flex flex-col gap-6">
           <TicketsOverviewChart />
+          <AvgResolutionTimeChart />
         </div>
       </div>
     </div>

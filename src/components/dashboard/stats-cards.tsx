@@ -1,18 +1,18 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { tickets } from "@/lib/data";
-import { Ticket, BarChart2, CheckCircle, Clock } from "lucide-react";
+import { tickets, projects } from "@/lib/data";
+import { Ticket, BarChart2, CheckCircle, Briefcase } from "lucide-react";
 
 export function StatsCards() {
   const totalTickets = tickets.length;
   const activeTickets = tickets.filter(t => t.status === 'Active' || t.status === 'New').length;
   const closedTickets = tickets.filter(t => t.status === 'Closed').length;
-  const avgResolutionTime = "1d 2h"; // Mock data
+  const totalProjects = projects.length;
 
   const stats = [
     { title: "Total Tickets", value: totalTickets, icon: Ticket, color: "text-blue-500" },
     { title: "Active Tickets", value: activeTickets, icon: BarChart2, color: "text-green-500" },
     { title: "Closed Tickets", value: closedTickets, icon: CheckCircle, color: "text-purple-500" },
-    { title: "Avg. Resolution", value: avgResolutionTime, icon: Clock, color: "text-orange-500" },
+    { title: "Total Projects", value: totalProjects, icon: Briefcase, color: "text-orange-500" },
   ];
 
   return (
