@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -17,13 +18,16 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
       urgent: 'Urgent',
   }
 
+  const finalAssignee = (!ticketData.assignee || ticketData.assignee === 'unassigned') ? 'Unassigned' : ticketData.assignee;
+  const finalProject = (!ticketData.project || ticketData.project === 'none') ? undefined : ticketData.project;
+
   let newTicketId: string;
   try {
     newTicketId = await addTicket({
       ...ticketData,
-      // The Ticket type has a specific capitalization for priority
+      project: finalProject,
+      assignee: finalAssignee,
       priority: priorityMap[values.priority] as 'Low' | 'Medium' | 'High' | 'Urgent',
-      assignee: ticketData.assignee || 'Unassigned',
       reporter: ticketData.reporter,
     });
 

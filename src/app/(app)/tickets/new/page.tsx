@@ -275,7 +275,7 @@ export default function NewTicketPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
                           {projects.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -296,7 +296,7 @@ export default function NewTicketPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
                           {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
