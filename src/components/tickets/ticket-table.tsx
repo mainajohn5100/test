@@ -31,18 +31,44 @@ const priorityVariantMap: { [key: string]: string } = {
     'Urgent': 'bg-red-100 text-red-800 border-red-200',
 };
 
+interface TicketTableProps {
+    statusFilter?: string;
+    searchTerm?: string;
+    priorityFilter?: string;
+}
 
-export function TicketTable({ statusFilter }: { statusFilter?: string }) {
+export function TicketTable({ statusFilter, searchTerm, priorityFilter }: TicketTableProps) {
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), []);
   
   const tickets = React.useMemo(() => {
-    if (!statusFilter || statusFilter === 'all') {
-      return allTickets;
+    let filteredTickets = allTickets;
+
+    // 1. Filter by status from URL/toolbar
+    if (statusFilter && statusFilter !== 'all') {
+      let normalizedFilter = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      if (statusFilter === 'new-status') {
+        normalizedFilter = 'New';
+      }
+      filteredTickets = filteredTickets.filter(t => t.status === normalizedFilter);
     }
-    // a bit of a hack to match the URL slugs with the data
-    const normalizedFilter = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-    return allTickets.filter(t => t.status === normalizedFilter);
-  }, [statusFilter]);
+
+    // 2. Filter by priority from toolbar
+    if (priorityFilter && priorityFilter !== 'all') {
+      filteredTickets = filteredTickets.filter(t => t.priority === priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1));
+    }
+
+    // 3. Filter by search term
+    if (searchTerm) {
+      const lowercasedSearchTerm = searchTerm.toLowerCase();
+      filteredTickets = filteredTickets.filter(t => 
+        t.title.toLowerCase().includes(lowercasedSearchTerm) ||
+        t.id.toLowerCase().includes(lowercasedSearchTerm) ||
+        t.assignee.toLowerCase().includes(lowercasedSearchTerm)
+      );
+    }
+    
+    return filteredTickets;
+  }, [statusFilter, searchTerm, priorityFilter]);
 
   return (
     <div className="w-full overflow-hidden">

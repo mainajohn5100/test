@@ -16,6 +16,7 @@ import {
   Briefcase,
   Users,
   Settings,
+  PlusCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,12 +31,13 @@ const menuItems = [
     icon: Ticket,
     subItems: [
       { label: "All Tickets", href: "/tickets/all" },
-      { label: "New Tickets", href: "/tickets/new" }, // Differentiating from create new
-      { label: "Pending Tickets", href: "/tickets/pending" },
+      { label: "New", href: "/tickets/new-status" },
+      { label: "Active", href: "/tickets/active" },
+      { label: "Pending", href: "/tickets/pending" },
       { label: "On Hold", href: "/tickets/on-hold" },
       { label: "Closed", href: "/tickets/closed" },
-      { label: "Active", href: "/tickets/active" },
       { label: "Terminated", href: "/tickets/terminated" },
+      { label: "Create Ticket", href: "/tickets/new" },
     ],
   },
   {
@@ -92,6 +94,7 @@ export function MainNav() {
                         pathname === subItem.href && "bg-sidebar-accent"
                       )}
                     >
+                      {subItem.href === '/tickets/new' && <PlusCircle className="mr-2 h-4 w-4" />}
                       {subItem.label}
                     </Button>
                   </Link>
