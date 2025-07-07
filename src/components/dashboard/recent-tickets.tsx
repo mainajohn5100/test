@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -14,6 +15,7 @@ import { tickets } from "@/lib/data"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { users } from "@/lib/data"
 import { useRouter } from "next/navigation"
+import Link from "next/link";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   'New': 'secondary',
@@ -61,11 +63,13 @@ export function RecentTickets() {
                 <TableCell>
                     {assignee ? (
                     <div className="flex items-center gap-2">
+                      <Link href={`/users/${assignee.id}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 relative z-10 p-1 -m-1 rounded-md hover:bg-background">
                         <Avatar className="h-6 w-6">
                             <AvatarImage src={assignee.avatar} alt={assignee.name} />
                             <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <span>{assignee.name}</span>
+                        <span className="hover:underline">{assignee.name}</span>
+                      </Link>
                     </div>
                     ) : ticket.assignee }
                 </TableCell>

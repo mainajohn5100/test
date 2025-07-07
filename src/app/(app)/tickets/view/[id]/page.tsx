@@ -1,3 +1,4 @@
+
 'use client';
 
 import { tickets, users } from "@/lib/data";
@@ -10,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Trash2, ArrowLeft, Send } from "lucide-react";
+import Link from "next/link";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,12 +62,16 @@ export default function ViewTicketPage() {
 
   React.useEffect(() => {
     if (ticket) {
-      const reporter = userMap.get(ticket.reporter) || { name: ticket.reporter, email: '', avatar: ''};
-      const reporterEmail = reporter.email ? `(${reporter.email})` : '';
+      const reporterUser = userMap.get(ticket.reporter);
+      const reporterName = reporterUser ? (
+        <Link href={`/users/${reporterUser.id}`} className="font-medium hover:underline">{reporterUser.name}</Link>
+      ) : (
+        <span className="font-medium">{ticket.reporter}</span>
+      );
 
       setPageDescription(
         <>
-          <div>Opened by {reporter.name} {reporterEmail} on {format(new Date(ticket.createdAt), "PPp")}.</div>
+          <div>Opened by {reporterName} on {format(new Date(ticket.createdAt), "PPp")}.</div>
           <div>Last updated on {format(new Date(ticket.updatedAt), "PPp")}.</div>
         </>
       );
@@ -77,7 +83,7 @@ export default function ViewTicketPage() {
   }
 
   const assignee = userMap.get(ticket.assignee);
-  const reporter = userMap.get(ticket.reporter) || { name: ticket.reporter, email: '', avatar: ''};
+  const reporter = userMap.get(ticket.reporter) || { id: 'anon', name: ticket.reporter, email: '', avatar: ''};
 
   return (
     <div className="flex flex-col gap-6">
@@ -101,13 +107,19 @@ export default function ViewTicketPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex gap-3">
-                        <Avatar>
-                            <AvatarImage src={assignee?.avatar} />
-                            <AvatarFallback>{assignee?.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        {assignee ? (
+                          <Link href={`/users/${assignee.id}`}>
+                            <Avatar>
+                                <AvatarImage src={assignee?.avatar} />
+                                <AvatarFallback>{assignee?.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                          </Link>
+                        ) : <Avatar><AvatarFallback>?</AvatarFallback></Avatar>}
                         <div className="flex-1">
                             <div className="flex justify-between">
-                                <span className="font-semibold">{assignee?.name}</span>
+                                {assignee ? (
+                                    <Link href={`/users/${assignee.id}`} className="font-semibold hover:underline">{assignee.name}</Link>
+                                ) : <span className="font-semibold">Unassigned</span>}
                                 <span className="text-xs text-muted-foreground">2 days ago</span>
                             </div>
                             <p className="text-muted-foreground">Hey, I've started looking into this. It seems to be an issue with the latest Safari update. I'll keep you posted.</p>
@@ -115,13 +127,15 @@ export default function ViewTicketPage() {
                     </div>
                     <Separator />
                      <div className="flex gap-3">
-                        <Avatar>
-                            <AvatarImage src={reporter?.avatar} />
-                            <AvatarFallback>{reporter?.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        <Link href={`/users/${reporter.id}`}>
+                            <Avatar>
+                                <AvatarImage src={reporter?.avatar} />
+                                <AvatarFallback>{reporter?.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        </Link>
                         <div className="flex-1">
                             <div className="flex justify-between">
-                                <span className="font-semibold">{reporter?.name}</span>
+                                <Link href={`/users/${reporter.id}`} className="font-semibold hover:underline">{reporter.name}</Link>
                                 <span className="text-xs text-muted-foreground">1 day ago</span>
                             </div>
                             <p className="text-muted-foreground">Thanks for the update, Maria!</p>
@@ -202,13 +216,15 @@ export default function ViewTicketPage() {
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Assignee</span>
                         {assignee ? (
-                            <div className="flex items-center gap-2">
+                          <Link href={`/users/${assignee.id}`} className="block">
+                            <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
                                 <Avatar className="h-6 w-6">
                                     <AvatarImage src={assignee.avatar} alt={assignee.name} />
                                     <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <span>{assignee.name}</span>
                             </div>
+                          </Link>
                         ) : (
                             <span>{ticket.assignee}</span>
                         )}
@@ -216,13 +232,15 @@ export default function ViewTicketPage() {
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Reporter</span>
                          {reporter ? (
-                            <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                    <AvatarImage src={reporter.avatar} alt={reporter.name} />
-                                    <AvatarFallback>{reporter.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <span>{reporter.name}</span>
-                            </div>
+                            <Link href={`/users/${reporter.id}`} className="block">
+                                <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
+                                    <Avatar className="h-6 w-6">
+                                        <AvatarImage src={reporter.avatar} alt={reporter.name} />
+                                        <AvatarFallback>{reporter.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span>{reporter.name}</span>
+                                </div>
+                            </Link>
                         ) : (
                             <span>{ticket.reporter}</span>
                         )}

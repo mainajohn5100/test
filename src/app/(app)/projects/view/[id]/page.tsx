@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Trash2 } from "lucide-react";
+import Link from "next/link";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -163,13 +164,17 @@ export default function ViewProjectPage() {
                      <Separator />
                      <div className="space-y-2">
                         <span className="text-sm font-medium">Project Manager</span>
-                        {manager && <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                                <AvatarImage src={manager.avatar} alt={manager.name} />
-                                <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span>{manager.name}</span>
-                        </div>}
+                        {manager && (
+                          <Link href={`/users/${manager.id}`} className="block">
+                            <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md">
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={manager.avatar} alt={manager.name} />
+                                    <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span>{manager.name}</span>
+                            </div>
+                          </Link>
+                        )}
                     </div>
                     <div className="space-y-2">
                         <span className="text-sm font-medium">Team Members</span>
@@ -178,10 +183,12 @@ export default function ViewProjectPage() {
                                 {teamMembers.map(member => (
                                     <Tooltip key={member.id}>
                                         <TooltipTrigger asChild>
+                                          <Link href={`/users/${member.id}`}>
                                             <Avatar className="h-8 w-8">
                                                 <AvatarImage src={member.avatar} alt={member.name} />
                                                 <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
+                                          </Link>
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>{member.name}</p>

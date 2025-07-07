@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -14,6 +15,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { tickets as allTickets, users } from "@/lib/data";
 import { TicketTableRowActions } from "./ticket-table-row-actions";
 import { formatDistanceToNow } from "date-fns";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   'New': 'secondary',
@@ -38,6 +42,7 @@ interface TicketTableProps {
 }
 
 export function TicketTable({ statusFilter, searchTerm, priorityFilter }: TicketTableProps) {
+  const router = useRouter();
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), []);
   
   const tickets = React.useMemo(() => {
@@ -54,7 +59,7 @@ export function TicketTable({ statusFilter, searchTerm, priorityFilter }: Ticket
 
     // 2. Filter by priority from toolbar
     if (priorityFilter && priorityFilter !== 'all') {
-      filteredTickets = filteredTickets.filter(t => t.priority === priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1));
+      filteredTickets = filteredTickets.filter(t => t.priority.toLowerCase() === priorityFilter);
     }
 
     // 3. Filter by search term
@@ -90,7 +95,7 @@ export function TicketTable({ statusFilter, searchTerm, priorityFilter }: Ticket
                 tickets.map((ticket) => {
                     const assignee = userMap.get(ticket.assignee);
                     return (
-                    <TableRow key={ticket.id}>
+                    <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer">
                         <TableCell className="font-medium">{ticket.id}</TableCell>
                         <TableCell>{ticket.title}</TableCell>
                         <TableCell>
@@ -105,13 +110,15 @@ export function TicketTable({ statusFilter, searchTerm, priorityFilter }: Ticket
                         </TableCell>
                         <TableCell>
                         {assignee ? (
-                            <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                                <AvatarImage src={assignee.avatar} alt={assignee.name} />
-                                <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span>{assignee.name}</span>
-                            </div>
+                            <Link href={`/users/${assignee.id}`} onClick={(e) => e.stopPropagation()} className="relative z-10">
+                                <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
+                                    <Avatar className="h-6 w-6">
+                                        <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                        <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="hover:underline">{assignee.name}</span>
+                                </div>
+                            </Link>
                         ) : (
                             <span>{ticket.assignee}</span>
                         )}
@@ -119,8 +126,8 @@ export function TicketTable({ statusFilter, searchTerm, priorityFilter }: Ticket
                         <TableCell>
                             {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}
                         </TableCell>
-                        <TableCell>
-                        <TicketTableRowActions ticket={ticket} />
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <TicketTableRowActions ticket={ticket} />
                         </TableCell>
                     </TableRow>
                     );
