@@ -20,9 +20,16 @@ async function seedDatabase() {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   };
   
-  // Check if the credentials are all present
-  if (!firebaseConfig.projectId || !firebaseConfig.apiKey) {
-    console.error('Firebase configuration is missing or incomplete in your .env file. Please check it and try again.');
+  // A more robust validation check for the seed script
+  const missingConfigKeys = Object.entries(firebaseConfig)
+    .filter(([, value]) => !value || typeof value !== 'string' || value.trim() === '')
+    .map(([key]) => key);
+
+  if (missingConfigKeys.length > 0) {
+    console.error('ERROR: Firebase configuration is missing or incomplete in your .env file.');
+    console.error('The seed script requires these values to be set:');
+    console.error(missingConfigKeys.join(', '));
+    console.error('Please check your .env file and try again.');
     process.exit(1);
   }
 
@@ -36,10 +43,6 @@ async function seedDatabase() {
   console.log('Seeding users...');
   const usersCollection = collection(db, 'users');
   users.forEach(user => {
-    // Note: We are seeding users with predictable IDs.
-    // In a real app, you would let Firebase Auth generate UIDs.
-    // This is done to make sample data associations easier.
-    // However, these users cannot be logged into unless an auth user is created with a matching UID.
     const userRef = doc(usersCollection, user.id);
     batch.set(userRef, {
       name: user.name,

@@ -11,13 +11,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Validate the firebaseConfig object to ensure all keys have values
-const isFirebaseConfigValid = Object.values(firebaseConfig).every(Boolean);
+// A more robust validation check that identifies exactly which keys are missing or invalid.
+const missingConfigKeys = Object.entries(firebaseConfig)
+  .filter(([key, value]) => !value || typeof value !== 'string' || value.trim() === '')
+  .map(([key]) => key);
 
-if (!isFirebaseConfigValid) {
-    // This error will be thrown if any of the environment variables are missing.
-    // It's more descriptive than the default Firebase error.
-    throw new Error('Firebase configuration is missing or incomplete. Please check your .env file and ensure all NEXT_PUBLIC_FIREBASE_* variables are set.');
+if (missingConfigKeys.length > 0) {
+    // This will throw a very specific error, making it much easier to debug.
+    throw new Error(`Firebase configuration is missing or incomplete. 
+    Please check your .env file and ensure all NEXT_PUBLIC_FIREBASE_* variables are set correctly.
+    Missing or invalid keys: ${missingConfigKeys.join(', ')}.
+    Remember to restart your development server after editing the .env file.`);
 }
 
 
