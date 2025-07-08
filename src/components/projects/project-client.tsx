@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,12 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
   const [sortBy, setSortBy] = useState('newest');
   
   const isFilteredView = initialStatusFilter !== 'all';
+
+  // This effect ensures the component's internal filter state
+  // syncs with the URL when navigating between pages.
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+  }, [initialStatusFilter]);
 
   const filteredAndSortedProjects = React.useMemo(() => {
     let filteredProjects = [...projects];

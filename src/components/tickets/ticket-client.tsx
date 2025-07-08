@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TicketTableToolbar } from "@/components/tickets/ticket-table-toolbar";
 import { TicketTable } from "@/components/tickets/ticket-table";
 import type { Ticket, User } from "@/lib/data";
@@ -19,6 +20,12 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
   const [sortBy, setSortBy] = useState('updatedAt_desc');
 
   const isFilteredView = initialStatusFilter !== 'all';
+  
+  // This effect ensures the component's internal filter state
+  // syncs with the URL when navigating between pages.
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+  }, [initialStatusFilter]);
 
   return (
     <Card>
