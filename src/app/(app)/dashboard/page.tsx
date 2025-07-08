@@ -7,7 +7,6 @@ import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
 import { getTickets, getProjects, getUsers } from "@/lib/firestore";
-import { users as mockUsers } from "@/lib/data";
 
 export default async function DashboardPage() {
   // Fetch data from Firestore
@@ -15,8 +14,8 @@ export default async function DashboardPage() {
   const projects = await getProjects();
   const users = await getUsers();
   
-  // Create a map for quick user lookup. Fallback to mock data if DB is empty.
-  const userMap = new Map((users.length > 0 ? users : mockUsers).map(u => [u.name, u]));
+  // Create a map for quick user lookup.
+  const userMap = new Map(users.map(u => [u.name, u]));
 
   return (
     <div className="flex flex-col gap-6">

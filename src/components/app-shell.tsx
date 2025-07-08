@@ -25,30 +25,30 @@ import { Input } from "@/components/ui/input";
 import { Search, Bell, Maximize } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
-import { getUserById } from "@/lib/firestore";
-import type { User } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+  const { user: currentUser } = useAuth();
   const router = useRouter();
-
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      // In a real app, you'd get the user ID from your auth session.
-      // For this demo, we'll hardcode 'usr_1' (Alex Johnson) as the logged-in user.
-      const user = await getUserById('usr_1');
-      setCurrentUser(user);
-    };
-    fetchUser();
-  }, []); // This runs on initial mount, and will re-run if the page is refreshed.
 
   const handleProfileClick = () => {
       if (currentUser) {
           router.push(`/users/${currentUser.id}`);
       }
+  };
+
+  const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        router.push('/login');
+    } catch (error) {
+        console.error("Error signing out: ", error);
+    }
   };
 
   return (
@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem disabled>Billing</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>Log out</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
@@ -146,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
                 <DropdownMenuItem disabled>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>Logout</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

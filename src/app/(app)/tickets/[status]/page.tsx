@@ -1,31 +1,35 @@
-'use client';
 
 import { PageHeader } from "@/components/page-header";
-import { TicketTable } from "@/components/tickets/ticket-table";
-import { TicketTableToolbar } from "@/components/tickets/ticket-table-toolbar";
+import { TicketClient } from "@/components/tickets/ticket-client";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { useState } from "react";
-import { useParams } from "next/navigation";
+import { getTickets, getTicketsByStatus, getUsers } from "@/lib/firestore";
 
-export default function TicketsPage() {
-  const params = useParams<{ status: string }>();
+export default async function TicketsPage({ params }: { params: { status: string } }) {
   const statusFilter = params.status || 'all';
 
-  let pageTitle = "Tickets";
+  let pageTitle = "All Tickets";
+  let normalizedStatus = "all";
+  
   if (statusFilter && statusFilter !== 'all') {
     if (statusFilter === 'new-status') {
       pageTitle = "New Tickets";
+      normalizedStatus = "New";
     } else {
-      pageTitle = `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1).replace('-', ' ')} Tickets`;
+      normalizedStatus = statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1).replace('-', ' ');
+      pageTitle = `${normalizedStatus} Tickets`;
     }
   }
+  
+  const tickets = await (async () => {
+    if (normalizedStatus === 'all') {
+      return getTickets();
+    }
+    return getTicketsByStatus(normalizedStatus);
+  })();
 
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+  const users = await getUsers();
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,24 +42,11 @@ export default function TicketsPage() {
         </Link>
       </PageHeader>
       
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <TicketTableToolbar 
-              statusFilter={statusFilter}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              priorityFilter={priorityFilter}
-              setPriorityFilter={setPriorityFilter}
-            />
-            <TicketTable 
-              statusFilter={statusFilter} 
-              searchTerm={searchTerm}
-              priorityFilter={priorityFilter}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <TicketClient 
+        tickets={tickets} 
+        users={users} 
+        initialStatusFilter={statusFilter}
+      />
     </div>
   );
 }

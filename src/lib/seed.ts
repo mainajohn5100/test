@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, writeBatch, Timestamp } from 'firebase/firestore';
-import { users, projects, tickets } from './data';
+import { projects, tickets } from './data';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
@@ -31,20 +31,6 @@ async function seedDatabase() {
   const db = getFirestore(app);
 
   const batch = writeBatch(db);
-
-  // Seed Users
-  console.log('Seeding users...');
-  const usersCollection = collection(db, 'users');
-  users.forEach(user => {
-    const userRef = doc(usersCollection, user.id);
-    batch.set(userRef, {
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar,
-        role: user.role
-    });
-  });
-  console.log(`- ${users.length} users queued for creation.`);
 
   // Seed Projects
   console.log('Seeding projects...');

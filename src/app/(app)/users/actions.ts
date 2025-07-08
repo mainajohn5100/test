@@ -2,26 +2,10 @@
 'use server';
 
 import { z } from 'zod';
-import { addUser, deleteUser, updateUser } from '@/lib/firestore';
+import { deleteUser, updateUser } from '@/lib/firestore';
 import { revalidatePath } from 'next/cache';
-import { userSchema, updateUserSchema } from './schema';
+import { updateUserSchema } from './schema';
 import { redirect } from 'next/navigation';
-
-export async function createUserAction(values: z.infer<typeof userSchema>) {
-  try {
-    const { name, email, role } = userSchema.parse(values);
-    await addUser({ name, email, role });
-
-    revalidatePath('/users');
-    return { success: true, message: "User created successfully." };
-  } catch (error) {
-    console.error("Error creating user:", error);
-    if (error instanceof z.ZodError) {
-      return { success: false, error: "Invalid form data." };
-    }
-    return { success: false, error: 'Failed to create user.' };
-  }
-}
 
 export async function updateUserAction(userId: string, values: z.infer<typeof updateUserSchema>) {
   try {

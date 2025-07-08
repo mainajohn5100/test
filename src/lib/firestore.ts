@@ -186,22 +186,6 @@ export async function updateUser(userId: string, userData: Partial<Omit<User, 'i
     }
 }
 
-export async function addUser(userData: Omit<User, 'id' | 'avatar'>): Promise<string> {
-    try {
-        const initials = userData.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
-        const avatar = `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;
-
-        const docRef = await addDoc(collection(db, 'users'), {
-            ...userData,
-            avatar,
-        });
-        return docRef.id;
-    } catch (error) {
-        console.error("Error adding user:", error);
-        throw new Error("Failed to create user.");
-    }
-}
-
 export async function deleteUser(userId: string): Promise<void> {
     try {
         const userRef = doc(db, 'users', userId);
