@@ -2,41 +2,44 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // --- Read Permissions ---
 
-    // Allow authenticated users to read the main data collections.
-    // This is required for the dashboard, ticket lists, project lists, and user profiles.
-    match /{collection}/{doc}
-      where collection in ['users', 'tickets', 'projects'] {
-      allow get, list: if request.auth != null;
-    }
-
-    // --- Write & Update Permissions ---
-
-    // Users can only update their own profile.
+    // USERS
     match /users/{userId} {
-      // Note: 'create' is handled by the signup server-side logic,
-      // so we only need to allow 'update' here.
-      allow update: if request.auth.uid == userId;
-    }
-
-    // Any authenticated user can create or update tickets and projects.
-    match /tickets/{ticketId} {
-      allow create, update: if request.auth != null;
-    }
-    match /projects/{projectId} {
-       allow create, update: if request.auth != null;
-    }
-
-    // --- Notification Permissions ---
-
-    // Notifications are private to the user they are sent to.
-    match /notifications/{notificationId} {
-      // A user can only read or update their own notifications (e.g., mark as read).
-      allow read, update: if request.auth != null && request.auth.uid == resource.data.userId;
-      // Any authenticated user (e.g., a server action) can create notifications.
+      // Allow any logged-in user to see the list of users (for assignees, etc.)
+      allow list, get: if request.auth != null;
+      // Allow users to update their own profile
+      allow update: if request.auth != null && request.auth.uid == userId;
+      // Allow new users to be created during signup
       allow create: if request.auth != null;
+       // Prevent user deletion from client for now
+      allow delete: if false;
+    }
+
+    // TICKETS
+    match /tickets/{ticketId} {
+      // Allow any logged-in user to see lists of tickets and individual tickets
+      allow list, get: if request.auth != null;
+      // Allow any logged-in user to create or update tickets
+      allow create, update: if request.auth != null;
+      // Prevent deletion for now
+      allow delete: if false;
+    }
+
+    // PROJECTS
+    match /projects/{projectId} {
+       // Allow any logged-in user to see lists of projects and individual projects
+      allow list, get: if request.auth != null;
+      // Allow any logged-in user to create or update projects
+      allow create, update: if request.auth != null;
+      // Prevent deletion for now
+      allow delete: if false;
+    }
+
+    // NOTIFICATIONS
+    match /notifications/{notificationId} {
+      // A user can read/write their own notifications.
+      // The `list` permission is implicitly denied here, so users cannot see all notifications.
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
