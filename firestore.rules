@@ -2,37 +2,41 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // --- Read Permissions ---
 
-    // Any authenticated user can read the lists of users, tickets, and projects.
-    // This is required for the dashboard and list pages to function.
-    // Individual document writes are more restricted.
+    // Allow authenticated users to read the main data collections.
+    // This is required for the dashboard, ticket lists, project lists, and user profiles.
+    match /{collection}/{doc}
+      where collection in ['users', 'tickets', 'projects'] {
+      allow get, list: if request.auth != null;
+    }
+
+    // --- Write & Update Permissions ---
+
+    // Users can only update their own profile.
     match /users/{userId} {
-      allow read: if request.auth != null;
-      // Only the user themselves can update their profile.
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Note: 'create' is handled by the signup server-side logic,
+      // so we only need to allow 'update' here.
+      allow update: if request.auth.uid == userId;
     }
 
+    // Any authenticated user can create or update tickets and projects.
     match /tickets/{ticketId} {
-      allow read: if request.auth != null;
-      // Any authenticated user can create a ticket.
-      allow create: if request.auth != null;
-      // For other writes, we trust the server-side logic in the action files
-      // to perform the necessary permission checks.
-      allow update, delete: if request.auth != null;
+      allow create, update: if request.auth != null;
     }
-    
     match /projects/{projectId} {
-      allow read: if request.auth != null;
-      // For other writes, we trust the server-side logic in the action files
-      // to perform the necessary permission checks.
-      allow write: if request.auth != null;
+       allow create, update: if request.auth != null;
     }
-    
+
+    // --- Notification Permissions ---
+
+    // Notifications are private to the user they are sent to.
     match /notifications/{notificationId} {
-       // A user can only read their own notifications.
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-       // Server actions are authenticated and handle creating notifications.
-      allow write: if request.auth != null;
+      // A user can only read or update their own notifications (e.g., mark as read).
+      allow read, update: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Any authenticated user (e.g., a server action) can create notifications.
+      allow create: if request.auth != null;
     }
   }
 }
