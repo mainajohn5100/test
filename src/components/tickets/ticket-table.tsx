@@ -23,66 +23,11 @@ import { cn } from "@/lib/utils";
 interface TicketTableProps {
     tickets: Ticket[];
     users: User[];
-    searchTerm?: string;
-    statusFilter?: string;
-    priorityFilter?: string;
-    sortBy?: string;
 }
 
-export function TicketTable({ tickets: allTickets, users, searchTerm, statusFilter, priorityFilter, sortBy = 'updatedAt_desc' }: TicketTableProps) {
+export function TicketTable({ tickets, users }: TicketTableProps) {
   const router = useRouter();
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
-  
-  const tickets = React.useMemo(() => {
-    let filteredTickets = [...allTickets];
-
-    // Filter by status from toolbar
-    if (statusFilter && statusFilter !== 'all') {
-      const normalizedStatus = statusFilter === 'new-status' 
-        ? 'New' 
-        : statusFilter.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      filteredTickets = filteredTickets.filter(t => t.status === normalizedStatus);
-    }
-
-    // Filter by priority from toolbar
-    if (priorityFilter && priorityFilter !== 'all') {
-      filteredTickets = filteredTickets.filter(t => t.priority.toLowerCase() === priorityFilter);
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      const lowercasedSearchTerm = searchTerm.toLowerCase();
-      filteredTickets = filteredTickets.filter(t => 
-        t.title.toLowerCase().includes(lowercasedSearchTerm) ||
-        t.id.toLowerCase().includes(lowercasedSearchTerm) ||
-        t.assignee.toLowerCase().includes(lowercasedSearchTerm)
-      );
-    }
-    
-    // Sort tickets
-    const [key, order] = sortBy.split('_');
-    
-    filteredTickets.sort((a, b) => {
-      let valA, valB;
-
-      if (key === 'createdAt' || key === 'updatedAt') {
-        valA = new Date(a[key as 'createdAt' | 'updatedAt']).getTime();
-        valB = new Date(b[key as 'createdAt' | 'updatedAt']).getTime();
-      } else if (key === 'priority') {
-        const priorityOrder: { [key in Ticket['priority']]: number } = { 'Low': 0, 'Medium': 1, 'High': 2, 'Urgent': 3 };
-        valA = priorityOrder[a.priority];
-        valB = priorityOrder[b.priority];
-      } else {
-        return 0; // No other sorting keys are implemented
-      }
-      
-      if (valA < valB) return order === 'asc' ? -1 : 1;
-      if (valA > valB) return order === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return filteredTickets;
-  }, [allTickets, searchTerm, statusFilter, priorityFilter, sortBy]);
 
   return (
     <div className="w-full overflow-hidden">
@@ -105,7 +50,7 @@ export function TicketTable({ tickets: allTickets, users, searchTerm, statusFilt
                     const assignee = userMap.get(ticket.assignee);
                     return (
                     <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer">
-                        <TableCell className="font-medium">{ticket.id}</TableCell>
+                        <TableCell className="font-medium truncate max-w-[150px]">{ticket.id}</TableCell>
                         <TableCell>{ticket.title}</TableCell>
                         <TableCell>
                           <Badge

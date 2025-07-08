@@ -13,14 +13,23 @@ export const dynamic = 'force-dynamic';
 export default async function ProjectsByStatusPage({ params }: { params: { status: string } }) {
     const statusFilter = params.status || 'all';
 
+    let pageTitle = "All Projects";
+    let pageDescription = "Browse and manage all your projects.";
+
+    if (statusFilter && statusFilter !== 'all') {
+        const normalizedStatus = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        pageTitle = `${normalizedStatus} Projects`;
+        pageDescription = `Browse and manage all ${statusFilter.replace('-', ' ')} projects.`
+    }
+
     // Fetch all projects. Filtering will be handled on the client.
     const projects = await getProjects();
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Projects"
-        description="Browse and manage all your projects."
+        title={pageTitle}
+        description={pageDescription}
       >
         <Link href="/projects/create" passHref>
           <Button>

@@ -38,7 +38,8 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
 
   const filteredAndSortedProjects = React.useMemo(() => {
     let filteredProjects = [...projects];
-
+    
+    // Client-side filtering by status
     if (statusFilter && statusFilter !== 'all') {
       const normalizedStatus = statusFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       filteredProjects = filteredProjects.filter(p => p.status === normalizedStatus);
@@ -116,7 +117,7 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
-              <p className="text-sm text-muted-foreground line-clamp-3">A brief summary of the project goals and objectives. This provides a quick overview for anyone looking at the project list.</p>
+              <p className="text-sm text-muted-foreground line-clamp-3">{project.description || "A brief summary of the project goals and objectives. This provides a quick overview for anyone looking at the project list."}</p>
               <div className="space-y-1">
                 <p className="text-sm font-medium">Project Manager</p>
                 <p className="text-sm text-muted-foreground">{project.manager}</p>
