@@ -27,35 +27,37 @@ const appearanceFormSchema = z.object({
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 
-const accentColors = [
-    { name: 'violet', hsl: '262 84% 60%', gradient: 'linear-gradient(to right, #f187fb, #439cfb)' },
-    { name: 'orange', hsl: '25 95% 53%', gradient: 'linear-gradient(to right, #ea5459, #f7ba2c)' },
-    { name: 'teal', hsl: '190 84% 60%', gradient: 'linear-gradient(to right, #6fe3e1, #5257e5)' },
-    { name: 'blue', hsl: '217 91% 60%', gradient: 'linear-gradient(to right, #9fccfa, #0974f1)' },
+const colorThemes = [
+    { name: 'default', label: 'Default', gradient: 'linear-gradient(to right, #BDE0FE, #cdb4db)' },
+    { name: 'violet', label: 'Violet', gradient: 'linear-gradient(to right, #f187fb, #439cfb)' },
+    { name: 'orange', label: 'Orange', gradient: 'linear-gradient(to right, #ea5459, #f7ba2c)' },
+    { name: 'teal', label: 'Teal', gradient: 'linear-gradient(to right, #6fe3e1, #5257e5)' },
+    { name: 'blue', label: 'Blue', gradient: 'linear-gradient(to right, #9fccfa, #0974f1)' },
 ]
 
 export function AppearanceForm() {
-  const { setTheme, theme } = useTheme()
-  const [accentColor, setAccentColor] = React.useState(accentColors[0].name)
+  const { setTheme, theme: mode } = useTheme()
+  const [appTheme, setAppTheme] = React.useState('default')
 
   React.useEffect(() => {
-    const savedAccent = localStorage.getItem('accent-color') || accentColors[0].name
-    handleAccentChange(savedAccent)
+    const savedTheme = localStorage.getItem('app-theme') || 'default'
+    handleThemeChange(savedTheme)
   }, [])
 
-  const handleAccentChange = (name: string) => {
-    setAccentColor(name)
-    localStorage.setItem('accent-color', name)
-    const selectedAccent = accentColors.find((ac) => ac.name === name)
-    if (selectedAccent) {
-      document.documentElement.style.setProperty('--accent-hsl', selectedAccent.hsl)
-    }
+  const handleThemeChange = (name: string) => {
+    setAppTheme(name)
+    localStorage.setItem('app-theme', name)
+    
+    // Remove all theme classes and add the new one
+    const htmlEl = document.documentElement
+    colorThemes.forEach(theme => htmlEl.classList.remove(`theme-${theme.name}`))
+    htmlEl.classList.add(`theme-${name}`)
   }
 
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
     defaultValues: {
-      theme: (theme as AppearanceFormValues['theme']) || 'system',
+      theme: (mode as AppearanceFormValues['theme']) || 'system',
     },
   })
 
@@ -67,9 +69,9 @@ export function AppearanceForm() {
           name="theme"
           render={({ field }) => (
             <FormItem className="space-y-1">
-              <FormLabel>Theme</FormLabel>
+              <FormLabel>Mode</FormLabel>
               <FormDescription>
-                Select the theme for the dashboard.
+                Select the color mode for the dashboard.
               </FormDescription>
               <FormMessage />
               <RadioGroup
@@ -156,25 +158,27 @@ export function AppearanceForm() {
           )}
         />
         <FormItem className="space-y-1">
-            <FormLabel>Accent Color</FormLabel>
+            <FormLabel>Theme</FormLabel>
             <FormDescription>
-                Select an accent color for the dashboard.
+                Select a color theme for the dashboard.
             </FormDescription>
             <div className="flex flex-wrap gap-4 pt-2">
-                {accentColors.map((accent) => (
-                    <button
-                        key={accent.name}
-                        type="button"
-                        onClick={() => handleAccentChange(accent.name)}
-                        className={cn(
-                            'h-12 w-12 rounded-md border-2 transition-all',
-                            accentColor === accent.name
-                            ? 'ring-2 ring-ring ring-offset-2'
-                            : 'border-muted'
-                        )}
-                        style={{ backgroundImage: accent.gradient }}
-                        aria-label={`Select ${accent.name} accent color`}
-                    />
+                {colorThemes.map((theme) => (
+                    <div key={theme.name} className="flex flex-col items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => handleThemeChange(theme.name)}
+                            className={cn(
+                                'h-12 w-12 rounded-md border-2 transition-all',
+                                appTheme === theme.name
+                                ? 'ring-2 ring-ring ring-offset-2'
+                                : 'border-muted'
+                            )}
+                            style={{ backgroundImage: theme.gradient }}
+                            aria-label={`Select ${theme.label} theme`}
+                        />
+                        <span className="text-xs text-muted-foreground">{theme.label}</span>
+                    </div>
                 ))}
             </div>
         </FormItem>
