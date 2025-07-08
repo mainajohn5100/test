@@ -40,6 +40,9 @@ import { onSnapshot, collection, query, where, orderBy } from "firebase/firestor
 import type { Notification } from "@/lib/data";
 import { formatDistanceToNow } from "date-fns";
 import { useSettings } from "@/contexts/settings-context";
+import { markAllUserNotificationsAsRead, updateNotificationReadStatus } from "@/lib/firestore";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const getNotificationIcon = (title: string) => {
     if (title.toLowerCase().includes('ticket')) {
@@ -55,6 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user: currentUser } = useAuth();
   const router = useRouter();
   const { setTheme } = useTheme();
+  const { toast } = useToast();
   const [isFullScreen, setIsFullScreen] = React.useState(false);
   const { showFullScreenButton, inAppNotifications } = useSettings();
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
@@ -130,6 +134,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('fullscreenchange', onFullScreenChange);
   }, []);
 
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.read) {
+        try {
+            await updateNotificationReadStatus(notification.id, true);
+        } catch (error) {
+            console.error("Failed to mark notification as read", error);
+        }
+    }
+    router.push(notification.link);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadCount = notifications.filter(n => !n.read).length;
+    if (!currentUser?.id || unreadCount === 0) {
+        return;
+    }
+    try {
+        await markAllUserNotificationsAsRead(currentUser.id);
+        toast({
+            title: "Notifications marked as read",
+        });
+    } catch (error) {
+        console.error("Failed to mark all as read", error);
+        toast({
+            title: "Error",
+            description: "Could not mark all notifications as read.",
+            variant: "destructive",
+        });
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -221,7 +255,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                                <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>
                             ) : notifications.length > 0 ? (
                                 notifications.map((notification) => (
-                                    <DropdownMenuItem key={notification.id} className="flex items-start gap-3 p-2 cursor-pointer" onClick={() => router.push(notification.link)}>
+                                    <DropdownMenuItem key={notification.id} className={cn("flex items-start gap-3 p-2 cursor-pointer", !notification.read && "bg-accent/50 hover:bg-accent/60")} onClick={() => handleNotificationClick(notification)}>
                                         <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification.title)}</div>
                                         <div className="flex flex-col">
                                             <p className="font-medium text-sm">{notification.title}</p>
@@ -246,7 +280,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {inAppNotifications && notifications.length > 0 && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="justify-center text-sm font-medium text-primary hover:text-primary cursor-pointer">
+                        <DropdownMenuItem 
+                            onClick={handleMarkAllAsRead}
+                            disabled={notifications.filter(n => !n.read).length === 0}
+                            className="justify-center text-sm font-medium text-primary hover:text-primary cursor-pointer disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-70"
+                        >
                             Mark all as read
                         </DropdownMenuItem>
                       </>

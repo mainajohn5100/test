@@ -1,5 +1,5 @@
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User, Notification } from './data';
 
@@ -237,4 +237,37 @@ export async function createNotification(notificationData: Omit<Notification, 'i
     console.error("Error creating notification:", error);
     throw new Error("Failed to create notification.");
   }
+}
+
+
+export async function updateNotificationReadStatus(notificationId: string, read: boolean): Promise<void> {
+    try {
+        const notificationRef = doc(db, 'notifications', notificationId);
+        await updateDoc(notificationRef, { read });
+    } catch (error) {
+        console.error("Error updating notification read status:", error);
+        throw new Error("Failed to update notification.");
+    }
+}
+
+export async function markAllUserNotificationsAsRead(userId: string): Promise<void> {
+    try {
+        const notificationsCol = collection(db, 'notifications');
+        const q = query(notificationsCol, where("userId", "==", userId), where("read", "==", false));
+        const unreadSnapshot = await getDocs(q);
+
+        if (unreadSnapshot.empty) {
+            return;
+        }
+
+        const batch = writeBatch(db);
+        unreadSnapshot.docs.forEach(document => {
+            batch.update(document.ref, { read: true });
+        });
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Error marking all notifications as read:", error);
+        throw new Error("Failed to mark all notifications as read.");
+    }
 }
