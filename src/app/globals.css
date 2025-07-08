@@ -22,7 +22,8 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 210 3.7% 64.9%;
  
-    --accent: 274 38.6% 78.6%;
+    --accent-hsl: 274 38.6% 78.6%;
+    --accent: var(--accent-hsl);
     --accent-foreground: 222.2 84% 4.9%;
  
     --destructive: 0 84.2% 60.2%;
@@ -63,7 +64,8 @@
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 274 38.6% 78.6%;
+    --accent-hsl: 274 38.6% 78.6%;
+    --accent: var(--accent-hsl);
     --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -95,4 +97,23 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  h1,h2,h3,h4,h5,h6 {
+      @apply font-headline;
+  }
+}
+
+@layer utilities {
+    .bg-accent {
+        background-color: hsl(var(--accent));
+    }
+    .text-accent-foreground {
+        color: hsl(var(--accent-foreground));
+    }
+    .border-accent {
+        border-color: hsl(var(--accent));
+    }
+    .ring-ring {
+        --tw-ring-color: hsl(var(--accent));
+    }
 }

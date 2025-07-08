@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useTheme } from 'next-themes'
 import { Moon, Sun } from 'lucide-react'
+import * as React from 'react'
 
 import {
   Form,
@@ -16,6 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { cn } from '@/lib/utils'
 
 const appearanceFormSchema = z.object({
   theme: z.enum(['light', 'dark', 'system'], {
@@ -25,8 +27,30 @@ const appearanceFormSchema = z.object({
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 
+const accentColors = [
+    { name: 'violet', hsl: '262 84% 60%', gradient: 'linear-gradient(to right, #f187fb, #439cfb)' },
+    { name: 'orange', hsl: '25 95% 53%', gradient: 'linear-gradient(to right, #ea5459, #f7ba2c)' },
+    { name: 'teal', hsl: '190 84% 60%', gradient: 'linear-gradient(to right, #6fe3e1, #5257e5)' },
+    { name: 'blue', hsl: '217 91% 60%', gradient: 'linear-gradient(to right, #9fccfa, #0974f1)' },
+]
+
 export function AppearanceForm() {
   const { setTheme, theme } = useTheme()
+  const [accentColor, setAccentColor] = React.useState(accentColors[0].name)
+
+  React.useEffect(() => {
+    const savedAccent = localStorage.getItem('accent-color') || accentColors[0].name
+    handleAccentChange(savedAccent)
+  }, [])
+
+  const handleAccentChange = (name: string) => {
+    setAccentColor(name)
+    localStorage.setItem('accent-color', name)
+    const selectedAccent = accentColors.find((ac) => ac.name === name)
+    if (selectedAccent) {
+      document.documentElement.style.setProperty('--accent-hsl', selectedAccent.hsl)
+    }
+  }
 
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
@@ -131,6 +155,29 @@ export function AppearanceForm() {
             </FormItem>
           )}
         />
+        <FormItem className="space-y-1">
+            <FormLabel>Accent Color</FormLabel>
+            <FormDescription>
+                Select an accent color for the dashboard.
+            </FormDescription>
+            <div className="flex flex-wrap gap-4 pt-2">
+                {accentColors.map((accent) => (
+                    <button
+                        key={accent.name}
+                        type="button"
+                        onClick={() => handleAccentChange(accent.name)}
+                        className={cn(
+                            'h-12 w-12 rounded-md border-2 transition-all',
+                            accentColor === accent.name
+                            ? 'ring-2 ring-ring ring-offset-2'
+                            : 'border-muted'
+                        )}
+                        style={{ backgroundImage: accent.gradient }}
+                        aria-label={`Select ${accent.name} accent color`}
+                    />
+                ))}
+            </div>
+        </FormItem>
       </form>
     </Form>
   )
