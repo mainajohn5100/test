@@ -1,5 +1,5 @@
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User } from './data';
 
@@ -173,6 +173,16 @@ export async function getUserById(id: string): Promise<User | null> {
     } catch (error) {
         console.error("Error fetching user by ID:", error);
         return null;
+    }
+}
+
+export async function updateUser(userId: string, userData: Partial<Omit<User, 'id' | 'avatar'>>): Promise<void> {
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, userData);
+    } catch (error) {
+        console.error("Error updating user:", error);
+        throw new Error("Failed to update user.");
     }
 }
 
