@@ -1,4 +1,3 @@
-'use client';
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -6,11 +5,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { projects as allProjects } from "@/lib/data";
+import { getProjects, getProjectsByStatus } from "@/lib/firestore";
 import { ArrowRight, ListFilter, PlusCircle, Search } from "lucide-react";
 import { format } from 'date-fns';
-import { useParams } from "next/navigation";
-import React from "react";
 import Link from "next/link";
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -20,26 +17,25 @@ const projectStatusVariantMap: { [key: string]: string } = {
   'New': 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100',
 };
 
-export default function ProjectsByStatusPage() {
-    const params = useParams<{ status: string }>();
+export default async function ProjectsByStatusPage({ params }: { params: { status: string } }) {
     const statusFilter = params.status || 'all';
 
     let pageTitle = "All Projects";
     let pageDescription = "Browse and manage all your projects.";
+    let normalizedStatus = 'all';
 
     if (statusFilter && statusFilter !== 'all') {
-        const statusName = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-        pageTitle = `${statusName} Projects`;
+        normalizedStatus = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        pageTitle = `${normalizedStatus} Projects`;
         pageDescription = `Browse and manage all ${statusFilter.replace('-', ' ')} projects.`
     }
-
-    const projects = React.useMemo(() => {
-        if (statusFilter === 'all') {
-            return allProjects;
+    
+    const projects = await (async () => {
+        if (normalizedStatus === 'all') {
+            return getProjects();
         }
-        const normalizedFilter = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-        return allProjects.filter(p => p.status === normalizedFilter);
-    }, [statusFilter]);
+        return getProjectsByStatus(normalizedStatus);
+    })();
 
 
   return (

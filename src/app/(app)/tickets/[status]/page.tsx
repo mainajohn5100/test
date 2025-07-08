@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { getTickets, getTicketsByStatus, getUsers } from "@/lib/firestore";
+import { users as mockUsers } from "@/lib/data";
 
 export default async function TicketsPage({ params }: { params: { status: string } }) {
   const statusFilter = params.status || 'all';
@@ -44,7 +45,7 @@ export default async function TicketsPage({ params }: { params: { status: string
       
       <TicketClient 
         tickets={tickets} 
-        users={users} 
+        users={users.length > 0 ? users : mockUsers} 
         initialStatusFilter={statusFilter}
       />
     </div>
