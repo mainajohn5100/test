@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader } from "lucide-react";
+import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +43,7 @@ import { useSettings } from "@/contexts/settings-context";
 import { markAllUserNotificationsAsRead, updateNotificationReadStatus } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "./ui/scroll-area";
 
 const getNotificationIcon = (title: string) => {
     if (title.toLowerCase().includes('ticket')) {
@@ -69,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (!currentUser?.id || !inAppNotifications) {
       setLoadingNotifications(false);
-      setNotifications([]); // Clear notifications if disabled
+      setNotifications([]);
       return;
     }
 
@@ -84,12 +85,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       (snapshot) => {
         const fetchedNotifications: Notification[] = snapshot.docs.map((doc) => {
           const data = doc.data();
-          // The `createdAt` field can be null temporarily on the client
-          // while the server timestamp is being set. We handle this case.
           const createdAtTimestamp = data.createdAt as Timestamp | null;
           
           return {
-            id: doc.id, // Firestore provides the document ID here.
+            id: doc.id,
             userId: data.userId,
             title: data.title,
             description: data.description,
@@ -99,21 +98,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           };
         });
 
-        // Sort on the client side to ensure newest are first
         fetchedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         setNotifications(fetchedNotifications);
         setLoadingNotifications(false);
       },
       (error) => {
-        console.error("Error fetching notifications:", error);
-        toast({ title: "Error", description: "Could not fetch notifications.", variant: "destructive" });
+        console.error("Firebase onSnapshot error fetching notifications:", error);
+        toast({ 
+            title: "Notification Error", 
+            description: "Could not listen for real-time notifications. This might be a permissions issue with your Firestore security rules.", 
+            variant: "destructive",
+            duration: 10000,
+        });
         setLoadingNotifications(false);
       }
     );
 
     return () => unsubscribe();
   }, [currentUser?.id, inAppNotifications, toast]);
+
 
   const handleProfileClick = () => {
       if (currentUser) {
@@ -156,7 +160,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             console.error("Failed to mark notification as read", error);
         }
     }
-    // Navigation will be handled by the Link component
+    router.push(notification.link);
   };
 
   const handleMarkAllAsRead = async () => {
@@ -262,38 +266,47 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuContent align="end" className="w-96">
                     <div className="flex justify-between items-center p-2 pr-1">
                       <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
-                      {inAppNotifications && notifications.length > 0 && unreadCount > 0 && (
-                         <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="text-xs h-auto p-1 font-medium">
-                            Mark all as read
-                         </Button>
-                      )}
+                      <div className="flex items-center">
+                        {inAppNotifications && notifications.length > 0 && unreadCount > 0 && (
+                           <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="text-xs h-auto p-1 font-medium">
+                              Mark all as read
+                           </Button>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={() => {}} className="h-6 w-6" disabled>
+                            <RefreshCw className={cn("h-4 w-4", loadingNotifications && "animate-spin")} />
+                        </Button>
+                      </div>
                     </div>
                     <DropdownMenuSeparator />
                     {inAppNotifications ? (
-                        <div className="flex flex-col gap-1 max-h-96 overflow-y-auto">
-                            {loadingNotifications ? (
-                               <div className="p-4 text-sm text-muted-foreground text-center flex items-center justify-center gap-2"><Loader className="h-4 w-4 animate-spin"/>Loading...</div>
-                            ) : notifications.length > 0 ? (
-                                notifications.map((notification) => (
-                                    <DropdownMenuItem key={notification.id} asChild className={cn("flex items-start gap-3 p-2 cursor-pointer h-auto", !notification.read && "bg-accent/50 hover:bg-accent/60")}>
-                                      <Link href={notification.link} onClick={() => handleNotificationClick(notification)}>
-                                        <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification.title)}</div>
-                                        <div className="flex flex-col flex-1 whitespace-normal">
-                                            <p className="font-medium text-sm leading-tight">{notification.title}</p>
-                                            <p className="text-xs text-muted-foreground leading-snug">{notification.description}</p>
-                                            <p className="text-xs text-muted-foreground/80 mt-1">
-                                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                                            </p>
-                                        </div>
-                                      </Link>
-                                    </DropdownMenuItem>
-                                ))
-                            ) : (
-                                <div className="p-4 text-sm text-muted-foreground text-center">
-                                    You're all caught up!
-                                </div>
-                            )}
-                        </div>
+                        <ScrollArea className="h-auto max-h-96">
+                          <div className="flex flex-col gap-1 p-1">
+                              {loadingNotifications ? (
+                                 <div className="p-4 text-sm text-muted-foreground text-center flex items-center justify-center gap-2"><Loader className="h-4 w-4 animate-spin"/>Loading...</div>
+                              ) : notifications.length > 0 ? (
+                                  notifications.map((notification) => (
+                                      <DropdownMenuItem key={notification.id} asChild className={cn("flex items-start gap-3 p-2 cursor-pointer h-auto", !notification.read && "bg-accent/50 hover:bg-accent/60")}>
+                                        <button onClick={() => handleNotificationClick(notification)} className="w-full text-left">
+                                          <div className="flex items-start gap-3">
+                                            <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification.title)}</div>
+                                            <div className="flex flex-col flex-1 whitespace-normal">
+                                                <p className="font-medium text-sm leading-tight">{notification.title}</p>
+                                                <p className="text-xs text-muted-foreground leading-snug">{notification.description}</p>
+                                                <p className="text-xs text-muted-foreground/80 mt-1">
+                                                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                                </p>
+                                            </div>
+                                          </div>
+                                        </button>
+                                      </DropdownMenuItem>
+                                  ))
+                              ) : (
+                                  <div className="p-4 text-sm text-muted-foreground text-center">
+                                      You're all caught up!
+                                  </div>
+                              )}
+                          </div>
+                        </ScrollArea>
                     ) : (
                         <div className="p-4 text-sm text-muted-foreground text-center">
                             In-app notifications are disabled.
@@ -354,3 +367,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    
