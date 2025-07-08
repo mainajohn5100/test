@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +18,8 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sortBy, setSortBy] = useState('updatedAt_desc');
 
+  const isFilteredView = initialStatusFilter !== 'all';
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -32,6 +33,7 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
             setPriorityFilter={setPriorityFilter}
             sortBy={sortBy}
             setSortBy={setSortBy}
+            isFilteredView={isFilteredView}
           />
           <TicketTable 
             tickets={tickets}

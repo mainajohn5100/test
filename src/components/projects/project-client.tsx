@@ -27,6 +27,8 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [sortBy, setSortBy] = useState('newest');
+  
+  const isFilteredView = initialStatusFilter !== 'all';
 
   const filteredAndSortedProjects = React.useMemo(() => {
     let filteredProjects = [...projects];
@@ -66,31 +68,33 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
               onChange={(e) => setSearchTerm(e.target.value)}
             />
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="on-hold">On Hold</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                  <ListFilter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="oldest">Oldest</SelectItem>
-                  <SelectItem value="deadline">By Deadline</SelectItem>
-              </SelectContent>
-            </Select>
-        </div>
+        {!isFilteredView && (
+            <div className="flex gap-2 w-full sm:w-auto">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="on-hold">On Hold</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+                </Select>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <ListFilter className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                    <SelectItem value="deadline">By Deadline</SelectItem>
+                </SelectContent>
+                </Select>
+            </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
