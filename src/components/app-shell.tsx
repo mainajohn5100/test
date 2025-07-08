@@ -72,10 +72,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     setLoadingNotifications(true);
+    // Remove orderBy to avoid needing a composite index. We will sort on the client.
     const q = query(
       collection(db, "notifications"),
-      where("userId", "==", currentUser.id),
-      orderBy("createdAt", "desc")
+      where("userId", "==", currentUser.id)
     );
 
     const unsubscribe = onSnapshot(
@@ -83,8 +83,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       (snapshot) => {
         const fetchedNotifications: Notification[] = snapshot.docs.map((doc) => {
           const data = doc.data();
-          // Firestore Timestamps need to be converted to a serializable format.
-          // The `createdAt` field can be null initially when using `serverTimestamp`.
           const createdAtTimestamp = data.createdAt as Timestamp | null;
           
           return {
@@ -99,6 +97,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
           };
         });
+
+        // Sort on the client side to ensure newest notifications are first
+        fetchedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
         setNotifications(fetchedNotifications);
         setLoadingNotifications(false);
       },
