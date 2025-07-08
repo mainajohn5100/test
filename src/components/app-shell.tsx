@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import {
   Sidebar,
@@ -24,10 +25,31 @@ import { Input } from "@/components/ui/input";
 import { Search, Bell, Maximize } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
-import { users } from "@/lib/data";
+import { getUserById } from "@/lib/firestore";
+import type { User } from "@/lib/data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const currentUser = users[0]; // Mock current user
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+  const router = useRouter();
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      // In a real app, you'd get the user ID from your auth session.
+      // For this demo, we'll hardcode 'usr_1' (Alex Johnson) as the logged-in user.
+      const user = await getUserById('usr_1');
+      setCurrentUser(user);
+    };
+    fetchUser();
+  }, []); // This runs on initial mount, and will re-run if the page is refreshed.
+
+  const handleProfileClick = () => {
+      if (currentUser) {
+          router.push(`/users/${currentUser.id}`);
+      }
+  };
 
   return (
     <SidebarProvider>
@@ -44,33 +66,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <MainNav />
         </SidebarContent>
         <SidebarFooter className="p-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="justify-start w-full h-auto p-2">
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex gap-3 items-center">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                      <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                      <span className="text-sm font-medium">{currentUser.name}</span>
-                      <span className="text-xs text-muted-foreground">{currentUser.email}</span>
+          {currentUser ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="justify-start w-full h-auto p-2">
+                  <div className="flex justify-between items-center w-full">
+                    <div className="flex gap-3 items-center">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+                        <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
+                        <span className="text-sm font-medium">{currentUser.name}</span>
+                        <span className="text-xs text-muted-foreground">{currentUser.email}</span>
+                      </div>
                     </div>
                   </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="start" className="w-56">
+                <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleProfileClick}>Profile</DropdownMenuItem>
+                <DropdownMenuItem disabled>Billing</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled>Log out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex items-center gap-3 p-2">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="flex flex-col gap-1.5 group-data-[collapsible=icon]:hidden">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-32" />
                 </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start" className="w-56">
-              <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Log out</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          )}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
@@ -94,20 +126,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full" disabled={!currentUser}>
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={currentUser.avatar} />
-                    <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                    {currentUser ? (
+                      <>
+                        <AvatarImage src={currentUser.avatar} />
+                        <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                      </>
+                    ) : (
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                    )}
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Support</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleProfileClick}>Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+                <DropdownMenuItem disabled>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Logout</DropdownMenuItem>
+                <DropdownMenuItem disabled>Logout</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

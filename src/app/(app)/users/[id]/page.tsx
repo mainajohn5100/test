@@ -62,6 +62,7 @@ const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destru
 };
 
 function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open: boolean) => void }) {
+  const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
 
@@ -82,6 +83,7 @@ function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open: boolea
           description: result.message,
         });
         setOpen(false);
+        router.refresh(); // This will re-fetch data for the layout and page
       } else {
         toast({
           title: "Error",
