@@ -18,7 +18,7 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
   };
 
   const finalAssignee = (!values.assignee || values.assignee === 'unassigned') ? 'Unassigned' : values.assignee;
-  const finalProject = (!values.project || values.project === 'none') ? undefined : values.project;
+  const finalProject = (!values.project || values.project === 'none') ? null : values.project;
 
   // Build the ticket data object carefully.
   // This object will be of a type that's a subset of what `addTicket` expects.
@@ -29,7 +29,7 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
     tags: string[];
     priority: Ticket['priority'];
     assignee: string;
-    project?: string;
+    project: string | null;
   } = {
     title: values.title,
     description: values.description,
@@ -37,12 +37,8 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
     tags: values.tags || [],
     priority: priorityMap[values.priority],
     assignee: finalAssignee,
+    project: finalProject,
   };
-
-  // Only add the project field if it has a value.
-  if (finalProject) {
-    ticketData.project = finalProject;
-  }
 
   let newTicketId: string;
   try {

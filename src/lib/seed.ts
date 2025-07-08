@@ -20,7 +20,6 @@ async function seedDatabase() {
   const usersCollection = collection(db, 'users');
   users.forEach(user => {
     const userRef = doc(usersCollection, user.id);
-    // Explicitly create user data to avoid spreading any unwanted properties
     const userData = {
         name: user.name,
         email: user.email,
@@ -53,7 +52,9 @@ async function seedDatabase() {
   const ticketsCollection = collection(db, 'tickets');
   tickets.forEach(ticket => {
     const ticketRef = doc(ticketsCollection, ticket.id);
-    const ticketData: { [key: string]: any } = {
+    // Explicitly build the object to ensure data consistency
+    // and prevent any 'undefined' fields.
+    const ticketData = {
         title: ticket.title,
         description: ticket.description,
         status: ticket.status,
@@ -63,12 +64,8 @@ async function seedDatabase() {
         createdAt: Timestamp.fromDate(new Date(ticket.createdAt)),
         updatedAt: Timestamp.fromDate(new Date(ticket.updatedAt)),
         tags: ticket.tags,
+        project: ticket.project, // This is now safe as project is string | null
     };
-    
-    // Only add the project field if it exists on the source object
-    if (ticket.project) {
-      ticketData.project = ticket.project;
-    }
     
     batch.set(ticketRef, ticketData);
   });
