@@ -11,6 +11,16 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Validate the firebaseConfig object to ensure all keys have values
+const isFirebaseConfigValid = Object.values(firebaseConfig).every(Boolean);
+
+if (!isFirebaseConfigValid) {
+    // This error will be thrown if any of the environment variables are missing.
+    // It's more descriptive than the default Firebase error.
+    throw new Error('Firebase configuration is missing or incomplete. Please check your .env file and ensure all NEXT_PUBLIC_FIREBASE_* variables are set.');
+}
+
+
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
