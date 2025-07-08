@@ -35,7 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { getTicketById, getUsers } from "@/lib/firestore";
 import type { Ticket, User } from "@/lib/data";
-import { updateTicketStatusAction } from "./actions";
+import { updateTicketAction } from "./actions";
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -142,24 +142,79 @@ export default function ViewTicketPage() {
   const assignee = userMap.get(ticket.assignee);
   const reporter = userMap.get(ticket.reporter);
 
-  const handleStatusChange = (status: Ticket['status']) => {
+  const handleStatusChange = (newStatus: Ticket['status']) => {
     startTransition(async () => {
-        setCurrentStatus(status);
+        const oldStatus = currentStatus;
+        setCurrentStatus(newStatus);
         const assigneeId = assignee ? assignee.id : null;
-        const result = await updateTicketStatusAction(ticket.id, status, assigneeId, ticket.title);
+        const result = await updateTicketAction(
+            ticket.id, 
+            { status: newStatus }, 
+            {
+                assigneeId,
+                title: `Ticket Status Updated`,
+                description: `Status for "${ticket.title}" changed to ${newStatus}.`,
+            }
+        );
         if(result.success) {
             toast({ title: "Status updated successfully!" });
         } else {
             toast({ title: "Error", description: result.error, variant: 'destructive' });
-            setCurrentStatus(ticket.status); // Revert optimistic update on failure
+            setCurrentStatus(oldStatus); // Revert optimistic update on failure
         }
+    });
+  };
+
+  const handlePriorityChange = (newPriority: Ticket['priority']) => {
+    startTransition(async () => {
+        const oldPriority = currentPriority;
+        setCurrentPriority(newPriority);
+        const assigneeId = assignee ? assignee.id : null;
+        const result = await updateTicketAction(
+            ticket.id, 
+            { priority: newPriority }, 
+            {
+                assigneeId,
+                title: `Ticket Priority Updated`,
+                description: `Priority for "${ticket.title}" changed to ${newPriority}.`,
+            }
+        );
+        if(result.success) {
+            toast({ title: "Priority updated successfully!" });
+        } else {
+            toast({ title: "Error", description: result.error, variant: 'destructive' });
+            setCurrentPriority(oldPriority); // Revert on failure
+        }
+    });
+  };
+
+  const updateTags = (newTags: string[]) => {
+    startTransition(async () => {
+      const oldTags = [...currentTags];
+      setCurrentTags(newTags);
+
+      const result = await updateTicketAction(
+        ticket.id,
+        { tags: newTags },
+        {
+          assigneeId: assignee ? assignee.id : null,
+          title: 'Ticket Tags Updated',
+          description: `Tags for "${ticket.title}" have been updated.`,
+        }
+      );
+
+      if (result.success) {
+        toast({ title: 'Tags updated' });
+      } else {
+        toast({ title: "Error", description: result.error, variant: 'destructive' });
+        setCurrentTags(oldTags);
+      }
     });
   };
 
   const handleSmartReply = async () => {
     setIsSuggestingReply(true);
     try {
-      // Note: In a real app, this data would be fetched from the DB
       const userHistory = "No previous tickets for this user.";
       const cannedResponses = "1. Thank you for your patience. We are looking into it.\n2. Could you please provide more details?\n3. This issue has been resolved and the fix will be deployed shortly.";
       
@@ -207,13 +262,15 @@ export default function ViewTicketPage() {
 
   const addTag = (tag: string) => {
     if (!currentTags.includes(tag)) {
-      setCurrentTags([...currentTags, tag]);
+      const newTags = [...currentTags, tag];
+      updateTags(newTags);
       setSuggestedTags(suggestedTags.filter(t => t !== tag));
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setCurrentTags(currentTags.filter(tag => tag !== tagToRemove));
+    const newTags = currentTags.filter(tag => tag !== tagToRemove);
+    updateTags(newTags);
   };
 
 
@@ -255,11 +312,11 @@ export default function ViewTicketPage() {
                     />
                 </CardContent>
                 <CardFooter className="justify-between">
-                    <Button variant="ghost" onClick={handleSmartReply} disabled={isSuggestingReply}>
+                    <Button variant="ghost" onClick={handleSmartReply} disabled={isSuggestingReply || isPending}>
                         {isSuggestingReply ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
                         Smart Reply
                     </Button>
-                    <Button>
+                    <Button disabled={isPending}>
                         <Send className="mr-2 h-4 w-4" />
                         Send Reply
                     </Button>
@@ -300,13 +357,13 @@ export default function ViewTicketPage() {
                         <span className="text-muted-foreground">Priority</span>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto justify-end">
+                                <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isPending}>
                                     <Badge className={`font-medium ${priorityVariantMap[currentPriority]} cursor-pointer`}>{currentPriority}</Badge>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {Object.keys(priorityVariantMap).map(p => (
-                                    <DropdownMenuItem key={p} onSelect={() => setCurrentPriority(p as any)}>
+                                    <DropdownMenuItem key={p} onSelect={() => handlePriorityChange(p as Ticket['priority'])} disabled={isPending}>
                                         {p}
                                     </DropdownMenuItem>
                                 ))}
@@ -366,7 +423,7 @@ export default function ViewTicketPage() {
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
                     <CardTitle>Tags</CardTitle>
-                     <Button variant="ghost" size="sm" onClick={handleSuggestTags} disabled={isSuggestingTags}>
+                     <Button variant="ghost" size="sm" onClick={handleSuggestTags} disabled={isSuggestingTags || isPending}>
                         {isSuggestingTags ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
                         Suggest
                     </Button>

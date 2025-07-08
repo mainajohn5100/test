@@ -1,24 +1,27 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { createNotification, updateTicket } from '@/lib/firestore';
 import type { Ticket } from '@/lib/data';
 
-export async function updateTicketStatusAction(
+export async function updateTicketAction(
   ticketId: string,
-  newStatus: Ticket['status'],
-  assigneeId: string | null,
-  ticketTitle: string
+  updates: Partial<Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>>,
+  notificationDetails?: {
+    assigneeId: string | null;
+    title: string;
+    description: string;
+  }
 ) {
   try {
-    await updateTicket(ticketId, { status: newStatus });
+    await updateTicket(ticketId, updates);
 
-    // If there's an assignee, create a notification for them.
-    if (assigneeId) {
+    if (notificationDetails?.assigneeId && notificationDetails.title && notificationDetails.description) {
       await createNotification({
-        userId: assigneeId,
-        title: `Ticket Status Updated`,
-        description: `Status for "${ticketTitle}" changed to ${newStatus}.`,
+        userId: notificationDetails.assigneeId,
+        title: notificationDetails.title,
+        description: notificationDetails.description,
         link: `/tickets/view/${ticketId}`,
       });
     }
@@ -27,9 +30,9 @@ export async function updateTicketStatusAction(
     revalidatePath('/tickets', 'layout');
     revalidatePath('/dashboard');
 
-    return { success: true, message: 'Ticket status updated.' };
+    return { success: true, message: 'Ticket updated successfully.' };
   } catch (error) {
-    console.error("Error in updateTicketStatusAction:", error);
-    return { success: false, error: 'Failed to update ticket status.' };
+    console.error("Error in updateTicketAction:", error);
+    return { success: false, error: 'Failed to update ticket.' };
   }
 }
