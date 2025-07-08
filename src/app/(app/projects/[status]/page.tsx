@@ -1,5 +1,3 @@
-
-
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +9,8 @@ import { ArrowRight, ListFilter, PlusCircle, Search } from "lucide-react";
 import { format } from 'date-fns';
 import Link from "next/link";
 
+// This is crucial to prevent Next.js from caching the page and to ensure
+// fresh data is fetched from Firestore on every visit.
 export const dynamic = 'force-dynamic';
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -27,18 +27,17 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
     let pageDescription = "Browse and manage all your projects.";
     let normalizedStatus = 'all';
 
-    if (statusFilter && statusFilter !== 'all') {
-        normalizedStatus = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    // Normalize the status from the URL to match the database values (e.g., 'on-hold' -> 'On Hold')
+    if (statusFilter !== 'all') {
+        normalizedStatus = statusFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
         pageTitle = `${normalizedStatus} Projects`;
         pageDescription = `Browse and manage all ${statusFilter.replace('-', ' ')} projects.`
     }
     
-    const projects = await (async () => {
-        if (normalizedStatus === 'all') {
-            return getProjects();
-        }
-        return getProjectsByStatus(normalizedStatus);
-    })();
+    // Fetch the correct data from Firestore based on the status
+    const projects = (normalizedStatus === 'all')
+      ? await getProjects()
+      : await getProjectsByStatus(normalizedStatus);
 
 
   return (
