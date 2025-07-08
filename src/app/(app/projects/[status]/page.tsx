@@ -1,4 +1,5 @@
 
+
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,8 @@ import { getProjects, getProjectsByStatus } from "@/lib/firestore";
 import { ArrowRight, ListFilter, PlusCircle, Search } from "lucide-react";
 import { format } from 'date-fns';
 import Link from "next/link";
+
+export const dynamic = 'force-dynamic';
 
 const projectStatusVariantMap: { [key: string]: string } = {
   'Active': 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
@@ -44,10 +47,12 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
         title={pageTitle}
         description={pageDescription}
       >
-        <Button>
-            <PlusCircle />
-            Create New Project
-        </Button>
+        <Link href="/projects/create" passHref>
+          <Button>
+              <PlusCircle />
+              Create New Project
+          </Button>
+        </Link>
       </PageHeader>
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

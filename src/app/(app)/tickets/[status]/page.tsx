@@ -1,4 +1,5 @@
 
+
 import { PageHeader } from "@/components/page-header";
 import { TicketClient } from "@/components/tickets/ticket-client";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,8 @@ import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { getTickets, getTicketsByStatus, getUsers } from "@/lib/firestore";
 import { users as mockUsers } from "@/lib/data";
+
+export const dynamic = 'force-dynamic';
 
 export default async function TicketsPage({ params }: { params: { status: string } }) {
   const statusFilter = params.status || 'all';

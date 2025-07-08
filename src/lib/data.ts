@@ -192,26 +192,26 @@ export const projectsByStatusData = [
 
 export const ticketTrendsData = {
   monthly: [
-    { name: 'Jan', New: 30, Active: 40, Pending: 20, Closed: 50 },
-    { name: 'Feb', New: 20, Active: 30, Pending: 15, Closed: 40 },
-    { name: 'Mar', New: 50, Active: 60, Pending: 25, Closed: 80 },
-    { name: 'Apr', New: 40, Active: 50, Pending: 30, Closed: 70 },
-    { name: 'May', New: 60, Active: 70, Pending: 35, Closed: 90 },
-    { name: 'Jun', New: 55, Active: 65, Pending: 40, Closed: 85 },
+    { name: 'Jan', New: 30, Active: 40, Pending: 20, 'On Hold': 5, Closed: 50 },
+    { name: 'Feb', New: 20, Active: 30, Pending: 15, 'On Hold': 8, Closed: 40 },
+    { name: 'Mar', New: 50, Active: 60, Pending: 25, 'On Hold': 12, Closed: 80 },
+    { name: 'Apr', New: 40, Active: 50, Pending: 30, 'On Hold': 10, Closed: 70 },
+    { name: 'May', New: 60, Active: 70, Pending: 35, 'On Hold': 15, Closed: 90 },
+    { name: 'Jun', New: 55, Active: 65, Pending: 40, 'On Hold': 18, Closed: 85 },
   ],
   weekly: [
-    { name: 'W1', New: 10, Active: 15, Pending: 5, Closed: 20 },
-    { name: 'W2', New: 8, Active: 12, Pending: 7, Closed: 18 },
-    { name: 'W3', New: 15, Active: 20, Pending: 10, Closed: 25 },
-    { name: 'W4', New: 12, Active: 18, Pending: 8, Closed: 22 },
+    { name: 'W1', New: 10, Active: 15, Pending: 5, 'On Hold': 2, Closed: 20 },
+    { name: 'W2', New: 8, Active: 12, Pending: 7, 'On Hold': 3, Closed: 18 },
+    { name: 'W3', New: 15, Active: 20, Pending: 10, 'On Hold': 5, Closed: 25 },
+    { name: 'W4', New: 12, Active: 18, Pending: 8, 'On Hold': 4, Closed: 22 },
   ],
   daily: [
-    { name: 'Mon', New: 2, Active: 5, Pending: 1, Closed: 4 },
-    { name: 'Tue', New: 3, Active: 4, Pending: 2, Closed: 5 },
-    { name: 'Wed', New: 1, Active: 6, Pending: 1, Closed: 3 },
-    { name: 'Thu', New: 4, Active: 3, Pending: 3, Closed: 6 },
-    { name: 'Fri', New: 2, Active: 7, Pending: 2, Closed: 5 },
-    { name: 'Sat', New: 1, Active: 2, Pending: 1, Closed: 2 },
-    { name: 'Sun', New: 0, Active: 1, Pending: 0, Closed: 1 },
+    { name: 'Mon', New: 2, Active: 5, Pending: 1, 'On Hold': 1, Closed: 4 },
+    { name: 'Tue', New: 3, Active: 4, Pending: 2, 'On Hold': 0, Closed: 5 },
+    { name: 'Wed', New: 1, Active: 6, Pending: 1, 'On Hold': 2, Closed: 3 },
+    { name: 'Thu', New: 4, Active: 3, Pending: 3, 'On Hold': 1, Closed: 6 },
+    { name: 'Fri', New: 2, Active: 7, Pending: 2, 'On Hold': 3, Closed: 5 },
+    { name: 'Sat', New: 1, Active: 2, Pending: 1, 'On Hold': 0, Closed: 2 },
+    { name: 'Sun', New: 0, Active: 1, Pending: 0, 'On Hold': 1, Closed: 1 },
   ]
 };
