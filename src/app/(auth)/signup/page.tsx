@@ -42,6 +42,7 @@ export default function SignupPage() {
       const role = email === 'admin@example.com' ? 'Admin' : 'Customer';
 
       await setDoc(doc(db, 'users', user.uid), {
+        id: user.uid,
         name,
         email,
         role: role,
