@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +15,7 @@ interface TicketClientProps {
 
 export function TicketClient({ tickets, users, initialStatusFilter }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sortBy, setSortBy] = useState('updatedAt_desc');
 
@@ -22,7 +24,8 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
       <CardContent className="pt-6">
         <div className="space-y-4">
           <TicketTableToolbar 
-            statusFilter={initialStatusFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             priorityFilter={priorityFilter}
@@ -34,6 +37,7 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
             tickets={tickets}
             users={users}
             searchTerm={searchTerm}
+            statusFilter={statusFilter}
             priorityFilter={priorityFilter}
             sortBy={sortBy}
           />

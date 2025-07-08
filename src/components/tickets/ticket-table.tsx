@@ -24,16 +24,25 @@ interface TicketTableProps {
     tickets: Ticket[];
     users: User[];
     searchTerm?: string;
+    statusFilter?: string;
     priorityFilter?: string;
     sortBy?: string;
 }
 
-export function TicketTable({ tickets: allTickets, users, searchTerm, priorityFilter, sortBy = 'updatedAt_desc' }: TicketTableProps) {
+export function TicketTable({ tickets: allTickets, users, searchTerm, statusFilter, priorityFilter, sortBy = 'updatedAt_desc' }: TicketTableProps) {
   const router = useRouter();
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
   
   const tickets = React.useMemo(() => {
     let filteredTickets = [...allTickets];
+
+    // Filter by status from toolbar
+    if (statusFilter && statusFilter !== 'all') {
+      const normalizedStatus = statusFilter === 'new-status' 
+        ? 'New' 
+        : statusFilter.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      filteredTickets = filteredTickets.filter(t => t.status === normalizedStatus);
+    }
 
     // Filter by priority from toolbar
     if (priorityFilter && priorityFilter !== 'all') {
@@ -73,7 +82,7 @@ export function TicketTable({ tickets: allTickets, users, searchTerm, priorityFi
     });
 
     return filteredTickets;
-  }, [allTickets, searchTerm, priorityFilter, sortBy]);
+  }, [allTickets, searchTerm, statusFilter, priorityFilter, sortBy]);
 
   return (
     <div className="w-full overflow-hidden">
@@ -100,14 +109,15 @@ export function TicketTable({ tickets: allTickets, users, searchTerm, priorityFi
                         <TableCell>{ticket.title}</TableCell>
                         <TableCell>
                           <Badge
+                            variant="outline"
                             className={cn(
                                 "font-medium capitalize",
-                                ticket.status === 'New' && 'bg-blue-500/20 text-blue-700 border-blue-500/30 hover:bg-blue-500/30',
-                                ticket.status === 'Pending' && 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30 hover:bg-yellow-500/30',
-                                ticket.status === 'On Hold' && 'bg-orange-500/20 text-orange-700 border-orange-500/30 hover:bg-orange-500/30',
-                                ticket.status === 'Active' && 'bg-green-500/20 text-green-700 border-green-500/30 hover:bg-green-500/30',
-                                ticket.status === 'Closed' && 'bg-gray-500/20 text-gray-700 border-gray-500/30 hover:bg-gray-500/30',
-                                ticket.status === 'Terminated' && 'bg-red-500/20 text-red-700 border-red-500/30 hover:bg-red-500/30'
+                                ticket.status === 'New' && 'text-blue-700 border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20',
+                                ticket.status === 'Pending' && 'text-yellow-700 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20',
+                                ticket.status === 'On Hold' && 'text-orange-700 border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20',
+                                ticket.status === 'Active' && 'text-green-700 border-green-500/50 bg-green-500/10 hover:bg-green-500/20',
+                                ticket.status === 'Closed' && 'text-gray-700 border-gray-500/50 bg-gray-500/10 hover:bg-gray-500/20',
+                                ticket.status === 'Terminated' && 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20'
                             )}>
                             {ticket.status}
                           </Badge>
