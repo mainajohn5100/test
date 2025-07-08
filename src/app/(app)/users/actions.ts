@@ -17,10 +17,14 @@ export async function updateUserAction(userId: string, formData: FormData) {
 
     const validatedData = updateUserSchema.parse({ name, email });
 
-    const updateData: Partial<Omit<User, 'id'>> = {
-      name: validatedData.name,
-      email: validatedData.email,
-    };
+    const updateData: Partial<Omit<User, 'id'>> = {};
+
+    if (validatedData.name) {
+      updateData.name = validatedData.name;
+    }
+    if (validatedData.email) {
+      updateData.email = validatedData.email;
+    }
 
     if (avatarFile && avatarFile.size > 0) {
       const filePath = `avatars/${userId}/${Date.now()}_${avatarFile.name}`;
@@ -31,7 +35,9 @@ export async function updateUserAction(userId: string, formData: FormData) {
       updateData.avatar = avatarUrl;
     }
 
-    await updateUser(userId, updateData);
+    if (Object.keys(updateData).length > 0) {
+        await updateUser(userId, updateData);
+    }
     
     revalidatePath(`/users/${userId}`);
     revalidatePath('/users');
