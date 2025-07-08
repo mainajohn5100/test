@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -10,12 +10,14 @@ interface AuthContextType {
   user: AppUser | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   firebaseUser: null,
   loading: true,
+  refreshUser: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -23,28 +25,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      setFirebaseUser(fbUser);
-      if (fbUser) {
-        // Fetch our custom user profile from Firestore using the uid
-        const userDocRef = doc(db, 'users', fbUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setUser({ id: userDoc.id, ...userDoc.data() } as AppUser);
-        } else {
-          setUser(null);
-        }
+  const fetchAppUser = useCallback(async (fbUser: FirebaseUser | null) => {
+    if (fbUser) {
+      const userDocRef = doc(db, 'users', fbUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        setUser({ id: userDoc.id, ...userDoc.data() } as AppUser);
       } else {
         setUser(null);
       }
+    } else {
+      setUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      setFirebaseUser(fbUser);
+      await fetchAppUser(fbUser);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchAppUser]);
+  
+  const refreshUser = useCallback(async () => {
+    await fetchAppUser(firebaseUser);
+  }, [firebaseUser, fetchAppUser]);
 
-  const value = { firebaseUser, user, loading };
+  const value = { firebaseUser, user, loading, refreshUser };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

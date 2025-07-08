@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/contexts/settings-context";
 import { EmailIntegrationForm } from "@/components/settings/email-integration-form";
+import { AccountForm } from "@/components/settings/account-form";
 
 export default function SettingsPage() {
   const { 
@@ -29,7 +30,7 @@ export default function SettingsPage() {
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="account" disabled>Account</TabsTrigger>
+          <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
 
         <TabsContent value="appearance">
@@ -91,6 +92,9 @@ export default function SettingsPage() {
         </TabsContent>
         <TabsContent value="integrations">
             <EmailIntegrationForm />
+        </TabsContent>
+        <TabsContent value="account">
+            <AccountForm />
         </TabsContent>
       </Tabs>
     </div>
