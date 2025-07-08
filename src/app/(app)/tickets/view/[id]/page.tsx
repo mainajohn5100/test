@@ -26,6 +26,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +38,7 @@ import { suggestTags } from "@/ai/flows/suggest-tags";
 import { getTicketById, getUsers } from "@/lib/firestore";
 import type { Ticket, User } from "@/lib/data";
 import { updateTicketAction } from "./actions";
+import { useAuth } from "@/contexts/auth-context";
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -57,6 +60,7 @@ export default function ViewTicketPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [isPending, startTransition] = React.useTransition();
   
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
@@ -66,6 +70,7 @@ export default function ViewTicketPage() {
   const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
   const [currentStatus, setCurrentStatus] = React.useState<string | undefined>(undefined);
   const [currentPriority, setCurrentPriority] = React.useState<string | undefined>(undefined);
+  const [currentAssignee, setCurrentAssignee] = React.useState<string | undefined>(undefined);
   const [reply, setReply] = React.useState("");
   const [isSuggestingReply, setIsSuggestingReply] = React.useState(false);
   const [currentTags, setCurrentTags] = React.useState<string[]>([]);
@@ -73,6 +78,8 @@ export default function ViewTicketPage() {
   const [isSuggestingTags, setIsSuggestingTags] = React.useState(false);
 
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
+  const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Agent' || u.role === 'Admin'), [users]);
+
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -88,6 +95,7 @@ export default function ViewTicketPage() {
           setTicket(ticketData);
           setCurrentStatus(ticketData.status);
           setCurrentPriority(ticketData.priority);
+          setCurrentAssignee(ticketData.assignee);
           setCurrentTags(ticketData.tags || []);
         } else {
           notFound();
@@ -135,11 +143,11 @@ export default function ViewTicketPage() {
     );
   }
 
-  if (!ticket || !currentStatus || !currentPriority) {
+  if (!ticket || !currentStatus || !currentPriority || !currentAssignee) {
     notFound();
   }
   
-  const assignee = userMap.get(ticket.assignee);
+  const assignee = userMap.get(currentAssignee);
   const reporter = userMap.get(ticket.reporter);
 
   const handleStatusChange = (newStatus: Ticket['status']) => {
@@ -184,6 +192,31 @@ export default function ViewTicketPage() {
         } else {
             toast({ title: "Error", description: result.error, variant: 'destructive' });
             setCurrentPriority(oldPriority); // Revert on failure
+        }
+    });
+  };
+
+  const handleAssigneeChange = (newAssigneeUser: User) => {
+    if (!ticket) return;
+    startTransition(async () => {
+        const oldAssignee = currentAssignee;
+        setCurrentAssignee(newAssigneeUser.name);
+
+        const result = await updateTicketAction(
+            ticket.id,
+            { assignee: newAssigneeUser.name },
+            {
+                assigneeId: newAssigneeUser.id,
+                title: `You've been assigned a ticket`,
+                description: `You are now the assignee for "${ticket.title}".`
+            }
+        );
+
+        if (result.success) {
+            toast({ title: "Assignee updated successfully!" });
+        } else {
+            toast({ title: "Error", description: result.error, variant: 'destructive' });
+            setCurrentAssignee(oldAssignee);
         }
     });
   };
@@ -379,7 +412,33 @@ export default function ViewTicketPage() {
                     <Separator />
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Assignee</span>
-                        {assignee ? (
+                        {currentUser?.role === 'Admin' && currentAssignee === 'Unassigned' ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isPending}>
+                                        <Badge variant="outline" className="cursor-pointer font-medium">
+                                            {isPending && currentAssignee !== 'Unassigned' ? <Loader className="h-3 w-3 animate-spin mr-1.5"/> : null}
+                                            {currentAssignee}
+                                        </Badge>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Assign to...</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {assignableUsers.map(user => (
+                                        <DropdownMenuItem key={user.id} onSelect={() => handleAssigneeChange(user)} disabled={isPending}>
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <span>{user.name}</span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : assignee ? (
                           <Link href={`/users/${assignee.id}`} className="block">
                             <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
                                 <Avatar className="h-6 w-6">
@@ -390,7 +449,7 @@ export default function ViewTicketPage() {
                             </div>
                           </Link>
                         ) : (
-                            <span>{ticket.assignee}</span>
+                            <span>{currentAssignee}</span>
                         )}
                     </div>
                     <div className="flex justify-between items-center">
