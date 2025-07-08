@@ -14,23 +14,6 @@ import { Logo } from '@/components/icons';
 import Link from 'next/link';
 import { Loader } from 'lucide-react';
 
-// Helper function to check for missing Firebase config variables
-const getMissingFirebaseConfig = () => {
-  const firebaseConfig = {
-    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  };
-
-  return Object.entries(firebaseConfig)
-    .filter(([, value]) => !value)
-    .map(([key]) => key);
-};
-
-
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -41,17 +24,6 @@ export default function LoginPage() {
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-
-    const missingKeys = getMissingFirebaseConfig();
-    if (missingKeys.length > 0) {
-      toast({
-        title: 'Configuration Error',
-        description: `Firebase config is missing: ${missingKeys.join(', ')}. Check your .env file and restart the server.`,
-        variant: 'destructive',
-      });
-      setLoading(false);
-      return;
-    }
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
