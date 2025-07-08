@@ -184,7 +184,10 @@ export async function getUserById(id: string): Promise<User | null> {
 export async function updateUser(userId: string, userData: Partial<Omit<User, 'id'>>): Promise<void> {
     try {
         const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, userData);
+        const cleanData = Object.fromEntries(Object.entries(userData).filter(([, value]) => value !== undefined));
+        if (Object.keys(cleanData).length > 0) {
+            await updateDoc(userRef, cleanData);
+        }
     } catch (error) {
         console.error("Error updating user:", error);
         throw new Error("Failed to update user.");
@@ -222,6 +225,16 @@ export async function updateTicket(ticketId: string, data: Partial<Omit<Ticket, 
   } catch (error) {
     console.error("Error updating ticket:", error);
     throw new Error("Failed to update ticket.");
+  }
+}
+
+export async function updateProject(projectId: string, data: Partial<Omit<Project, 'id'>>): Promise<void> {
+  try {
+    const projectRef = doc(db, 'projects', projectId);
+    await updateDoc(projectRef, data);
+  } catch (error) {
+    console.error("Error updating project:", error);
+    throw new Error("Failed to update project.");
   }
 }
 

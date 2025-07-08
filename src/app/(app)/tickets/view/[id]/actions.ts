@@ -2,42 +2,69 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNotification, updateTicket } from '@/lib/firestore';
-import type { Ticket } from '@/lib/data';
+import { createNotification, getTicketById, updateTicket } from '@/lib/firestore';
+import type { Ticket, User } from '@/lib/data';
+
+// Helper to determine notification details based on what changed
+function getNotificationDetails(
+  ticket: Ticket, 
+  updates: Partial<Omit<Ticket, 'id'>>,
+  oldAssigneeId: string | null,
+  newAssignee?: User | null
+) {
+    const changes = [];
+    if (updates.status) changes.push(`status updated to ${updates.status}`);
+    if (updates.priority) changes.push(`priority set to ${updates.priority}`);
+    if (updates.tags) changes.push(`tags were updated`);
+
+    // Case 1: Ticket is reassigned
+    if (newAssignee && newAssignee.id !== oldAssigneeId) {
+        return {
+            userId: newAssignee.id,
+            title: `You have been assigned a new ticket`,
+            description: `You are the new assignee for ticket "${ticket.title}".`
+        };
+    }
+    
+    // Case 2: Ticket is updated, but not reassigned
+    if (changes.length > 0 && ticket.assignee !== 'Unassigned' && oldAssigneeId) {
+        return {
+            userId: oldAssigneeId,
+            title: `Ticket Updated: "${ticket.title}"`,
+            description: `The following was changed: ${changes.join(', ')}.`
+        };
+    }
+
+    return null;
+}
 
 export async function updateTicketAction(
   ticketId: string,
   updates: Partial<Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>>,
-  notificationDetails?: {
-    assigneeId: string | null;
-    title: string;
-    description: string;
-  }
+  assigneeDetails?: { oldAssigneeId: string | null, newAssignee?: User | null }
 ) {
   try {
-    // Explicitly build the object to prevent passing complex types or undefined values.
-    const dataToUpdate: { [key: string]: any } = {};
-    if (updates.status) dataToUpdate.status = updates.status;
-    if (updates.priority) dataToUpdate.priority = updates.priority;
-    if (updates.assignee) dataToUpdate.assignee = updates.assignee;
-    if (updates.tags) dataToUpdate.tags = updates.tags;
-    if (updates.project) dataToUpdate.project = updates.project;
+    await updateTicket(ticketId, updates);
 
-    // Only update if there are actual changes.
-    if (Object.keys(dataToUpdate).length > 0) {
-      await updateTicket(ticketId, dataToUpdate);
-    } else if (!notificationDetails?.assigneeId) {
-      // If there are no updates and no one to notify, do nothing.
-      return { success: true, message: 'No changes to apply.' };
-    }
+    // After a successful update, fetch the latest ticket data to build the notification
+    const updatedTicket = await getTicketById(ticketId);
 
-    if (notificationDetails?.assigneeId && notificationDetails.title && notificationDetails.description) {
-      await createNotification({
-        userId: notificationDetails.assigneeId,
-        title: notificationDetails.title,
-        description: notificationDetails.description,
-        link: `/tickets/view/${ticketId}`,
-      });
+    if (updatedTicket) {
+      const notification = getNotificationDetails(
+          updatedTicket, 
+          updates, 
+          assigneeDetails?.oldAssigneeId ?? null,
+          assigneeDetails?.newAssignee
+      );
+
+      if (notification) {
+          await createNotification({
+              userId: notification.userId,
+              title: notification.title,
+              description: notification.description,
+              link: `/tickets/view/${ticketId}`,
+          });
+      }
     }
 
     revalidatePath(`/tickets/view/${ticketId}`);
@@ -47,7 +74,6 @@ export async function updateTicketAction(
     return { success: true, message: 'Ticket updated successfully.' };
   } catch (error) {
     console.error("Error in updateTicketAction:", error);
-    // Make sure to return a specific error message if available.
     const errorMessage = error instanceof Error ? error.message : 'Failed to update ticket.';
     return { success: false, error: errorMessage };
   }

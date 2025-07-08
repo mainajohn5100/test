@@ -78,6 +78,7 @@ export default function ViewTicketPage() {
   const [isSuggestingTags, setIsSuggestingTags] = React.useState(false);
 
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
+  const userMapById = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
   const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Agent' || u.role === 'Admin'), [users]);
 
 
@@ -154,16 +155,7 @@ export default function ViewTicketPage() {
     startTransition(async () => {
         const oldStatus = currentStatus;
         setCurrentStatus(newStatus);
-        const assigneeId = assignee ? assignee.id : null;
-        const result = await updateTicketAction(
-            ticket.id, 
-            { status: newStatus }, 
-            {
-                assigneeId,
-                title: `Ticket Status Updated`,
-                description: `Status for "${ticket.title}" changed to ${newStatus}.`,
-            }
-        );
+        const result = await updateTicketAction(ticket.id, { status: newStatus }, { oldAssigneeId: assignee?.id ?? null });
         if(result.success) {
             toast({ title: "Status updated successfully!" });
         } else {
@@ -177,16 +169,7 @@ export default function ViewTicketPage() {
     startTransition(async () => {
         const oldPriority = currentPriority;
         setCurrentPriority(newPriority);
-        const assigneeId = assignee ? assignee.id : null;
-        const result = await updateTicketAction(
-            ticket.id, 
-            { priority: newPriority }, 
-            {
-                assigneeId,
-                title: `Ticket Priority Updated`,
-                description: `Priority for "${ticket.title}" changed to ${newPriority}.`,
-            }
-        );
+        const result = await updateTicketAction(ticket.id, { priority: newPriority }, { oldAssigneeId: assignee?.id ?? null });
         if(result.success) {
             toast({ title: "Priority updated successfully!" });
         } else {
@@ -205,10 +188,9 @@ export default function ViewTicketPage() {
         const result = await updateTicketAction(
             ticket.id,
             { assignee: newAssigneeUser.name },
-            {
-                assigneeId: newAssigneeUser.id,
-                title: `You've been assigned a ticket`,
-                description: `You are now the assignee for "${ticket.title}".`
+            { 
+              oldAssigneeId: assignee?.id ?? null,
+              newAssignee: newAssigneeUser 
             }
         );
 
@@ -229,11 +211,7 @@ export default function ViewTicketPage() {
       const result = await updateTicketAction(
         ticket.id,
         { tags: newTags },
-        {
-          assigneeId: assignee ? assignee.id : null,
-          title: 'Ticket Tags Updated',
-          description: `Tags for "${ticket.title}" have been updated.`,
-        }
+        { oldAssigneeId: assignee?.id ?? null }
       );
 
       if (result.success) {

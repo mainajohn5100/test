@@ -45,6 +45,8 @@ import {
 } from "@/components/ui/tooltip";
 import { getProjectById, getTicketsByProject, getUsers } from "@/lib/firestore";
 import type { Project, Ticket, User } from "@/lib/data";
+import { useToast } from "@/hooks/use-toast";
+import { updateProjectAction } from "./actions";
 
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -66,6 +68,8 @@ const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destru
 export default function ViewProjectPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const [isUpdating, startTransition] = React.useTransition();
 
   const [project, setProject] = React.useState<Project | null>(null);
   const [users, setUsers] = React.useState<User[]>([]);
@@ -104,6 +108,20 @@ export default function ViewProjectPage() {
     fetchData();
   }, [params.id]);
 
+  const handleStatusChange = (newStatus: Project['status']) => {
+    if (!project) return;
+    startTransition(async () => {
+        const oldStatus = currentStatus;
+        setCurrentStatus(newStatus);
+        const result = await updateProjectAction(project.id, { status: newStatus });
+        if (result.success) {
+            toast({ title: "Project status updated!" });
+        } else {
+            toast({ title: "Error", description: result.error, variant: 'destructive' });
+            setCurrentStatus(oldStatus); // Revert on failure
+        }
+    });
+  };
 
   if (loading) {
     return (
@@ -190,13 +208,16 @@ export default function ViewProjectPage() {
                         <span className="text-muted-foreground">Status</span>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto justify-end">
-                                    <Badge className={`${projectStatusVariantMap[currentStatus]} cursor-pointer`}>{currentStatus}</Badge>
+                                <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isUpdating}>
+                                    <Badge className={`${projectStatusVariantMap[currentStatus]} cursor-pointer`}>
+                                      {isUpdating ? <Loader className="h-3 w-3 animate-spin mr-1.5"/> : null}
+                                      {currentStatus}
+                                    </Badge>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {Object.keys(projectStatusVariantMap).map(status => (
-                                    <DropdownMenuItem key={status} onSelect={() => setCurrentStatus(status as any)}>
+                                    <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as any)} disabled={isUpdating}>
                                         {status}
                                     </DropdownMenuItem>
                                 ))}
