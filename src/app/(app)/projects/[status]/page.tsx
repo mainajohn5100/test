@@ -1,4 +1,5 @@
 
+
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,10 +45,12 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
         title={pageTitle}
         description={pageDescription}
       >
-        <Button>
-            <PlusCircle />
-            Create New Project
-        </Button>
+        <Link href="/projects/create" passHref>
+          <Button>
+              <PlusCircle />
+              Create New Project
+          </Button>
+        </Link>
       </PageHeader>
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

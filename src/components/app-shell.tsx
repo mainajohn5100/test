@@ -77,8 +77,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setLoadingNotifications(true);
     const q = query(
       collection(db, "notifications"),
-      where("userId", "==", currentUser.id)
+      /* where("userId", "==", currentUser.id) */ 
     );
+
+    // Add this debug log to check
+console.log('Current user ID:', currentUser?.id);
+console.log('Sample notification userId from Firebase:', notifications[0]?.userId);
 
     const unsubscribe = onSnapshot(
       q,

@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { addTicket } from '@/lib/firestore';
+import { addTicket, createNotification, getUserByName } from '@/lib/firestore';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { ticketSchema } from './schema';
@@ -46,6 +46,19 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
   try {
     // The `addTicket` function will add status and timestamps.
     newTicketId = await addTicket(ticketData);
+
+    // Create notification if assigned
+    if (finalAssignee !== 'Unassigned') {
+      const assigneeUser = await getUserByName(finalAssignee);
+      if (assigneeUser) {
+        await createNotification({
+          userId: assigneeUser.id,
+          title: `New Ticket Assigned`,
+          description: `You have been assigned the ticket: "${ticketData.title}".`,
+          link: `/tickets/view/${newTicketId}`,
+        });
+      }
+    }
 
     // Revalidate paths to reflect the new ticket in lists
     revalidatePath('/tickets', 'layout');

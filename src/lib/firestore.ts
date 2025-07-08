@@ -1,5 +1,6 @@
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch } from 'firebase/firestore';
+
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User, Notification } from './data';
 
@@ -181,6 +182,22 @@ export async function getUserById(id: string): Promise<User | null> {
     }
 }
 
+export async function getUserByName(name: string): Promise<User | null> {
+    if (name === 'Unassigned') return null;
+    try {
+        const usersCol = collection(db, 'users');
+        const q = query(usersCol, where("name", "==", name), limit(1));
+        const userSnapshot = await getDocs(q);
+        if (userSnapshot.empty) {
+            return null;
+        }
+        return docToData<User>(userSnapshot.docs[0]);
+    } catch (error) {
+        console.error("Error fetching user by name:", error);
+        return null;
+    }
+}
+
 export async function updateUser(userId: string, userData: Partial<Omit<User, 'id'>>): Promise<void> {
     try {
         const userRef = doc(db, 'users', userId);
@@ -216,6 +233,26 @@ export async function addTicket(ticketData: {
     console.error("Error adding ticket:", error);
     throw new Error("Failed to create ticket.");
   }
+}
+
+export async function addProject(projectData: {
+    name: string;
+    description: string;
+    manager: string; // User ID
+    team: string[]; // User IDs
+    deadline: Date;
+}): Promise<string> {
+    try {
+        const docRef = await addDoc(collection(db, 'projects'), {
+            ...projectData,
+            status: 'New',
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding project:", error);
+        throw new Error("Failed to create project.");
+    }
 }
 
 export async function updateTicket(ticketId: string, data: Partial<Omit<Ticket, 'id'>>): Promise<void> {

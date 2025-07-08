@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -54,6 +55,7 @@ const menuItems = [
       { label: "Active", href: "/projects/active" },
       { label: "On Hold", href: "/projects/on-hold" },
       { label: "Completed", href: "/projects/completed" },
+      { label: "Create Project", href: "/projects/create" },
     ],
   },
   {
@@ -95,6 +97,7 @@ export function MainNav() {
                       )}
                     >
                       {subItem.href === '/tickets/new' && <PlusCircle className="mr-2 h-4 w-4" />}
+                      {subItem.href === '/projects/create' && <PlusCircle className="mr-2 h-4 w-4" />}
                       {subItem.label}
                     </Button>
                   </Link>
