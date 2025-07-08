@@ -15,6 +15,22 @@ import { Logo } from '@/components/icons';
 import Link from 'next/link';
 import { Loader } from 'lucide-react';
 
+// Helper function to check for missing Firebase config variables
+const getMissingFirebaseConfig = () => {
+  const firebaseConfig = {
+    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  };
+
+  return Object.entries(firebaseConfig)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+};
+
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -26,6 +42,17 @@ export default function SignupPage() {
   const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+
+    const missingKeys = getMissingFirebaseConfig();
+    if (missingKeys.length > 0) {
+      toast({
+        title: 'Configuration Error',
+        description: `Firebase config is missing: ${missingKeys.join(', ')}. Check your .env file and restart the server.`,
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -56,10 +83,8 @@ export default function SignupPage() {
 
     } catch (error: any) {
       let description = error.message;
-      if (error.code === 'auth/configuration-not-found') {
-        description = "Firebase configuration is missing or invalid. Please ensure your .env file is set up correctly and you have restarted the development server.";
-      } else if (error.code === 'auth/api-key-not-valid') {
-        description = "The provided Firebase API Key is invalid. Please double-check the NEXT_PUBLIC_FIREBASE_API_KEY value in your .env file, ensure there are no typos or extra characters (like quotes), and restart your development server.";
+      if (error.code === 'auth/api-key-not-valid') {
+        description = "The provided Firebase API Key is invalid. Please double-check the value in your .env file and restart your development server.";
       }
       toast({
         title: 'Signup Failed',
