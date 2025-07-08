@@ -26,6 +26,7 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
     title: string;
     description: string;
     reporter: string;
+    reporterEmail?: string;
     tags: string[];
     priority: Ticket['priority'];
     assignee: string;
@@ -34,6 +35,7 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
     title: values.title,
     description: values.description,
     reporter: values.reporter,
+    reporterEmail: values.email,
     tags: values.tags || [],
     priority: priorityMap[values.priority],
     assignee: finalAssignee,

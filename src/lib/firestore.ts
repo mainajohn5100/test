@@ -190,6 +190,7 @@ export async function addTicket(ticketData: {
     title: string;
     description: string;
     reporter: string;
+    reporterEmail?: string;
     tags: string[];
     priority: "Low" | "Medium" | "High" | "Urgent";
     assignee: string;

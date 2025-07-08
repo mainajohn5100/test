@@ -59,7 +59,9 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
               <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
                 <TableCell>
                   <div className="font-medium">{ticket.title}</div>
-                  <div className="text-sm text-muted-foreground">{ticket.id}</div>
+                  <div className="text-sm text-muted-foreground truncate" title={ticket.reporterEmail || ticket.reporter}>
+                    {ticket.reporterEmail || `From: ${ticket.reporter}`}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Badge variant={statusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>

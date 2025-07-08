@@ -6,6 +6,7 @@ export type Ticket = {
   priority: 'Low' | 'Medium' | 'High' | 'Urgent';
   assignee: string;
   reporter: string;
+  reporterEmail?: string;
   createdAt: string;
   updatedAt: string;
   tags: string[];
@@ -57,6 +58,7 @@ export const tickets: Ticket[] = [
     priority: 'High',
     assignee: 'Maria Garcia',
     reporter: 'Priya Patel',
+    reporterEmail: 'priya.p@example.com',
     createdAt: '2024-05-01T10:00:00Z',
     updatedAt: '2024-05-02T14:30:00Z',
     tags: ['bug', 'safari', 'login'],
@@ -83,6 +85,7 @@ export const tickets: Ticket[] = [
     priority: 'Medium',
     assignee: 'James Smith',
     reporter: 'Priya Patel',
+    reporterEmail: 'priya.p@example.com',
     createdAt: '2024-05-03T15:20:00Z',
     updatedAt: '2024-05-03T15:20:00Z',
     tags: ['feature-request', 'reports', 'csv'],
@@ -109,6 +112,7 @@ export const tickets: Ticket[] = [
     priority: 'Urgent',
     assignee: 'Maria Garcia',
     reporter: 'Customer Support',
+    reporterEmail: 'support@requestflow.app',
     createdAt: '2024-05-05T09:30:00Z',
     updatedAt: '2024-05-05T11:00:00Z',
     tags: ['crash', 'android', 'mobile-app'],
@@ -135,6 +139,7 @@ export const tickets: Ticket[] = [
     priority: 'Medium',
     assignee: 'James Smith',
     reporter: 'Marketing',
+    reporterEmail: 'marketing@requestflow.app',
     createdAt: '2024-04-15T16:00:00Z',
     updatedAt: '2024-04-20T11:45:00Z',
     tags: ['onboarding', 'feature-request', 'ux'],

@@ -82,6 +82,7 @@ async function seedDatabase() {
         priority: ticket.priority,
         assignee: ticket.assignee,
         reporter: ticket.reporter,
+        reporterEmail: ticket.reporterEmail || null,
         createdAt: Timestamp.fromDate(new Date(ticket.createdAt)),
         updatedAt: Timestamp.fromDate(new Date(ticket.updatedAt)),
         tags: ticket.tags,
