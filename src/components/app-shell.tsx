@@ -20,9 +20,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Maximize } from "lucide-react";
+import { Search, Bell, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,11 +34,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useTheme } from "next-themes";
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user: currentUser } = useAuth();
   const router = useRouter();
+  const { setTheme } = useTheme();
+  const [isFullScreen, setIsFullScreen] = React.useState(false);
 
   const handleProfileClick = () => {
       if (currentUser) {
@@ -50,6 +57,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         console.error("Error signing out: ", error);
     }
   };
+  
+  const handleFullScreen = () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+  };
+  
+  React.useEffect(() => {
+    const onFullScreenChange = () => {
+        setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFullScreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullScreenChange);
+  }, []);
+
 
   return (
     <SidebarProvider>
@@ -116,14 +142,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-9" />
             </div>
-            <Button variant="ghost" size="icon" className="rounded-full">
-                <Maximize className="h-5 w-5" />
-                <span className="sr-only">Full screen</span>
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={handleFullScreen}>
+                {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                <span className="sr-only">Toggle Full screen</span>
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">Notifications</span>
-            </Button>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                        <Bell className="h-5 w-5" />
+                        <span className="sr-only">Notifications</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                        <p className="text-sm text-muted-foreground text-center w-full">No new notifications</p>
+                    </DropdownMenuItem>
+                    {/* Placeholder for actual notifications */}
+                    {/* <DropdownMenuItem>
+                        Item 1
+                    </DropdownMenuItem> */}
+                    <DropdownMenuSeparator />
+                     <DropdownMenuItem className="justify-center text-sm font-medium text-primary hover:text-primary cursor-pointer">
+                        View all notifications
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full" disabled={!currentUser}>
@@ -145,6 +190,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem onClick={handleProfileClick}>Profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
                 <DropdownMenuItem disabled>Support</DropdownMenuItem>
+                 <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <span>Theme</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => setTheme("light")}>
+                        <Sun className="mr-2 h-4 w-4" />
+                        <span>Light</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("dark")}>
+                        <Moon className="mr-2 h-4 w-4" />
+                        <span>Dark</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("system")}>
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                        <span>System</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
               </DropdownMenuContent>

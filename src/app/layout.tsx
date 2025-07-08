@@ -4,6 +4,7 @@ import './globals.css';
 import { raleway, montserrat } from './fonts';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/contexts/auth-context';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'RequestFlow',
@@ -18,10 +19,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn("font-body antialiased", raleway.variable, montserrat.variable)}>
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
