@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from "react";
@@ -20,6 +21,8 @@ import { updateUserAction } from "@/app/(app)/users/actions";
 export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open: boolean) => void }) {
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
 
   const form = useForm<z.infer<typeof updateUserSchema>>({
     resolver: zodResolver(updateUserSchema),
@@ -29,9 +32,24 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
     },
   });
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   const onSubmit = (values: z.infer<typeof updateUserSchema>) => {
     startTransition(async () => {
-      const result = await updateUserAction(user.id, values);
+      const formData = new FormData();
+      formData.append('name', values.name || '');
+      formData.append('email', values.email || '');
+      if (selectedFile) {
+        formData.append('avatar', selectedFile);
+      }
+
+      const result = await updateUserAction(user.id, formData);
       if (result.success) {
         toast({
           title: "Profile Updated",
@@ -60,14 +78,20 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
         <div className="grid gap-6 py-4">
           <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={previewUrl || user.avatar} alt={user.name} />
                   <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="w-full">
                   <Label htmlFor="avatar-file" className="text-sm font-medium">Profile Photo</Label>
-                  <Input id="avatar-file" type="file" className="mt-1" disabled />
+                  <Input 
+                    id="avatar-file" 
+                    type="file" 
+                    className="mt-1" 
+                    accept="image/png, image/jpeg, image/gif"
+                    onChange={handleFileChange}
+                  />
                   <p className="text-xs text-muted-foreground pt-1">
-                      Avatar updates are not yet supported.
+                      Upload a new profile picture.
                   </p>
               </div>
           </div>

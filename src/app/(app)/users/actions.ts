@@ -5,25 +5,37 @@ import { z } from 'zod';
 import { updateUser } from '@/lib/firestore';
 import { revalidatePath } from 'next/cache';
 import { updateUserSchema } from './schema';
-import { redirect } from 'next/navigation';
+import { storage } from '@/lib/firebase';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import type { User } from '@/lib/data';
 
-export async function updateUserAction(userId: string, values: z.infer<typeof updateUserSchema>) {
+export async function updateUserAction(userId: string, formData: FormData) {
   try {
-    const validatedData = updateUserSchema.parse(values);
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const avatarFile = formData.get('avatar') as File | null;
 
-    // Filter out any undefined values so Firestore doesn't complain
-    const updateData = Object.fromEntries(
-        Object.entries(validatedData).filter(([, value]) => value !== undefined)
-    );
+    const validatedData = updateUserSchema.parse({ name, email });
 
-    if (Object.keys(updateData).length === 0) {
-        return { success: true, message: "No changes were made." };
+    const updateData: Partial<Omit<User, 'id'>> = {
+      name: validatedData.name,
+      email: validatedData.email,
+    };
+
+    if (avatarFile && avatarFile.size > 0) {
+      const filePath = `avatars/${userId}/${Date.now()}_${avatarFile.name}`;
+      const storageRef = ref(storage, filePath);
+      
+      await uploadBytes(storageRef, avatarFile);
+      const avatarUrl = await getDownloadURL(storageRef);
+      updateData.avatar = avatarUrl;
     }
 
     await updateUser(userId, updateData);
     
     revalidatePath(`/users/${userId}`);
     revalidatePath('/users');
+    revalidatePath('/settings');
 
     return { success: true, message: "Profile updated successfully." };
   } catch (error) {
