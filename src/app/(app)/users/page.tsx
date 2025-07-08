@@ -1,21 +1,140 @@
 
 'use client';
 
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
+
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
-import React from "react";
 import { getUsers } from "@/lib/firestore";
 import type { User } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Loader, PlusCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+
+import { userSchema } from "./schema";
+import { createUserAction } from "./actions";
+
+function CreateUserForm({ setOpen }: { setOpen: (open: boolean) => void }) {
+  const { toast } = useToast();
+  const [isPending, startTransition] = React.useTransition();
+
+  const form = useForm<z.infer<typeof userSchema>>({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      role: "Agent",
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof userSchema>) => {
+    startTransition(async () => {
+      const result = await createUserAction(values);
+      if (result.success) {
+        toast({
+          title: "User Created",
+          description: result.message,
+        });
+        setOpen(false);
+      } else {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        });
+      }
+    });
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <DialogHeader>
+          <DialogTitle>Create New User</DialogTitle>
+          <DialogDescription>
+            Fill in the details below to add a new user to the system.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="John Doe" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email Address</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="john.doe@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="Agent">Agent</SelectItem>
+                    <SelectItem value="Customer">Customer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Create User
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+}
+
 
 export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [isCreateDialogOpen, setCreateDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     const fetchUsers = async () => {
@@ -30,14 +149,26 @@ export default function UsersPage() {
         }
     };
     fetchUsers();
-  }, []);
+  }, [isCreateDialogOpen]); // Refetch when dialog is closed
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="User Accounts Management"
         description="Manage user roles and permissions."
-      />
+      >
+        <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle />
+              Create User
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <CreateUserForm setOpen={setCreateDialogOpen} />
+          </DialogContent>
+        </Dialog>
+      </PageHeader>
       <Card>
         <CardHeader>
             <CardTitle>Users</CardTitle>

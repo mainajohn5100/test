@@ -1,5 +1,5 @@
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User } from './data';
 
@@ -176,7 +176,41 @@ export async function getUserById(id: string): Promise<User | null> {
     }
 }
 
-export async function addTicket(ticketData: Partial<Omit<Ticket, 'id' | 'status' | 'createdAt' | 'updatedAt'>>): Promise<string> {
+export async function addUser(userData: Omit<User, 'id' | 'avatar'>): Promise<string> {
+    try {
+        const initials = userData.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+        const avatar = `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;
+
+        const docRef = await addDoc(collection(db, 'users'), {
+            ...userData,
+            avatar,
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding user:", error);
+        throw new Error("Failed to create user.");
+    }
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+    try {
+        const userRef = doc(db, 'users', userId);
+        await deleteDoc(userRef);
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        throw new Error("Failed to delete user.");
+    }
+}
+
+export async function addTicket(ticketData: {
+    title: string;
+    description: string;
+    reporter: string;
+    tags: string[];
+    priority: "Low" | "Medium" | "High" | "Urgent";
+    assignee: string;
+    project: string | null;
+  }): Promise<string> {
   try {
     const docRef = await addDoc(collection(db, 'tickets'), {
       ...ticketData,

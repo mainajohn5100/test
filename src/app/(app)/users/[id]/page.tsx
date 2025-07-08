@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, KeyRound, Loader, ShieldCheck } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader, ShieldCheck, Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -27,10 +27,23 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getUserById, getTicketsByAssignee, getTicketsByReporter, getProjectsByManager } from "@/lib/firestore";
 import type { User, Ticket, Project } from "@/lib/data";
+import { deleteUserAction } from "../actions";
+import { useToast } from "@/hooks/use-toast";
 
 
 const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -45,6 +58,9 @@ const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destru
 export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const [isPending, startTransition] = React.useTransition();
+
 
   const [user, setUser] = React.useState<User | null>(null);
   const [assignedTickets, setAssignedTickets] = React.useState<Ticket[]>([]);
@@ -79,6 +95,25 @@ export default function UserProfilePage() {
     };
     fetchData();
   }, [params.id]);
+
+  const handleDelete = () => {
+    if (!user) return;
+    startTransition(async () => {
+      const result = await deleteUserAction(user.id);
+      if (result?.error) {
+        toast({
+          title: "Error deleting user",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "User deleted",
+          description: "The user has been permanently deleted.",
+        });
+      }
+    });
+  };
 
   if (loading) {
     return (
@@ -176,6 +211,42 @@ export default function UserProfilePage() {
                         Enable Two-Factor Auth
                     </Button>
                     <p className="text-xs text-muted-foreground text-center pt-2">SSO/OAuth settings would appear here.</p>
+                </CardContent>
+            </Card>
+            <Card className="border-destructive/50">
+                <CardHeader>
+                    <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
+                    <CardDescription>This action is irreversible.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete User
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this
+                            user and remove their data from our servers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={handleDelete}
+                            disabled={isPending}
+                          >
+                             {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                            Continue
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </CardContent>
             </Card>
         </div>
