@@ -8,7 +8,6 @@ import { AppearanceForm } from "@/components/settings/appearance-form";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/contexts/settings-context";
-import { FormDescription } from "@/components/ui/form";
 
 export default function SettingsPage() {
   const { 
@@ -59,9 +58,9 @@ export default function SettingsPage() {
                     <Label htmlFor="in-app-notifications" className="text-base">
                       In-App Notifications
                     </Label>
-                    <FormDescription>
+                    <p className="text-sm text-muted-foreground">
                       Receive notifications within the app header.
-                    </FormDescription>
+                    </p>
                   </div>
                   <Switch
                     id="in-app-notifications"
@@ -75,9 +74,9 @@ export default function SettingsPage() {
                     <Label htmlFor="email-notifications" className="text-base">
                       Email Notifications
                     </Label>
-                    <FormDescription>
+                    <p className="text-sm text-muted-foreground">
                       Receive notifications for important events via email.
-                    </FormDescription>
+                    </p>
                   </div>
                   <Switch
                     id="email-notifications"
