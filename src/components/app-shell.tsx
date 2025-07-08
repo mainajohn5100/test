@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -23,6 +24,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare } from "lucide-react";
