@@ -17,38 +17,23 @@ import { TicketTableRowActions } from "./ticket-table-row-actions";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
-
-const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
-  'New': 'secondary',
-  'Active': 'default',
-  'Pending': 'outline',
-  'On Hold': 'outline',
-  'Closed': 'secondary',
-  'Terminated': 'destructive',
-};
-
-const priorityVariantMap: { [key: string]: string } = {
-    'Low': 'bg-green-100 text-green-800 border-green-200',
-    'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'High': 'bg-orange-100 text-orange-800 border-orange-200',
-    'Urgent': 'bg-red-100 text-red-800 border-red-200',
-};
 
 interface TicketTableProps {
     tickets: Ticket[];
     users: User[];
-    statusFilter?: string;
     searchTerm?: string;
     priorityFilter?: string;
+    sortBy?: string;
 }
 
-export function TicketTable({ tickets: allTickets, users, statusFilter, searchTerm, priorityFilter }: TicketTableProps) {
+export function TicketTable({ tickets: allTickets, users, searchTerm, priorityFilter, sortBy = 'updatedAt_desc' }: TicketTableProps) {
   const router = useRouter();
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
   
   const tickets = React.useMemo(() => {
-    let filteredTickets = allTickets;
+    let filteredTickets = [...allTickets];
 
     // Filter by priority from toolbar
     if (priorityFilter && priorityFilter !== 'all') {
@@ -65,8 +50,30 @@ export function TicketTable({ tickets: allTickets, users, statusFilter, searchTe
       );
     }
     
+    // Sort tickets
+    const [key, order] = sortBy.split('_');
+    
+    filteredTickets.sort((a, b) => {
+      let valA, valB;
+
+      if (key === 'createdAt' || key === 'updatedAt') {
+        valA = new Date(a[key as 'createdAt' | 'updatedAt']).getTime();
+        valB = new Date(b[key as 'createdAt' | 'updatedAt']).getTime();
+      } else if (key === 'priority') {
+        const priorityOrder: { [key in Ticket['priority']]: number } = { 'Low': 0, 'Medium': 1, 'High': 2, 'Urgent': 3 };
+        valA = priorityOrder[a.priority];
+        valB = priorityOrder[b.priority];
+      } else {
+        return 0; // No other sorting keys are implemented
+      }
+      
+      if (valA < valB) return order === 'asc' ? -1 : 1;
+      if (valA > valB) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
+
     return filteredTickets;
-  }, [allTickets, searchTerm, priorityFilter]);
+  }, [allTickets, searchTerm, priorityFilter, sortBy]);
 
   return (
     <div className="w-full overflow-hidden">
@@ -92,12 +99,30 @@ export function TicketTable({ tickets: allTickets, users, statusFilter, searchTe
                         <TableCell className="font-medium">{ticket.id}</TableCell>
                         <TableCell>{ticket.title}</TableCell>
                         <TableCell>
-                        <Badge variant={statusVariantMap[ticket.status] || 'default'}>
+                          <Badge
+                            className={cn(
+                                "font-medium capitalize",
+                                ticket.status === 'New' && 'bg-blue-500/20 text-blue-700 border-blue-500/30 hover:bg-blue-500/30',
+                                ticket.status === 'Pending' && 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30 hover:bg-yellow-500/30',
+                                ticket.status === 'On Hold' && 'bg-orange-500/20 text-orange-700 border-orange-500/30 hover:bg-orange-500/30',
+                                ticket.status === 'Active' && 'bg-green-500/20 text-green-700 border-green-500/30 hover:bg-green-500/30',
+                                ticket.status === 'Closed' && 'bg-gray-500/20 text-gray-700 border-gray-500/30 hover:bg-gray-500/30',
+                                ticket.status === 'Terminated' && 'bg-red-500/20 text-red-700 border-red-500/30 hover:bg-red-500/30'
+                            )}>
                             {ticket.status}
-                        </Badge>
+                          </Badge>
                         </TableCell>
                         <TableCell>
-                            <Badge className={`font-medium ${priorityVariantMap[ticket.priority]}`}>
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                "font-medium capitalize",
+                                ticket.priority === 'Urgent' && 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20',
+                                ticket.priority === 'High' && 'text-orange-700 border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20',
+                                ticket.priority === 'Medium' && 'text-yellow-700 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20',
+                                ticket.priority === 'Low' && 'text-green-700 border-green-500/50 bg-green-500/10 hover:bg-green-500/20'
+                                )}
+                            >
                                 {ticket.priority}
                             </Badge>
                         </TableCell>

@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X } from "lucide-react";
+import { ListOrdered, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface TicketTableToolbarProps {
@@ -18,6 +18,8 @@ interface TicketTableToolbarProps {
   setSearchTerm: (value: string) => void;
   priorityFilter: string;
   setPriorityFilter: (value: string) => void;
+  sortBy: string;
+  setSortBy: (value: string) => void;
 }
 
 export function TicketTableToolbar({
@@ -25,13 +27,16 @@ export function TicketTableToolbar({
   searchTerm,
   setSearchTerm,
   priorityFilter,
-  setPriorityFilter
+  setPriorityFilter,
+  sortBy,
+  setSortBy,
 }: TicketTableToolbarProps) {
   const router = useRouter();
 
   const handleReset = () => {
     setSearchTerm('');
     setPriorityFilter('all');
+    setSortBy('updatedAt_desc');
     if (statusFilter !== 'all') {
       router.push('/tickets/all');
     }
@@ -80,6 +85,19 @@ export function TicketTableToolbar({
             <SelectItem value="urgent">Urgent</SelectItem>
           </SelectContent>
         </Select>
+         <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full h-9 md:w-auto">
+                <ListOrdered className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="updatedAt_desc">Last Updated</SelectItem>
+                <SelectItem value="createdAt_desc">Newest First</SelectItem>
+                <SelectItem value="createdAt_asc">Oldest First</SelectItem>
+                <SelectItem value="priority_desc">Priority (High-Low)</SelectItem>
+                <SelectItem value="priority_asc">Priority (Low-High)</SelectItem>
+              </SelectContent>
+            </Select>
       </div>
       <Button variant="ghost" className="h-9 px-3" onClick={handleReset}>
         <X className="mr-2 h-4 w-4" />

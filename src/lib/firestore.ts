@@ -54,16 +54,39 @@ export async function getTickets(): Promise<Ticket[]> {
   }
 }
 
+// export async function getTicketsByStatus(status: string): Promise<Ticket[]> {
+//     try {
+//         const ticketsCol = collection(db, 'tickets');
+//         const q = query(ticketsCol, where("status", "==", status));
+//         const ticketSnapshot = await getDocs(q);
+//         return snapshotToData<Ticket>(ticketSnapshot);
+//     } catch (error) {
+//         console.error("Error fetching tickets by status:", error);
+//         return [];
+//     }
+// }
+
 export async function getTicketsByStatus(status: string): Promise<Ticket[]> {
-    try {
-        const ticketsCol = collection(db, 'tickets');
-        const q = query(ticketsCol, where("status", "==", status));
-        const ticketSnapshot = await getDocs(q);
-        return snapshotToData<Ticket>(ticketSnapshot);
-    } catch (error) {
-        console.error("Error fetching tickets by status:", error);
-        return [];
-    }
+  try {
+      console.log('🔍 Querying Firestore for status:', status);
+      
+      const ticketsCol = collection(db, 'tickets');
+      const q = query(ticketsCol, where("status", "==", status));
+      const ticketSnapshot = await getDocs(q);
+      
+      console.log('🔍 Query result count:', ticketSnapshot.docs.length);
+      
+      // Log the actual status values in your collection
+      const allTicketsCol = collection(db, 'tickets');
+      const allSnapshot = await getDocs(allTicketsCol);
+      const allStatuses = allSnapshot.docs.map(doc => doc.data().status);
+      console.log('🔍 All status values in database:', [...new Set(allStatuses)]);
+      
+      return snapshotToData<Ticket>(ticketSnapshot);
+  } catch (error) {
+      console.error("Error fetching tickets by status:", error);
+      return [];
+  }
 }
 
 export async function getTicketById(id: string): Promise<Ticket | null> {
