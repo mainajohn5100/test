@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -54,9 +55,13 @@ export default function SignupPage() {
       });
 
     } catch (error: any) {
+      let description = error.message;
+      if (error.code === 'auth/configuration-not-found') {
+        description = "Firebase configuration is missing or invalid. Please ensure your .env file is set up correctly and you have restarted the development server.";
+      }
       toast({
         title: 'Signup Failed',
-        description: error.message,
+        description: description,
         variant: 'destructive',
       });
     } finally {
