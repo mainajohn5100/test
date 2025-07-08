@@ -13,7 +13,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="appearance" className="space-y-6">
         <TabsList>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="notifications" disabled>Notifications</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="integrations" disabled>Integrations</TabsTrigger>
           <TabsTrigger value="account" disabled>Account</TabsTrigger>
         </TabsList>
@@ -30,6 +30,21 @@ export default function SettingsPage() {
                     <AppearanceForm />
                 </CardContent>
             </Card>
+        </TabsContent>
+        <TabsContent value="notifications">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+              <CardDescription>
+                Manage how you receive notifications. (Coming soon!)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center text-muted-foreground py-8">
+                <p>Detailed notification settings will be available here in a future update.</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

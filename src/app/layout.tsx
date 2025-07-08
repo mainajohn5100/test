@@ -5,6 +5,7 @@ import { raleway, montserrat } from './fonts';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/components/theme-provider';
+import { SettingsProvider } from '@/contexts/settings-context';
 
 export const metadata: Metadata = {
   title: 'RequestFlow',
@@ -26,8 +27,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
-            <Toaster />
+            <SettingsProvider>
+              {children}
+              <Toaster />
+            </SettingsProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

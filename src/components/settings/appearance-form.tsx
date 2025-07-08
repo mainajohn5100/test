@@ -18,6 +18,9 @@ import {
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
+import { useSettings } from '@/contexts/settings-context'
+import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 
 const appearanceFormSchema = z.object({
   theme: z.enum(['light', 'dark', 'system'], {
@@ -37,6 +40,7 @@ const colorThemes = [
 
 export function AppearanceForm() {
   const { setTheme, theme: mode } = useTheme()
+  const { showFullScreenButton, setShowFullScreenButton } = useSettings();
   const [appTheme, setAppTheme] = React.useState('default')
 
   React.useEffect(() => {
@@ -157,6 +161,29 @@ export function AppearanceForm() {
             </FormItem>
           )}
         />
+        <Separator />
+         <div className="space-y-4">
+            <FormLabel>Interface Elements</FormLabel>
+            <FormDescription>
+                Manage visibility of UI elements in the header.
+            </FormDescription>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">
+                  Show Full Screen Button
+                </FormLabel>
+                <FormDescription>
+                  Display the toggle in the application header.
+                </FormDescription>
+              </div>
+              <Switch
+                checked={showFullScreenButton}
+                onCheckedChange={setShowFullScreenButton}
+                aria-label="Toggle full screen button"
+              />
+            </div>
+        </div>
+        <Separator />
         <FormItem className="space-y-1">
             <FormLabel>Theme</FormLabel>
             <FormDescription>
