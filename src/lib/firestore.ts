@@ -186,16 +186,6 @@ export async function updateUser(userId: string, userData: Partial<Omit<User, 'i
     }
 }
 
-export async function deleteUser(userId: string): Promise<void> {
-    try {
-        const userRef = doc(db, 'users', userId);
-        await deleteDoc(userRef);
-    } catch (error) {
-        console.error("Error deleting user:", error);
-        throw new Error("Failed to delete user.");
-    }
-}
-
 export async function addTicket(ticketData: {
     title: string;
     description: string;

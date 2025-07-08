@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { deleteUser, updateUser } from '@/lib/firestore';
+import { updateUser } from '@/lib/firestore';
 import { revalidatePath } from 'next/cache';
 import { updateUserSchema } from './schema';
 import { redirect } from 'next/navigation';
@@ -33,18 +33,4 @@ export async function updateUserAction(userId: string, values: z.infer<typeof up
     }
     return { success: false, error: 'Failed to update profile.' };
   }
-}
-
-
-export async function deleteUserAction(userId: string) {
-    try {
-        await deleteUser(userId);
-        revalidatePath('/users');
-    } catch (error) {
-        console.error("Error deleting user:", error);
-        return {
-            error: 'Failed to delete user. Please try again.',
-        };
-    }
-    redirect('/users');
 }
