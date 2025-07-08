@@ -8,6 +8,7 @@ import { AppearanceForm } from "@/components/settings/appearance-form";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/contexts/settings-context";
+import { EmailIntegrationForm } from "@/components/settings/email-integration-form";
 
 export default function SettingsPage() {
   const { 
@@ -27,7 +28,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="integrations" disabled>Integrations</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
           <TabsTrigger value="account" disabled>Account</TabsTrigger>
         </TabsList>
 
@@ -87,6 +88,9 @@ export default function SettingsPage() {
                 </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="integrations">
+            <EmailIntegrationForm />
         </TabsContent>
       </Tabs>
     </div>
