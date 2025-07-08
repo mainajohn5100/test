@@ -1,40 +1,45 @@
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User, Notification } from './data';
 
-// A helper function to convert Firestore snapshots to our data types.
-// It handles the conversion of Timestamps to string dates.
-function snapshotToData<T>(snapshot: any): T[] {
-  return snapshot.docs.map((doc: any) => {
-    const data = doc.data();
-    const result: { [key: string]: any } = { id: doc.id };
+// Helper to process raw document data, converting Timestamps
+function processDocData(data: DocumentData) {
+    const processedData: { [key: string]: any } = {};
     for (const key in data) {
-      if (data[key] && typeof data[key].toDate === 'function') { // Check if it's a Firestore Timestamp
-        result[key] = data[key].toDate().toISOString();
-      } else {
-        result[key] = data[key];
-      }
+        if (data[key] instanceof Timestamp) {
+            processedData[key] = data[key].toDate().toISOString();
+        } else {
+            processedData[key] = data[key];
+        }
     }
-    return result as T;
+    return processedData;
+}
+
+// A helper function to convert Firestore snapshots to our data types.
+// It ensures the document ID is always used as the object's 'id'.
+function snapshotToData<T>(snapshot: QuerySnapshot): T[] {
+  return snapshot.docs.map((doc) => {
+    const data = doc.data();
+    const processedData = processDocData(data);
+    return {
+      ...processedData,
+      id: doc.id,
+    } as T;
   });
 }
 
-function docToData<T>(docSnap: any): T | null {
+function docToData<T>(docSnap: DocumentSnapshot): T | null {
     if (!docSnap.exists()) {
         console.log('No such document!');
         return null;
     }
     const data = docSnap.data();
-    const result: { [key: string]: any } = { id: docSnap.id };
-    for (const key in data) {
-        if (data[key] && typeof data[key].toDate === 'function') {
-            result[key] = data[key].toDate().toISOString();
-        } else {
-            result[key] = data[key];
-        }
-    }
-    return result as T;
+    const processedData = processDocData(data);
+    return {
+      ...processedData,
+      id: docSnap.id,
+    } as T;
 }
 
 export async function getTickets(): Promise<Ticket[]> {
