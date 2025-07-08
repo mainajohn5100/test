@@ -176,7 +176,7 @@ export async function getUserById(id: string): Promise<User | null> {
     }
 }
 
-export async function updateUser(userId: string, userData: Partial<Omit<User, 'id' | 'avatar'>>): Promise<void> {
+export async function updateUser(userId: string, userData: Partial<Omit<User, 'id'>>): Promise<void> {
     try {
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, userData);
