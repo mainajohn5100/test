@@ -43,7 +43,7 @@ export default async function TicketsPage({ params }: { params: { status: string
       </PageHeader>
       
       <TicketClient 
-        allTickets={tickets} 
+        tickets={tickets} 
         users={users.length > 0 ? users : mockUsers} 
         initialStatusFilter={statusFilter}
       />

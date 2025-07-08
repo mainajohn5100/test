@@ -8,12 +8,12 @@ import { TicketTable } from "@/components/tickets/ticket-table";
 import type { Ticket, User } from "@/lib/data";
 
 interface TicketClientProps {
-  allTickets: Ticket[];
+  tickets: Ticket[];
   users: User[];
   initialStatusFilter: string;
 }
 
-export function TicketClient({ allTickets, users, initialStatusFilter }: TicketClientProps) {
+export function TicketClient({ tickets, users, initialStatusFilter }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -28,7 +28,7 @@ export function TicketClient({ allTickets, users, initialStatusFilter }: TicketC
   }, [initialStatusFilter]);
 
   const filteredAndSortedTickets = useMemo(() => {
-    let filteredTickets = [...allTickets];
+    let filteredTickets = [...tickets];
 
     // Filter by status from URL/toolbar
     if (statusFilter && statusFilter !== 'all') {
@@ -77,7 +77,7 @@ export function TicketClient({ allTickets, users, initialStatusFilter }: TicketC
     });
 
     return filteredTickets;
-  }, [allTickets, searchTerm, statusFilter, priorityFilter, sortBy]);
+  }, [tickets, searchTerm, statusFilter, priorityFilter, sortBy]);
 
 
   return (
