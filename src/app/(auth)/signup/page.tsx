@@ -58,6 +58,8 @@ export default function SignupPage() {
       let description = error.message;
       if (error.code === 'auth/configuration-not-found') {
         description = "Firebase configuration is missing or invalid. Please ensure your .env file is set up correctly and you have restarted the development server.";
+      } else if (error.code === 'auth/api-key-not-valid') {
+        description = "The provided Firebase API Key is invalid. Please double-check the NEXT_PUBLIC_FIREBASE_API_KEY value in your .env file, ensure there are no typos or extra characters (like quotes), and restart your development server.";
       }
       toast({
         title: 'Signup Failed',

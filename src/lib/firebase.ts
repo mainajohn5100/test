@@ -12,17 +12,22 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Simple check to ensure that the app doesn't crash on the server if the env vars are missing.
-// The client-side will handle the more user-friendly error message.
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  console.error(`
-    Firebase configuration is missing or incomplete. 
-    Please check your .env file and ensure all NEXT_PUBLIC_FIREBASE_* variables are set correctly.
-    Remember to restart your development server after editing the .env file.`);
+// --- Debugging Helper ---
+// This will log the loaded config values to the server console when the app starts.
+// It helps verify that the .env file is being read correctly.
+console.log("--- Firebase Config Debug ---");
+console.log("Project ID loaded:", firebaseConfig.projectId || "NOT FOUND");
+const apiKey = firebaseConfig.apiKey;
+if (apiKey) {
+    console.log("API Key loaded: Yes (length:", apiKey.length, ")");
+} else {
+    console.log("API Key loaded: No (value is undefined or empty)");
 }
+console.log("---------------------------");
 
 
 // Initialize Firebase
+// The config check is handled by the UI now to provide better error messages.
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
