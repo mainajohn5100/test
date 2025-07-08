@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +32,7 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
     if (statusFilter !== 'all') {
         normalizedStatus = statusFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
         pageTitle = `${normalizedStatus} Projects`;
-        pageDescription = `Browse and manage all ${statusFilter.replace('-', ' ')} projects.`
+        pageDescription = `Browse and manage all ${normalizedStatus.toLowerCase()} projects.`
     }
     
     // Fetch the correct data from Firestore based on the status
