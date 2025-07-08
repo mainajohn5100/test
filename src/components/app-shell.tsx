@@ -36,7 +36,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useTheme } from "next-themes";
-import { onSnapshot, collection, query, where, orderBy } from "firebase/firestore";
+import { onSnapshot, collection, query, where, orderBy, Timestamp } from "firebase/firestore";
 import type { Notification } from "@/lib/data";
 import { formatDistanceToNow } from "date-fns";
 import { useSettings } from "@/contexts/settings-context";
@@ -83,11 +83,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       (snapshot) => {
         const fetchedNotifications: Notification[] = snapshot.docs.map((doc) => {
           const data = doc.data();
+          // Firestore Timestamps need to be converted to a serializable format.
+          // The `createdAt` field can be null initially when using `serverTimestamp`.
+          const createdAtTimestamp = data.createdAt as Timestamp | null;
+          
           return {
             id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate().toISOString(),
-          } as Notification;
+            userId: data.userId,
+            title: data.title,
+            description: data.description,
+            read: data.read,
+            link: data.link,
+            // Default to the current time if the server timestamp isn't available yet.
+            // It will be corrected on the subsequent snapshot.
+            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
+          };
         });
         setNotifications(fetchedNotifications);
         setLoadingNotifications(false);
