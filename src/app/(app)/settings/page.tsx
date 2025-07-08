@@ -1,9 +1,23 @@
+
+'use client';
+
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppearanceForm } from "@/components/settings/appearance-form";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useSettings } from "@/contexts/settings-context";
+import { FormDescription } from "@/components/ui/form";
 
 export default function SettingsPage() {
+  const { 
+    inAppNotifications, 
+    setInAppNotifications,
+    emailNotifications,
+    setEmailNotifications
+  } = useSettings();
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -36,13 +50,42 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
               <CardDescription>
-                Manage how you receive notifications. (Coming soon!)
+                Manage how you receive notifications from the application.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center text-muted-foreground py-8">
-                <p>Detailed notification settings will be available here in a future update.</p>
-              </div>
+            <CardContent className="space-y-6">
+               <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="in-app-notifications" className="text-base">
+                      In-App Notifications
+                    </Label>
+                    <FormDescription>
+                      Receive notifications within the app header.
+                    </FormDescription>
+                  </div>
+                  <Switch
+                    id="in-app-notifications"
+                    checked={inAppNotifications}
+                    onCheckedChange={setInAppNotifications}
+                    aria-label="Toggle in-app notifications"
+                  />
+                </div>
+                 <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="email-notifications" className="text-base">
+                      Email Notifications
+                    </Label>
+                    <FormDescription>
+                      Receive notifications for important events via email.
+                    </FormDescription>
+                  </div>
+                  <Switch
+                    id="email-notifications"
+                    checked={emailNotifications}
+                    onCheckedChange={setEmailNotifications}
+                    aria-label="Toggle email notifications"
+                  />
+                </div>
             </CardContent>
           </Card>
         </TabsContent>

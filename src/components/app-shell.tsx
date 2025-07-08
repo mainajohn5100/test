@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare } from "lucide-react";
+import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,13 +56,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { setTheme } = useTheme();
   const [isFullScreen, setIsFullScreen] = React.useState(false);
-  const { showFullScreenButton } = useSettings();
+  const { showFullScreenButton, inAppNotifications } = useSettings();
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = React.useState(true);
 
   React.useEffect(() => {
-    if (!currentUser?.id) {
+    if (!currentUser?.id || !inAppNotifications) {
       setLoadingNotifications(false);
+      setNotifications([]); // Clear notifications if disabled
       return;
     }
 
@@ -94,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
 
     return () => unsubscribe();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, inAppNotifications]);
 
   const handleProfileClick = () => {
       if (currentUser) {
@@ -204,8 +205,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full relative">
-                        <Bell className="h-5 w-5" />
-                        {notifications.filter(n => !n.read).length > 0 && (
+                        {inAppNotifications ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5 text-muted-foreground" />}
+                        {inAppNotifications && notifications.filter(n => !n.read).length > 0 && (
                             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
                         )}
                         <span className="sr-only">Notifications</span>
@@ -214,29 +215,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuContent align="end" className="w-96">
                     <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <div className="flex flex-col gap-1 p-1">
-                        {loadingNotifications ? (
-                           <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>
-                        ) : notifications.length > 0 ? (
-                            notifications.map((notification) => (
-                                <DropdownMenuItem key={notification.id} className="flex items-start gap-3 p-2 cursor-pointer" onClick={() => router.push(notification.link)}>
-                                    <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification.title)}</div>
-                                    <div className="flex flex-col">
-                                        <p className="font-medium text-sm">{notification.title}</p>
-                                        <p className="text-xs text-muted-foreground">{notification.description}</p>
-                                        <p className="text-xs text-muted-foreground/80 mt-1">
-                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                                        </p>
-                                    </div>
-                                </DropdownMenuItem>
-                            ))
-                        ) : (
-                            <div className="p-4 text-sm text-muted-foreground text-center">
-                                No new notifications
-                            </div>
-                        )}
-                    </div>
-                    {notifications.length > 0 && (
+                    {inAppNotifications ? (
+                        <div className="flex flex-col gap-1 p-1">
+                            {loadingNotifications ? (
+                               <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>
+                            ) : notifications.length > 0 ? (
+                                notifications.map((notification) => (
+                                    <DropdownMenuItem key={notification.id} className="flex items-start gap-3 p-2 cursor-pointer" onClick={() => router.push(notification.link)}>
+                                        <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification.title)}</div>
+                                        <div className="flex flex-col">
+                                            <p className="font-medium text-sm">{notification.title}</p>
+                                            <p className="text-xs text-muted-foreground">{notification.description}</p>
+                                            <p className="text-xs text-muted-foreground/80 mt-1">
+                                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                            </p>
+                                        </div>
+                                    </DropdownMenuItem>
+                                ))
+                            ) : (
+                                <div className="p-4 text-sm text-muted-foreground text-center">
+                                    No new notifications
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="p-4 text-sm text-muted-foreground text-center">
+                            In-app notifications are disabled.
+                        </div>
+                    )}
+                    {inAppNotifications && notifications.length > 0 && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="justify-center text-sm font-medium text-primary hover:text-primary cursor-pointer">

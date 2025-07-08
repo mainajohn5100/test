@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -14,13 +15,15 @@ import {z} from 'genkit';
 const priorityLevels = z.enum(['Low', 'Medium', 'High', 'Urgent']);
 
 const AnalyzeEmailPriorityInputSchema = z.object({
+  fromAddress: z.string().email().describe("The sender's email address."),
   subject: z.string().describe('The subject line of the email.'),
   body: z.string().describe('The body content of the email.'),
 });
 export type AnalyzeEmailPriorityInput = z.infer<typeof AnalyzeEmailPriorityInputSchema>;
 
 const AnalyzeEmailPriorityOutputSchema = z.object({
-  priority: priorityLevels.describe('The determined priority level for the ticket.'),
+  isSystemNotification: z.boolean().describe('Whether the email is a system-generated notification that should be ignored.'),
+  priority: priorityLevels.describe('The determined priority level for the ticket. Set to Low if it is a system notification.'),
 });
 export type AnalyzeEmailPriorityOutput = z.infer<typeof AnalyzeEmailPriorityOutputSchema>;
 
@@ -32,16 +35,17 @@ const prompt = ai.definePrompt({
   name: 'analyzeEmailPriorityPrompt',
   input: {schema: AnalyzeEmailPriorityInputSchema},
   output: {schema: AnalyzeEmailPriorityOutputSchema},
-  prompt: `You are a ticket prioritization expert for a customer support team. Your task is to analyze the content of an incoming email and assign a priority level.
+  prompt: `You are a ticket prioritization expert for a customer support team. Your task is to analyze an incoming email and determine if it should be converted into a ticket.
 
-  Analyze the subject and body for sentiment and urgency. Look for keywords indicating a critical issue (e.g., "urgent", "ASAP", "down", "broken", "cannot access") versus less critical requests (e.g., "question", "suggestion", "feedback").
+  First, check if the email is a system-generated notification from RequestFlow itself, which should be ignored. Look for subjects starting with "[RequestFlow-Notification]" or if the from address is "noreply@requestflow.app". If it is a notification, set 'isSystemNotification' to true and priority to 'Low'.
 
-  Based on your analysis, assign one of the following priority levels: Low, Medium, High, or Urgent.
+  If it's not a system notification, analyze the subject and body for sentiment and urgency to assign a priority level. Look for keywords indicating a critical issue (e.g., "urgent", "ASAP", "down", "broken", "cannot access") versus less critical requests (e.g., "question", "suggestion", "feedback"). Assign one of the following priority levels: Low, Medium, High, or Urgent. Set 'isSystemNotification' to false.
 
+  From: {{{fromAddress}}}
   Subject: {{{subject}}}
   Body: {{{body}}}
 
-  Return only the assigned priority in the "priority" field.
+  Return your analysis in the specified JSON format.
   `,
 });
 
