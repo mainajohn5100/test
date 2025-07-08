@@ -55,12 +55,16 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
           <TableBody>
             {recentTickets.length > 0 ? recentTickets.map((ticket) => {
                 const assignee = userMap.get(ticket.assignee);
+                const reporterUser = userMap.get(ticket.reporter);
+                const reporterDisplay = ticket.reporterEmail || (reporterUser ? reporterUser.email : `From: ${ticket.reporter}`);
+                const reporterTitle = ticket.reporterEmail || (reporterUser ? reporterUser.email : ticket.reporter);
+
                 return(
               <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
                 <TableCell>
                   <div className="font-medium">{ticket.title}</div>
-                  <div className="text-sm text-muted-foreground truncate" title={ticket.reporterEmail || ticket.reporter}>
-                    {ticket.reporterEmail || `From: ${ticket.reporter}`}
+                  <div className="text-sm text-muted-foreground truncate" title={reporterTitle}>
+                    {reporterDisplay}
                   </div>
                 </TableCell>
                 <TableCell>
