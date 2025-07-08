@@ -37,10 +37,13 @@ export default function SignupPage() {
       const initials = name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
       const avatar = `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;
       
+      // Assign 'Admin' role for a specific email, otherwise 'Customer'
+      const role = email === 'admin@example.com' ? 'Admin' : 'Customer';
+
       await setDoc(doc(db, 'users', user.uid), {
         name,
         email,
-        role: 'Customer', // Default role for new signups
+        role: role,
         avatar,
       });
 

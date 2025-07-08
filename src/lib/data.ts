@@ -30,6 +30,13 @@ export type Project = {
   createdAt: string;
 }
 
+export const users: User[] = [
+    { id: 'usr_1', name: 'Alex Johnson', email: 'alex.j@example.com', avatar: 'https://placehold.co/32x32/FFC0CB/4A4A4A.png?text=AJ', role: 'Admin' },
+    { id: 'usr_2', name: 'Maria Garcia', email: 'maria.g@example.com', avatar: 'https://placehold.co/32x32/B9F2D0/4A4A4A.png?text=MG', role: 'Agent' },
+    { id: 'usr_3', name: 'James Smith', email: 'james.s@example.com', avatar: 'https://placehold.co/32x32/C2DFFF/4A4A4A.png?text=JS', role: 'Agent' },
+    { id: 'usr_4', name: 'Priya Patel', email: 'priya.p@example.com', avatar: 'https://placehold.co/32x32/FFE6B3/4A4A4A.png?text=PP', role: 'Customer' },
+];
+
 export const tickets: Ticket[] = [
   {
     id: 'TKT-001',
