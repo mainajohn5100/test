@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff } from "lucide-react";
+import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,7 +36,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useTheme } from "next-themes";
-import { onSnapshot, collection, query, where, orderBy, Timestamp } from "firebase/firestore";
+import { onSnapshot, collection, query, where, Timestamp } from "firebase/firestore";
 import type { Notification } from "@/lib/data";
 import { formatDistanceToNow } from "date-fns";
 import { useSettings } from "@/contexts/settings-context";
@@ -63,6 +63,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { showFullScreenButton, inAppNotifications } = useSettings();
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = React.useState(true);
+  
+  const unreadCount = React.useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
   React.useEffect(() => {
     if (!currentUser?.id || !inAppNotifications) {
@@ -72,7 +74,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     setLoadingNotifications(true);
-    // Remove orderBy to avoid needing a composite index. We will sort on the client.
     const q = query(
       collection(db, "notifications"),
       where("userId", "==", currentUser.id)
@@ -83,22 +84,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       (snapshot) => {
         const fetchedNotifications: Notification[] = snapshot.docs.map((doc) => {
           const data = doc.data();
+          // The `createdAt` field can be null temporarily on the client
+          // while the server timestamp is being set. We handle this case.
           const createdAtTimestamp = data.createdAt as Timestamp | null;
           
           return {
-            id: doc.id,
+            id: doc.id, // Firestore provides the document ID here.
             userId: data.userId,
             title: data.title,
             description: data.description,
             read: data.read,
             link: data.link,
-            // Default to the current time if the server timestamp isn't available yet.
-            // It will be corrected on the subsequent snapshot.
             createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
           };
         });
 
-        // Sort on the client side to ensure newest notifications are first
+        // Sort on the client side to ensure newest are first
         fetchedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         setNotifications(fetchedNotifications);
@@ -106,12 +107,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       },
       (error) => {
         console.error("Error fetching notifications:", error);
+        toast({ title: "Error", description: "Could not fetch notifications.", variant: "destructive" });
         setLoadingNotifications(false);
       }
     );
 
     return () => unsubscribe();
-  }, [currentUser?.id, inAppNotifications]);
+  }, [currentUser?.id, inAppNotifications, toast]);
 
   const handleProfileClick = () => {
       if (currentUser) {
@@ -154,11 +156,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             console.error("Failed to mark notification as read", error);
         }
     }
-    router.push(notification.link);
+    // Navigation will be handled by the Link component
   };
 
   const handleMarkAllAsRead = async () => {
-    const unreadCount = notifications.filter(n => !n.read).length;
     if (!currentUser?.id || unreadCount === 0) {
         return;
     }
@@ -252,35 +253,44 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full relative">
                         {inAppNotifications ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5 text-muted-foreground" />}
-                        {inAppNotifications && notifications.filter(n => !n.read).length > 0 && (
+                        {inAppNotifications && unreadCount > 0 && (
                             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
                         )}
                         <span className="sr-only">Notifications</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-96">
-                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                    <div className="flex justify-between items-center p-2 pr-1">
+                      <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+                      {inAppNotifications && notifications.length > 0 && unreadCount > 0 && (
+                         <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="text-xs h-auto p-1 font-medium">
+                            Mark all as read
+                         </Button>
+                      )}
+                    </div>
                     <DropdownMenuSeparator />
                     {inAppNotifications ? (
-                        <div className="flex flex-col gap-1 p-1">
+                        <div className="flex flex-col gap-1 max-h-96 overflow-y-auto">
                             {loadingNotifications ? (
-                               <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>
+                               <div className="p-4 text-sm text-muted-foreground text-center flex items-center justify-center gap-2"><Loader className="h-4 w-4 animate-spin"/>Loading...</div>
                             ) : notifications.length > 0 ? (
                                 notifications.map((notification) => (
-                                    <DropdownMenuItem key={notification.id} className={cn("flex items-start gap-3 p-2 cursor-pointer", !notification.read && "bg-accent/50 hover:bg-accent/60")} onClick={() => handleNotificationClick(notification)}>
+                                    <DropdownMenuItem key={notification.id} asChild className={cn("flex items-start gap-3 p-2 cursor-pointer h-auto", !notification.read && "bg-accent/50 hover:bg-accent/60")}>
+                                      <Link href={notification.link} onClick={() => handleNotificationClick(notification)}>
                                         <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification.title)}</div>
-                                        <div className="flex flex-col">
-                                            <p className="font-medium text-sm">{notification.title}</p>
-                                            <p className="text-xs text-muted-foreground">{notification.description}</p>
+                                        <div className="flex flex-col flex-1 whitespace-normal">
+                                            <p className="font-medium text-sm leading-tight">{notification.title}</p>
+                                            <p className="text-xs text-muted-foreground leading-snug">{notification.description}</p>
                                             <p className="text-xs text-muted-foreground/80 mt-1">
                                                 {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                                             </p>
                                         </div>
+                                      </Link>
                                     </DropdownMenuItem>
                                 ))
                             ) : (
                                 <div className="p-4 text-sm text-muted-foreground text-center">
-                                    No new notifications
+                                    You're all caught up!
                                 </div>
                             )}
                         </div>
@@ -288,18 +298,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <div className="p-4 text-sm text-muted-foreground text-center">
                             In-app notifications are disabled.
                         </div>
-                    )}
-                    {inAppNotifications && notifications.length > 0 && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                            onClick={handleMarkAllAsRead}
-                            disabled={notifications.filter(n => !n.read).length === 0}
-                            className="justify-center text-sm font-medium text-primary hover:text-primary cursor-pointer disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-70"
-                        >
-                            Mark all as read
-                        </DropdownMenuItem>
-                      </>
                     )}
                 </DropdownMenuContent>
             </DropdownMenu>
