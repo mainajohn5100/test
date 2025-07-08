@@ -37,7 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { getTicketById, getUsers } from "@/lib/firestore";
 import type { Ticket, User } from "@/lib/data";
-import { updateTicketAction } from "./actions";
+import { updateTicketAction, deleteTicketAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
 
 const priorityVariantMap: { [key: string]: string } = {
@@ -62,6 +62,7 @@ export default function ViewTicketPage() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const [isPending, startTransition] = React.useTransition();
+  const [isDeleting, startDeleteTransition] = React.useTransition();
   
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
   const [users, setUsers] = React.useState<User[]>([]);
@@ -282,6 +283,26 @@ export default function ViewTicketPage() {
   const removeTag = (tagToRemove: string) => {
     const newTags = currentTags.filter(tag => tag !== tagToRemove);
     updateTags(newTags);
+  };
+  
+  const handleDeleteTicket = async () => {
+    if (!ticket) return;
+    startDeleteTransition(async () => {
+      const result = await deleteTicketAction(ticket.id);
+      if (result?.error) {
+        toast({
+          title: "Error deleting ticket",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Ticket Deleted",
+          description: "The ticket has been successfully deleted.",
+        });
+        // Redirect is handled in the action
+      }
+    });
   };
 
 
@@ -512,7 +533,12 @@ export default function ViewTicketPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          <AlertDialogAction 
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={handleDeleteTicket}
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Continue
                           </AlertDialogAction>
                         </AlertDialogFooter>

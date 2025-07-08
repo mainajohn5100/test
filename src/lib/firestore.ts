@@ -275,6 +275,26 @@ export async function updateProject(projectId: string, data: Partial<Omit<Projec
   }
 }
 
+export async function deleteTicket(ticketId: string): Promise<void> {
+  try {
+    const ticketRef = doc(db, 'tickets', ticketId);
+    await deleteDoc(ticketRef);
+  } catch (error) {
+    console.error("Error deleting ticket:", error);
+    throw new Error("Failed to delete ticket.");
+  }
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+  try {
+    const projectRef = doc(db, 'projects', projectId);
+    await deleteDoc(projectRef);
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    throw new Error("Failed to delete project.");
+  }
+}
+
 export async function createNotification(notificationData: Omit<Notification, 'id' | 'createdAt' | 'read'>): Promise<string> {
   try {
     const docRef = await addDoc(collection(db, 'notifications'), {

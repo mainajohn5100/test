@@ -8,8 +8,10 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon } from "lucide-react";
-import { chartData, pieChartData, avgResolutionTimeData, projectsByStatusData, ticketTrendsData } from "@/lib/data";
+import type { Ticket, Project } from "@/lib/data";
+import { ticketTrendsData } from "@/lib/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, getMonth, differenceInDays } from "date-fns";
 
 type ChartType = "bar" | "line" | "pie";
 const STACK_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
@@ -41,6 +43,7 @@ function ChartToolbar({ supportedTypes, chartType, setChartType }: { supportedTy
 
 const StyledTooltip = () => (
     <Tooltip
+        cursor={{fill: "hsl(var(--muted))"}}
         contentStyle={{
             background: "hsl(var(--background))",
             border: "1px solid hsl(var(--border))",
@@ -50,8 +53,45 @@ const StyledTooltip = () => (
 );
 
 
-function TicketVolumeTrendsChart() {
+function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
   const [chartType, setChartType] = React.useState<ChartType>("line");
+  const monthlyData = React.useMemo(() => {
+    const data: { [key: string]: { opened: number, closed: number } } = {};
+    const monthOrder: Date[] = [];
+
+    tickets.forEach(ticket => {
+        const createdAt = new Date(ticket.createdAt);
+        const createdMonth = new Date(createdAt.getFullYear(), createdAt.getMonth(), 1);
+        const createdMonthKey = format(createdMonth, 'MMM yyyy');
+
+        if (!data[createdMonthKey]) {
+            data[createdMonthKey] = { opened: 0, closed: 0 };
+            monthOrder.push(createdMonth);
+        }
+        data[createdMonthKey].opened++;
+
+        if (ticket.status === 'Closed' || ticket.status === 'Terminated') {
+            const updatedAt = new Date(ticket.updatedAt);
+            const closedMonth = new Date(updatedAt.getFullYear(), updatedAt.getMonth(), 1);
+            const closedMonthKey = format(closedMonth, 'MMM yyyy');
+
+            if (!data[closedMonthKey]) {
+                data[closedMonthKey] = { opened: 0, closed: 0 };
+                monthOrder.push(closedMonth);
+            }
+            data[closedMonthKey].closed++;
+        }
+    });
+    
+    const uniqueMonths = [...new Set(monthOrder.map(d => d.getTime()))].sort();
+
+    return uniqueMonths.map(time => {
+        const date = new Date(time);
+        const key = format(date, 'MMM yyyy');
+        return { name: format(date, 'MMM'), ...data[key] };
+    });
+}, [tickets]);
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
@@ -64,23 +104,23 @@ function TicketVolumeTrendsChart() {
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={300}>
           {chartType === 'line' ? (
-            <LineChart data={chartData}>
+            <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <StyledTooltip />
               <Legend />
-              <Line type="monotone" dataKey="tickets" name="Opened" stroke="hsl(var(--chart-1))" />
+              <Line type="monotone" dataKey="opened" name="Opened" stroke="hsl(var(--chart-1))" />
               <Line type="monotone" dataKey="closed" name="Closed" stroke="hsl(var(--chart-2))" />
             </LineChart>
           ) : (
-             <BarChart data={chartData}>
+             <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <StyledTooltip />
               <Legend />
-              <Bar dataKey="tickets" name="Opened" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="opened" name="Opened" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
               <Bar dataKey="closed" name="Closed" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
             </BarChart>
           )}
@@ -90,8 +130,16 @@ function TicketVolumeTrendsChart() {
   );
 }
 
-function TicketsByStatusChart() {
+function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
     const [chartType, setChartType] = React.useState<ChartType>("pie");
+    const data = React.useMemo(() => {
+        const statusCounts = tickets.reduce((acc, ticket) => {
+            acc[ticket.status] = (acc[ticket.status] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        return Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+    }, [tickets]);
+
     return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
@@ -105,18 +153,18 @@ function TicketsByStatusChart() {
         <ResponsiveContainer width="100%" height={300}>
             {chartType === 'pie' ? (
                 <PieChart>
-                    <Pie data={pieChartData} cx="50%" cy="50%" labelLine={false} outerRadius={100} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                        {pieChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                    <Pie data={data} cx="50%" cy="50%" labelLine={false} outerRadius={100} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        {data.map((entry, index) => <Cell key={`cell-${index}`} fill={STACK_COLORS[index % STACK_COLORS.length]} />)}
                     </Pie>
                     <StyledTooltip />
                 </PieChart>
             ) : (
-                <BarChart data={pieChartData} layout="vertical">
+                <BarChart data={data} layout="vertical">
                     <XAxis type="number" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis type="category" dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} width={60} />
+                    <YAxis type="category" dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} width={80} />
                     <StyledTooltip />
                     <Bar dataKey="value" name="Count" radius={[0, 4, 4, 0]}>
-                         {pieChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                         {data.map((entry, index) => <Cell key={`cell-${index}`} fill={STACK_COLORS[index % STACK_COLORS.length]} />)}
                     </Bar>
                 </BarChart>
             )}
@@ -126,8 +174,35 @@ function TicketsByStatusChart() {
   );
 }
 
-function ReportAvgResolutionTimeChart() {
+function ReportAvgResolutionTimeChart({ tickets }: { tickets: Ticket[] }) {
   const [chartType, setChartType] = React.useState<ChartType>("line");
+  const data = React.useMemo(() => {
+    const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status === 'Terminated');
+    const monthlyResolutionTimes: { [key: number]: { totalDays: number; count: number } } = {};
+  
+    closedTickets.forEach(ticket => {
+      const createdAt = new Date(ticket.createdAt);
+      const resolvedAt = new Date(ticket.updatedAt);
+      const resolutionDays = differenceInDays(resolvedAt, createdAt);
+      const month = getMonth(resolvedAt);
+      
+      if (!monthlyResolutionTimes[month]) {
+        monthlyResolutionTimes[month] = { totalDays: 0, count: 0 };
+      }
+      monthlyResolutionTimes[month].totalDays += resolutionDays;
+      monthlyResolutionTimes[month].count++;
+    });
+  
+    return Array.from({ length: 12 }).map((_, i) => {
+      const monthName = format(new Date(2000, i, 1), 'MMM');
+      if (monthlyResolutionTimes[i] && monthlyResolutionTimes[i].count > 0) {
+        const avg = monthlyResolutionTimes[i].totalDays / monthlyResolutionTimes[i].count;
+        return { name: monthName, days: parseFloat(avg.toFixed(1)) };
+      }
+      return { name: monthName, days: 0 };
+    });
+  }, [tickets]);
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
@@ -140,15 +215,15 @@ function ReportAvgResolutionTimeChart() {
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={300}>
            {chartType === 'line' ? (
-             <LineChart data={avgResolutionTimeData}>
+             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="d" />
               <StyledTooltip />
-              <Line type="monotone" dataKey="days" name="Avg. Days" stroke="hsl(var(--chart-3))" />
+              <Line type="monotone" dataKey="days" name="Avg. Days" stroke="hsl(var(--chart-3))" connectNulls />
             </LineChart>
            ) : (
-            <BarChart data={avgResolutionTimeData}>
+            <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="d" />
@@ -162,8 +237,16 @@ function ReportAvgResolutionTimeChart() {
   );
 }
 
-function ProjectsByStatusChart() {
+function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
     const [chartType, setChartType] = React.useState<ChartType>("pie");
+    const data = React.useMemo(() => {
+        const statusCounts = projects.reduce((acc, project) => {
+            acc[project.status] = (acc[project.status] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        return Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+    }, [projects]);
+
     return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
@@ -177,19 +260,19 @@ function ProjectsByStatusChart() {
         <ResponsiveContainer width="100%" height={300}>
             {chartType === 'pie' ? (
                 <PieChart>
-                    <Pie data={projectsByStatusData} cx="50%" cy="50%" labelLine={false} outerRadius={100} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                        {projectsByStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                    <Pie data={data} cx="50%" cy="50%" labelLine={false} outerRadius={100} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        {data.map((entry, index) => <Cell key={`cell-${index}`} fill={STACK_COLORS[index % STACK_COLORS.length]} />)}
                     </Pie>
                     <StyledTooltip />
                 </PieChart>
             ) : (
-                 <BarChart data={projectsByStatusData}>
+                 <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <StyledTooltip />
                     <Bar dataKey="value" name="Count" radius={[4, 4, 0, 0]}>
-                         {projectsByStatusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                         {data.map((entry, index) => <Cell key={`cell-${index}`} fill={STACK_COLORS[index % STACK_COLORS.length]} />)}
                     </Bar>
                 </BarChart>
             )}
@@ -210,7 +293,10 @@ function TicketStatusTrendsChart() {
       <CardHeader className="flex-row items-start justify-between pb-2">
         <div>
           <CardTitle>Ticket Status Trends</CardTitle>
-          <CardDescription>Volume of tickets by status over time.</CardDescription>
+          <CardDescription>
+              Volume of tickets by status over time. 
+              <span className="text-xs italic text-muted-foreground/80"> (Using mock data)</span>
+          </CardDescription>
         </div>
         <div className="flex items-center gap-4">
           <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as any)}>
@@ -254,16 +340,14 @@ function TicketStatusTrendsChart() {
   )
 }
 
-export function ReportCharts() {
+export function ReportCharts({ tickets, projects }: { tickets: Ticket[]; projects: Project[] }) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <TicketVolumeTrendsChart />
-      <TicketsByStatusChart />
-      <ReportAvgResolutionTimeChart />
-      <ProjectsByStatusChart />
+      <TicketVolumeTrendsChart tickets={tickets} />
+      <TicketsByStatusChart tickets={tickets} />
+      <ReportAvgResolutionTimeChart tickets={tickets} />
+      <ProjectsByStatusChart projects={projects} />
       <TicketStatusTrendsChart />
     </div>
   );
 }
-
-    

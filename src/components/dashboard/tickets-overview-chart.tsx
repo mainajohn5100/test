@@ -1,13 +1,19 @@
+
 "use client"
 
 import * as React from "react"
-import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { pieChartData } from "@/lib/data"
 import { BarChart as BarChartIcon, LineChart as LineChartIcon } from "lucide-react"
 
-export function TicketsOverviewChart() {
+const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
+interface TicketsOverviewChartProps {
+    data: { name: string; value: number }[];
+}
+
+export function TicketsOverviewChart({ data }: TicketsOverviewChartProps) {
   const [chartType, setChartType] = React.useState<"bar" | "line">("bar");
 
   return (
@@ -38,7 +44,7 @@ export function TicketsOverviewChart() {
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={250}>
             {chartType === 'bar' ? (
-                <BarChart data={pieChartData}>
+                <BarChart data={data}>
                     <XAxis
                       dataKey="name"
                       stroke="#888888"
@@ -61,10 +67,14 @@ export function TicketsOverviewChart() {
                         borderRadius: "var(--radius)",
                       }}
                     />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="hsl(var(--chart-2))" /> 
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                       {data.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                       ))}
+                    </Bar> 
                 </BarChart>
             ) : (
-                <LineChart data={pieChartData}>
+                <LineChart data={data}>
                     <XAxis
                       dataKey="name"
                       stroke="#888888"

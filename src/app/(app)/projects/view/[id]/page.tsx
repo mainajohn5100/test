@@ -46,7 +46,7 @@ import {
 import { getProjectById, getTicketsByProject, getUsers } from "@/lib/firestore";
 import type { Project, Ticket, User } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { updateProjectAction } from "./actions";
+import { updateProjectAction, deleteProjectAction } from "./actions";
 
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -70,6 +70,7 @@ export default function ViewProjectPage() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
   const [isUpdating, startTransition] = React.useTransition();
+  const [isDeleting, startDeleteTransition] = React.useTransition();
 
   const [project, setProject] = React.useState<Project | null>(null);
   const [users, setUsers] = React.useState<User[]>([]);
@@ -120,6 +121,26 @@ export default function ViewProjectPage() {
             toast({ title: "Error", description: result.error, variant: 'destructive' });
             setCurrentStatus(oldStatus); // Revert on failure
         }
+    });
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+    startDeleteTransition(async () => {
+      const result = await deleteProjectAction(project.id);
+      if (result?.error) {
+        toast({
+          title: "Error deleting project",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Project Deleted",
+          description: "The project has been successfully deleted.",
+        });
+        // Redirect is handled in the action
+      }
     });
   };
 
@@ -295,7 +316,12 @@ export default function ViewProjectPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={handleDeleteProject}
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Continue
                           </AlertDialogAction>
                         </AlertDialogFooter>

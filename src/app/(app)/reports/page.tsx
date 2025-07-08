@@ -1,9 +1,14 @@
+
 import { PageHeader } from "@/components/page-header";
 import { ReportCharts } from "@/components/reports/charts";
 import { Button } from "@/components/ui/button";
+import { getTickets, getProjects } from "@/lib/firestore";
 import { Download, Printer } from "lucide-react";
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const tickets = await getTickets();
+  const projects = await getProjects();
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Reports" description="Analyze trends and performance with detailed reports.">
@@ -16,7 +21,7 @@ export default function ReportsPage() {
           Download All
         </Button>
       </PageHeader>
-      <ReportCharts />
+      <ReportCharts tickets={tickets} projects={projects} />
     </div>
   );
 }

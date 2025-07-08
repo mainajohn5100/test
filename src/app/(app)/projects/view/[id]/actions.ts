@@ -2,8 +2,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNotification, getProjectById, updateProject } from '@/lib/firestore';
+import { createNotification, getProjectById, updateProject, deleteProject } from '@/lib/firestore';
 import type { Project } from '@/lib/data';
+import { redirect } from 'next/navigation';
 
 export async function updateProjectAction(
   projectId: string,
@@ -39,4 +40,18 @@ export async function updateProjectAction(
     const errorMessage = error instanceof Error ? error.message : 'Failed to update project.';
     return { success: false, error: errorMessage };
   }
+}
+
+export async function deleteProjectAction(projectId: string) {
+  try {
+    await deleteProject(projectId);
+    revalidatePath('/projects', 'layout');
+    revalidatePath('/dashboard');
+  } catch (error) {
+    console.error("Error in deleteProjectAction:", error);
+    return {
+      error: 'Failed to delete project. Please try again.',
+    };
+  }
+  redirect('/projects/all');
 }

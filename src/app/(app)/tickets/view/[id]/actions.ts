@@ -2,8 +2,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNotification, getTicketById, updateTicket } from '@/lib/firestore';
+import { createNotification, getTicketById, updateTicket, deleteTicket } from '@/lib/firestore';
 import type { Ticket, User } from '@/lib/data';
+import { redirect } from 'next/navigation';
 
 // Helper to determine notification details based on what changed
 function getNotificationDetails(
@@ -77,4 +78,18 @@ export async function updateTicketAction(
     const errorMessage = error instanceof Error ? error.message : 'Failed to update ticket.';
     return { success: false, error: errorMessage };
   }
+}
+
+export async function deleteTicketAction(ticketId: string) {
+  try {
+    await deleteTicket(ticketId);
+    revalidatePath('/tickets', 'layout');
+    revalidatePath('/dashboard');
+  } catch (error) {
+    console.error("Error in deleteTicketAction:", error);
+    return {
+      error: 'Failed to delete ticket. Please try again.',
+    };
+  }
+  redirect('/tickets/all');
 }
