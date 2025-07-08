@@ -9,9 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon } from "lucide-react";
 import type { Ticket, Project } from "@/lib/data";
-import { ticketTrendsData } from "@/lib/data";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, getMonth, differenceInDays } from "date-fns";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, getMonth, differenceInDays, startOfWeek } from "date-fns";
 
 type ChartType = "bar" | "line" | "pie";
 const STACK_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
@@ -282,11 +281,47 @@ function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
   );
 }
 
-function TicketStatusTrendsChart() {
+function TicketStatusTrendsChart({ tickets }: { tickets: Ticket[] }) {
   const [chartType, setChartType] = React.useState<ChartType>("bar");
   const [timeframe, setTimeframe] = React.useState<"daily" | "weekly" | "monthly">("monthly");
-  const data = ticketTrendsData[timeframe];
-  const statuses = Object.keys(ticketTrendsData.monthly[0]).filter(k => k !== 'name');
+  
+  const statuses = ['New', 'Active', 'Pending', 'On Hold', 'Closed', 'Terminated'];
+  const getInitialCounts = () => statuses.reduce((acc, status) => ({...acc, [status]: 0}), {});
+
+  const data = React.useMemo(() => {
+    if (!tickets) return [];
+
+    const dataMap: { [key: string]: any } = {};
+
+    tickets.forEach(ticket => {
+        const createdAt = new Date(ticket.createdAt);
+        let key = '';
+        let name = '';
+
+        if (timeframe === 'monthly') {
+            key = format(new Date(createdAt.getFullYear(), createdAt.getMonth(), 1), 'yyyy-MM');
+            name = format(createdAt, 'MMM yyyy');
+        } else if (timeframe === 'weekly') {
+            const weekStart = startOfWeek(createdAt, { weekStartsOn: 1 });
+            key = format(weekStart, 'yyyy-MM-dd');
+            name = format(weekStart, 'd MMM');
+        } else { // daily
+            key = format(createdAt, 'yyyy-MM-dd');
+            name = format(createdAt, 'd MMM');
+        }
+        
+        if (!dataMap[key]) {
+            dataMap[key] = { name, ...getInitialCounts() };
+        }
+        if (statuses.includes(ticket.status)) {
+            dataMap[key][ticket.status]++;
+        }
+    });
+    
+    const sortedKeys = Object.keys(dataMap).sort();
+    return sortedKeys.map(key => dataMap[key]);
+
+  }, [tickets, timeframe]);
 
   return (
     <Card className="md:col-span-2">
@@ -294,8 +329,7 @@ function TicketStatusTrendsChart() {
         <div>
           <CardTitle>Ticket Status Trends</CardTitle>
           <CardDescription>
-              Volume of tickets by status over time. 
-              <span className="text-xs italic text-muted-foreground/80"> (Using mock data)</span>
+              Volume of tickets created over time, by status.
           </CardDescription>
         </div>
         <div className="flex items-center gap-4">
@@ -347,7 +381,7 @@ export function ReportCharts({ tickets, projects }: { tickets: Ticket[]; project
       <TicketsByStatusChart tickets={tickets} />
       <ReportAvgResolutionTimeChart tickets={tickets} />
       <ProjectsByStatusChart projects={projects} />
-      <TicketStatusTrendsChart />
+      <TicketStatusTrendsChart tickets={tickets} />
     </div>
   );
 }
