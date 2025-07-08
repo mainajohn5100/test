@@ -26,7 +26,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Maximize, Minimize, Moon, Sun } from "lucide-react";
+import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,6 +36,26 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useTheme } from "next-themes";
 
+const notifications = [
+    {
+        title: "New ticket assigned",
+        description: "Ticket TKT-008 has been assigned to you.",
+        time: "5m ago",
+        icon: <Ticket className="h-4 w-4" />
+    },
+    {
+        title: "Project deadline approaching",
+        description: "Project 'Website Redesign' is due in 3 days.",
+        time: "1h ago",
+        icon: <Briefcase className="h-4 w-4" />
+    },
+    {
+        title: "User Mention",
+        description: "Alex Johnson mentioned you in a comment on TKT-005.",
+        time: "2h ago",
+        icon: <MessageSquare className="h-4 w-4" />
+    }
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user: currentUser } = useAuth();
@@ -153,16 +173,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <span className="sr-only">Notifications</span>
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuContent align="end" className="w-96">
                     <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                        <p className="text-sm text-muted-foreground text-center w-full">No new notifications</p>
-                    </DropdownMenuItem>
-                    {/* Placeholder for actual notifications */}
-                    {/* <DropdownMenuItem>
-                        Item 1
-                    </DropdownMenuItem> */}
+                    <div className="flex flex-col gap-1 p-1">
+                        {notifications.length > 0 ? (
+                            notifications.map((notification, index) => (
+                                <DropdownMenuItem key={index} className="flex items-start gap-3 p-2 cursor-pointer">
+                                    <div className="mt-1 text-muted-foreground">{notification.icon}</div>
+                                    <div className="flex flex-col">
+                                        <p className="font-medium text-sm">{notification.title}</p>
+                                        <p className="text-xs text-muted-foreground">{notification.description}</p>
+                                        <p className="text-xs text-muted-foreground/80 mt-1">{notification.time}</p>
+                                    </div>
+                                </DropdownMenuItem>
+                            ))
+                        ) : (
+                            <div className="p-4 text-sm text-muted-foreground text-center">
+                                No new notifications
+                            </div>
+                        )}
+                    </div>
                     <DropdownMenuSeparator />
                      <DropdownMenuItem className="justify-center text-sm font-medium text-primary hover:text-primary cursor-pointer">
                         View all notifications
