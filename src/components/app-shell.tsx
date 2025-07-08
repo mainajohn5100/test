@@ -19,7 +19,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
@@ -33,35 +32,65 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { useTheme } from "next-themes";
+import { onSnapshot, collection, query, where, orderBy } from "firebase/firestore";
+import type { Notification } from "@/lib/data";
+import { formatDistanceToNow } from "date-fns";
 
-const notifications = [
-    {
-        title: "New ticket assigned",
-        description: "Ticket TKT-008 has been assigned to you.",
-        time: "5m ago",
-        icon: <Ticket className="h-4 w-4" />
-    },
-    {
-        title: "Project deadline approaching",
-        description: "Project 'Website Redesign' is due in 3 days.",
-        time: "1h ago",
-        icon: <Briefcase className="h-4 w-4" />
-    },
-    {
-        title: "User Mention",
-        description: "Alex Johnson mentioned you in a comment on TKT-005.",
-        time: "2h ago",
-        icon: <MessageSquare className="h-4 w-4" />
+const getNotificationIcon = (title: string) => {
+    if (title.toLowerCase().includes('ticket')) {
+        return <Ticket className="h-4 w-4" />
     }
-];
+    if (title.toLowerCase().includes('project')) {
+        return <Briefcase className="h-4 w-4" />
+    }
+    return <MessageSquare className="h-4 w-4" />
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user: currentUser } = useAuth();
   const router = useRouter();
   const { setTheme } = useTheme();
   const [isFullScreen, setIsFullScreen] = React.useState(false);
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!currentUser?.id) {
+      setLoadingNotifications(false);
+      return;
+    }
+
+    setLoadingNotifications(true);
+    const q = query(
+      collection(db, "notifications"),
+      where("userId", "==", currentUser.id),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedNotifications: Notification[] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate().toISOString(),
+          } as Notification;
+        });
+        setNotifications(fetchedNotifications);
+        setLoadingNotifications(false);
+      },
+      (error) => {
+        console.error("Error fetching notifications:", error);
+        setLoadingNotifications(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentUser?.id]);
 
   const handleProfileClick = () => {
       if (currentUser) {
@@ -168,8 +197,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full relative">
                         <Bell className="h-5 w-5" />
+                        {notifications.filter(n => !n.read).length > 0 && (
+                            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+                        )}
                         <span className="sr-only">Notifications</span>
                     </Button>
                 </DropdownMenuTrigger>
@@ -177,14 +209,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <div className="flex flex-col gap-1 p-1">
-                        {notifications.length > 0 ? (
-                            notifications.map((notification, index) => (
-                                <DropdownMenuItem key={index} className="flex items-start gap-3 p-2 cursor-pointer">
-                                    <div className="mt-1 text-muted-foreground">{notification.icon}</div>
+                        {loadingNotifications ? (
+                           <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>
+                        ) : notifications.length > 0 ? (
+                            notifications.map((notification) => (
+                                <DropdownMenuItem key={notification.id} className="flex items-start gap-3 p-2 cursor-pointer" onClick={() => router.push(notification.link)}>
+                                    <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification.title)}</div>
                                     <div className="flex flex-col">
                                         <p className="font-medium text-sm">{notification.title}</p>
                                         <p className="text-xs text-muted-foreground">{notification.description}</p>
-                                        <p className="text-xs text-muted-foreground/80 mt-1">{notification.time}</p>
+                                        <p className="text-xs text-muted-foreground/80 mt-1">
+                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                        </p>
                                     </div>
                                 </DropdownMenuItem>
                             ))
@@ -194,10 +230,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             </div>
                         )}
                     </div>
-                    <DropdownMenuSeparator />
-                     <DropdownMenuItem className="justify-center text-sm font-medium text-primary hover:text-primary cursor-pointer">
-                        View all notifications
-                    </DropdownMenuItem>
+                    {notifications.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="justify-center text-sm font-medium text-primary hover:text-primary cursor-pointer">
+                            Mark all as read
+                        </DropdownMenuItem>
+                      </>
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
             <DropdownMenu>

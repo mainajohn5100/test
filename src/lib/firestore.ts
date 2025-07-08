@@ -1,7 +1,7 @@
 
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Ticket, Project, User } from './data';
+import type { Ticket, Project, User, Notification } from './data';
 
 // A helper function to convert Firestore snapshots to our data types.
 // It handles the conversion of Timestamps to string dates.
@@ -206,5 +206,29 @@ export async function addTicket(ticketData: {
   } catch (error) {
     console.error("Error adding ticket:", error);
     throw new Error("Failed to create ticket.");
+  }
+}
+
+export async function updateTicket(ticketId: string, data: Partial<Omit<Ticket, 'id'>>): Promise<void> {
+  try {
+    const ticketRef = doc(db, 'tickets', ticketId);
+    await updateDoc(ticketRef, { ...data, updatedAt: serverTimestamp() });
+  } catch (error) {
+    console.error("Error updating ticket:", error);
+    throw new Error("Failed to update ticket.");
+  }
+}
+
+export async function createNotification(notificationData: Omit<Notification, 'id' | 'createdAt' | 'read'>): Promise<string> {
+  try {
+    const docRef = await addDoc(collection(db, 'notifications'), {
+      ...notificationData,
+      createdAt: serverTimestamp(),
+      read: false,
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    throw new Error("Failed to create notification.");
   }
 }

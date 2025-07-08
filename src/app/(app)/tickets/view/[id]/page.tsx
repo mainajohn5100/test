@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { getTicketById, getUsers } from "@/lib/firestore";
 import type { Ticket, User } from "@/lib/data";
+import { updateTicketStatusAction } from "./actions";
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -56,6 +57,7 @@ export default function ViewTicketPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
+  const [isPending, startTransition] = React.useTransition();
   
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
   const [users, setUsers] = React.useState<User[]>([]);
@@ -119,7 +121,7 @@ export default function ViewTicketPage() {
       setPageDescription(
         <>
           <div>Opened by {reporterName} on {format(new Date(ticket.createdAt), "PPp")}.</div>
-          <div>Last updated on {format(new Date(ticket.updatedAt), "PPp")}.</div>
+          <div>Last updated on {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}.</div>
         </>
       );
     }
@@ -139,6 +141,20 @@ export default function ViewTicketPage() {
   
   const assignee = userMap.get(ticket.assignee);
   const reporter = userMap.get(ticket.reporter);
+
+  const handleStatusChange = (status: Ticket['status']) => {
+    startTransition(async () => {
+        setCurrentStatus(status);
+        const assigneeId = assignee ? assignee.id : null;
+        const result = await updateTicketStatusAction(ticket.id, status, assigneeId, ticket.title);
+        if(result.success) {
+            toast({ title: "Status updated successfully!" });
+        } else {
+            toast({ title: "Error", description: result.error, variant: 'destructive' });
+            setCurrentStatus(ticket.status); // Revert optimistic update on failure
+        }
+    });
+  };
 
   const handleSmartReply = async () => {
     setIsSuggestingReply(true);
@@ -264,13 +280,16 @@ export default function ViewTicketPage() {
                         <span className="text-muted-foreground">Status</span>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto justify-end">
-                                    <Badge variant={statusVariantMap[currentStatus] || 'default'} className="cursor-pointer">{currentStatus}</Badge>
+                                <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isPending}>
+                                    <Badge variant={statusVariantMap[currentStatus] || 'default'} className="cursor-pointer">
+                                       {isPending ? <Loader className="h-3 w-3 animate-spin mr-1.5"/> : null}
+                                       {currentStatus}
+                                    </Badge>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {Object.keys(statusVariantMap).map(status => (
-                                    <DropdownMenuItem key={status} onSelect={() => setCurrentStatus(status as any)}>
+                                    <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as Ticket['status'])} disabled={isPending}>
                                         {status}
                                     </DropdownMenuItem>
                                 ))}
