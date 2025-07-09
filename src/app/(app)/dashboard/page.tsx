@@ -1,20 +1,52 @@
 
+'use client';
+
+import React from 'react';
 import { PageHeader } from "@/components/page-header";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
 import { TicketsOverviewChart } from "@/components/dashboard/tickets-overview-chart";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
 import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
 import { getTickets, getProjects, getUsers } from "@/lib/firestore";
 import { format, getMonth, differenceInDays } from 'date-fns';
+import { useAuth } from '@/contexts/auth-context';
+import type { Ticket, Project, User } from '@/lib/data';
 
-export default async function DashboardPage() {
-  // Fetch data from Firestore
-  const tickets = await getTickets();
-  const projects = await getProjects();
-  const users = await getUsers();
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const [loading, setLoading] = React.useState(true);
+  const [tickets, setTickets] = React.useState<Ticket[]>([]);
+  const [projects, setProjects] = React.useState<Project[]>([]);
+  const [users, setUsers] = React.useState<User[]>([]);
+
+  React.useEffect(() => {
+    if (user) {
+      const fetchData = async () => {
+        setLoading(true);
+        const [ticketsData, projectsData, usersData] = await Promise.all([
+          getTickets(user),
+          getProjects(user),
+          getUsers()
+        ]);
+        setTickets(ticketsData);
+        setProjects(projectsData);
+        setUsers(usersData);
+        setLoading(false);
+      };
+      fetchData();
+    }
+  }, [user]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
   
   // Create a map for quick user lookup.
   const userMap = new Map(users.map(u => [u.name, u]));
@@ -56,12 +88,14 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Dashboard" description="Here's a snapshot of your helpdesk activity.">
-        <Link href="/tickets/new" passHref>
-          <Button>
-            <PlusCircle />
-            New Ticket
-          </Button>
-        </Link>
+        {(user.role === 'Admin' || user.role === 'Agent') && (
+            <Link href="/tickets/new" passHref>
+              <Button>
+                <PlusCircle />
+                New Ticket
+              </Button>
+            </Link>
+        )}
       </PageHeader>
       
       <StatsCards tickets={tickets} projects={projects} />

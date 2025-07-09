@@ -1,30 +1,19 @@
 
+'use client';
+
+import React from 'react';
 import { PageHeader } from "@/components/page-header";
 import { TicketClient } from "@/components/tickets/ticket-client";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
-import { getTickets, getUsers, getTicketsByStatus } from "@/lib/firestore";
-import { users as mockUsers } from "@/lib/data";
+import { getTicketsByStatus, getUsers } from "@/lib/firestore";
+import { useAuth } from '@/contexts/auth-context';
+import type { Ticket, User } from '@/lib/data';
 
-// This is crucial to prevent Next.js from caching the page and to ensure
-// fresh data is fetched from Firestore on every visit.
 export const dynamic = 'force-dynamic';
 
-interface StatusConfig {
-  dbValue: string;
-  title: string;
-}
-
-interface PageParams {
-  status: string;
-}
-
-interface TicketsPageProps {
-  params: Promise<PageParams>;
-}
-
-const statusMap: Record<string, StatusConfig> = {
+const statusMap: { [key: string]: { dbValue: string; title: string } } = {
   'all': { dbValue: 'all', title: 'All Tickets' },
   'new-status': { dbValue: 'New', title: 'New Tickets' },
   'active': { dbValue: 'Active', title: 'Active Tickets' },
@@ -34,50 +23,59 @@ const statusMap: Record<string, StatusConfig> = {
   'terminated': { dbValue: 'Terminated', title: 'Terminated Tickets' },
 };
 
-export default async function TicketsPage({ params }: TicketsPageProps): Promise<JSX.Element> {
-  // Await the params Promise
-  const resolvedParams: PageParams = await params;
-  
-  console.log('🔍 Raw params received:', resolvedParams);
-  
-  const statusFilter: string = resolvedParams.status || 'all';
-  const statusConfig: StatusConfig | undefined = statusMap[statusFilter];
-  
-  console.log('🎯 Status filter resolved to:', statusFilter);
-  console.log('🗺️ Status config:', statusConfig);
+export default function TicketsPage({ params }: { params: { status: string } }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = React.useState(true);
+  const [tickets, setTickets] = React.useState<Ticket[]>([]);
+  const [users, setUsers] = React.useState<User[]>([]);
 
-  // If the status from the URL is not in our map, default to 'all'.
-  const pageTitle: string = statusConfig ? statusConfig.title : statusMap['all'].title;
-  const dbStatus: string = statusConfig ? statusConfig.dbValue : 'all';
-
-  console.log(`🎫 Fetching tickets for status: "${dbStatus}" (URL param: "${statusFilter}")`);
-
-  const tickets = await (async () => {
-    if (dbStatus === 'all') {
-      return getTickets();
+  const statusFilter = params.status || 'all';
+  const statusConfig = statusMap[statusFilter];
+  const pageTitle = statusConfig ? statusConfig.title : statusMap['all'].title;
+  const dbStatus = statusConfig ? statusConfig.dbValue : 'all';
+  
+  React.useEffect(() => {
+    if (user) {
+      const fetchData = async () => {
+        setLoading(true);
+        const [ticketsData, usersData] = await Promise.all([
+          getTicketsByStatus(dbStatus, user),
+          getUsers()
+        ]);
+        setTickets(ticketsData);
+        setUsers(usersData);
+        setLoading(false);
+      };
+      fetchData();
     }
-    return getTicketsByStatus(dbStatus);
-  })();
+  }, [user, dbStatus]);
 
-  console.log(`📊 Fetched ${tickets.length} tickets for status "${dbStatus}":`, tickets);
 
-  const users = await getUsers();
-
+  if (loading || !user) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+  
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={pageTitle} description="View, manage, and filter your tickets.">
-        <Link href="/tickets/new" passHref>
-          <Button>
-            <PlusCircle />
-            New Ticket
-          </Button>
-        </Link>
+        {(user.role === 'Admin' || user.role === 'Agent') && (
+          <Link href="/tickets/new" passHref>
+            <Button>
+              <PlusCircle />
+              New Ticket
+            </Button>
+          </Link>
+        )}
       </PageHeader>
-
+      
       <TicketClient 
-        tickets={tickets} 
-        users={users.length > 0 ? users : mockUsers} 
-        initialStatusFilter={""} 
+        tickets={tickets}
+        users={users}
+        statusFilter={statusFilter}
       />
     </div>
   );
