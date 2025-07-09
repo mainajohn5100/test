@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +14,6 @@ import { Button } from "@/components/ui/button";
 
 interface ProjectClientProps {
   projects: Project[];
-  initialStatusFilter: string;
 }
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -25,19 +23,11 @@ const projectStatusVariantMap: { [key: string]: string } = {
   'New': 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100',
 };
 
-export function ProjectClient({ projects, initialStatusFilter }: ProjectClientProps) {
+export function ProjectClient({ projects }: ProjectClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
-  const router = useRouter();
 
-  const handleStatusChange = (newStatus: string) => {
-    // Navigate to the new page. The server will handle fetching the correct data.
-    router.push(`/projects/${newStatus}`);
-  };
-
-  const filteredAndSortedProjects = React.useMemo(() => {
-    // The `projects` prop is already pre-filtered by status on the server.
-    // We only need to apply client-side search and sort.
+  const filteredAndSortedProjects = useMemo(() => {
     let displayProjects = projects || [];
 
     if (searchTerm) {
@@ -58,8 +48,6 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
     return displayProjects;
   }, [projects, searchTerm, sortBy]);
 
-  const isFilteredView = initialStatusFilter !== 'all';
-
   return (
     <>
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -73,20 +61,6 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
             />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          {!isFilteredView && (
-            <Select value={initialStatusFilter} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="on-hold">On Hold</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-full sm:w-[180px]">
                 <ListFilter className="mr-2 h-4 w-4" />

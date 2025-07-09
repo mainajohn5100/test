@@ -6,34 +6,19 @@ import { useState, useMemo } from "react";
 import { TicketTableToolbar } from "@/components/tickets/ticket-table-toolbar";
 import { TicketTable } from "@/components/tickets/ticket-table";
 import type { Ticket, User } from "@/lib/data";
-import { useRouter } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { ListOrdered } from "lucide-react";
 
 interface TicketClientProps {
   tickets: Ticket[];
   users: User[];
-  initialStatusFilter: string;
 }
 
-export function TicketClient({ tickets, users, initialStatusFilter }: TicketClientProps) {
+export function TicketClient({ tickets, users }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('updatedAt_desc');
-  const router = useRouter();
-  
-  const isFilteredView = initialStatusFilter !== 'all';
-
-  const handleStatusChange = (newStatus: string) => {
-    // Navigate to the new page. The server will handle fetching the correct data.
-    router.push(`/tickets/${newStatus}`);
-  };
 
   const filteredAndSortedTickets = useMemo(() => {
-    // The `tickets` prop is already pre-filtered by status on the server.
-    // We only need to apply client-side search and sort.
     let displayTickets = tickets ? [...tickets] : [];
 
-    // Filter by search term
     if (searchTerm) {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
       displayTickets = displayTickets.filter(t => 
@@ -44,7 +29,6 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
       );
     }
     
-    // Sort tickets
     const [key, order] = sortBy.split('_');
     
     displayTickets.sort((a, b) => {
@@ -74,43 +58,12 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
     <Card>
       <CardContent className="pt-6">
         <div className="space-y-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <TicketTableToolbar 
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-            />
-            <div className="flex gap-2 w-full md:w-auto shrink-0">
-                {!isFilteredView && (
-                  <Select value={initialStatusFilter} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-full md:w-[180px]">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="new-status">New</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="on-hold">On Hold</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                      <SelectItem value="terminated">Terminated</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full h-10 md:w-auto">
-                    <ListOrdered className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="updatedAt_desc">Last Updated</SelectItem>
-                    <SelectItem value="createdAt_desc">Newest First</SelectItem>
-                    <SelectItem value="createdAt_asc">Oldest First</SelectItem>
-                    <SelectItem value="priority_desc">Priority (High-Low)</SelectItem>
-                    <SelectItem value="priority_asc">Priority (Low-High)</SelectItem>
-                  </SelectContent>
-                </Select>
-            </div>
-          </div>
+          <TicketTableToolbar 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+          />
           <TicketTable 
             tickets={filteredAndSortedTickets}
             users={users}

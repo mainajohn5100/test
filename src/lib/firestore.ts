@@ -1,5 +1,6 @@
 
 
+
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User, Notification } from './data';
@@ -54,38 +55,15 @@ export async function getTickets(): Promise<Ticket[]> {
   }
 }
 
-// export async function getTicketsByStatus(status: string): Promise<Ticket[]> {
-//     try {
-//         const ticketsCol = collection(db, 'tickets');
-//         const q = query(ticketsCol, where("status", "==", status));
-//         const ticketSnapshot = await getDocs(q);
-//         return snapshotToData<Ticket>(ticketSnapshot);
-//     } catch (error) {
-//         console.error("Error fetching tickets by status:", error);
-//         return [];
-//     }
-// }
-
 export async function getTicketsByStatus(status: string): Promise<Ticket[]> {
   try {
-      console.log('🔍 Querying Firestore for status:', status);
-      
-      const ticketsCol = collection(db, 'tickets');
-      const q = query(ticketsCol, where("status", "==", status));
-      const ticketSnapshot = await getDocs(q);
-      
-      console.log('🔍 Query result count:', ticketSnapshot.docs.length);
-      
-      // Log the actual status values in your collection
-      const allTicketsCol = collection(db, 'tickets');
-      const allSnapshot = await getDocs(allTicketsCol);
-      const allStatuses = allSnapshot.docs.map(doc => doc.data().status);
-      console.log('🔍 All status values in database:', [...new Set(allStatuses)]);
-      
-      return snapshotToData<Ticket>(ticketSnapshot);
+    const ticketsCol = collection(db, 'tickets');
+    const q = query(ticketsCol, where("status", "==", status));
+    const ticketSnapshot = await getDocs(q);
+    return snapshotToData<Ticket>(ticketSnapshot);
   } catch (error) {
-      console.error("Error fetching tickets by status:", error);
-      return [];
+    console.error(`Error fetching tickets with status "${status}":`, error);
+    return [];
   }
 }
 
@@ -155,7 +133,7 @@ export async function getProjectsByStatus(status: string): Promise<Project[]> {
         const projectSnapshot = await getDocs(q);
         return snapshotToData<Project>(projectSnapshot);
     } catch (error) {
-        console.error("Error fetching projects by status:", error);
+        console.error(`Error fetching projects with status "${status}":`, error);
         return [];
     }
 }

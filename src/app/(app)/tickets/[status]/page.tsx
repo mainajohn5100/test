@@ -1,98 +1,41 @@
-// //page.tsx
-// import { PageHeader } from "@/components/page-header";
-// import { TicketClient } from "@/components/tickets/ticket-client";
-// import { Button } from "@/components/ui/button";
-// import { PlusCircle } from "lucide-react";
-// import Link from "next/link";
-// import { getTickets, getUsers } from "@/lib/firestore";
-// import { users as mockUsers } from "@/lib/data";
 
-// // This is crucial to prevent Next.js from caching the page and to ensure
-// // fresh data is fetched from Firestore on every visit.
-// export const dynamic = 'force-dynamic';
-
-// export default async function TicketsPage({ params }: { params: { status: string } }) {
-//   const statusFilter = params.status || 'all';
-
-//   let pageTitle = "All Tickets";
-  
-//   // Normalize the status from the URL to match the database values 
-//   // (e.g., 'new-status' -> 'New', 'on-hold' -> 'On Hold')
-//   if (statusFilter !== 'all') {
-//     if (statusFilter === 'new-status') {
-//       pageTitle = "New Tickets";
-//     } else {
-//       const normalizedStatus = statusFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-//       pageTitle = `${normalizedStatus} Tickets`;
-//     }
-//   }
-  
-//   // Fetch all tickets. The filtering will be done on the client for responsiveness.
-//   const tickets = await getTickets();
-//   const users = await getUsers();
-
-//   return (
-//     <div className="flex flex-col gap-6">
-//       <PageHeader title={pageTitle} description="View, manage, and filter your tickets.">
-//         <Link href="/tickets/new" passHref>
-//             <Button>
-//                 <PlusCircle />
-//                 New Ticket
-//             </Button>
-//         </Link>
-//       </PageHeader>
-      
-//       <TicketClient 
-//         tickets={tickets} 
-//         users={users.length > 0 ? users : mockUsers} 
-//         initialStatusFilter={statusFilter}
-//       />
-//     </div>
-//   );
-// }
-
-
-// app/tickets/[status]/page.tsx
 import { PageHeader } from "@/components/page-header";
 import { TicketClient } from "@/components/tickets/ticket-client";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
-import { getTickets, getUsers } from "@/lib/firestore";
+import { getTickets, getUsers, getTicketsByStatus } from "@/lib/firestore";
 import { users as mockUsers } from "@/lib/data";
 
 // This is crucial to prevent Next.js from caching the page and to ensure
 // fresh data is fetched from Firestore on every visit.
 export const dynamic = 'force-dynamic';
 
-export default async function TicketsPage({ 
-  params 
-}: { 
-  params: { status: string } 
-}) {
-  // Access the status from params correctly
+const statusMap: { [key: string]: { dbValue: string; title: string } } = {
+  'all': { dbValue: 'all', title: 'All Tickets' },
+  'new-status': { dbValue: 'New', title: 'New Tickets' },
+  'active': { dbValue: 'Active', title: 'Active Tickets' },
+  'pending': { dbValue: 'Pending', title: 'Pending Tickets' },
+  'on-hold': { dbValue: 'On Hold', title: 'On Hold Tickets' },
+  'closed': { dbValue: 'Closed', title: 'Closed Tickets' },
+  'terminated': { dbValue: 'Terminated', title: 'Terminated Tickets' },
+};
+
+export default async function TicketsPage({ params }: { params: { status: string } }) {
   const statusFilter = params.status || 'all';
-  
-  let pageTitle = "All Tickets";
-  
-  // Normalize the status from the URL to match the database values
-  // (e.g., 'new' -> 'New', 'on-hold' -> 'On Hold')
-  if (statusFilter !== 'all') {
-    if (statusFilter === 'new') {
-      pageTitle = "New Tickets";
-    } else if (statusFilter === 'on-hold') {
-      pageTitle = "On Hold Tickets";
-    } else {
-      const normalizedStatus = statusFilter
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      pageTitle = `${normalizedStatus} Tickets`;
+  const statusConfig = statusMap[statusFilter];
+
+  // If the status from the URL is not in our map, default to 'all'.
+  const pageTitle = statusConfig ? statusConfig.title : statusMap['all'].title;
+  const dbStatus = statusConfig ? statusConfig.dbValue : 'all';
+
+  const tickets = await (async () => {
+    if (dbStatus === 'all') {
+      return getTickets();
     }
-  }
-  
-  // Fetch all tickets. The filtering will be done on the client for responsiveness.
-  const tickets = await getTickets();
+    return getTicketsByStatus(dbStatus);
+  })();
+
   const users = await getUsers();
   
   return (
@@ -109,7 +52,6 @@ export default async function TicketsPage({
       <TicketClient 
         tickets={tickets}
         users={users.length > 0 ? users : mockUsers}
-        initialStatusFilter={statusFilter}
       />
     </div>
   );

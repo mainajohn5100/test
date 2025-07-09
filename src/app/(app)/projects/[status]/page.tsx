@@ -10,22 +10,27 @@ import { ProjectClient } from "@/components/projects/project-client";
 // fresh data is fetched from Firestore on every visit.
 export const dynamic = 'force-dynamic';
 
+const statusMap: { [key: string]: { dbValue: string; title: string } } = {
+  'all': { dbValue: 'all', title: 'All Projects' },
+  'new': { dbValue: 'New', title: 'New Projects' },
+  'active': { dbValue: 'Active', title: 'Active Projects' },
+  'on-hold': { dbValue: 'On Hold', title: 'On Hold Projects' },
+  'completed': { dbValue: 'Completed', title: 'Completed Projects' },
+};
+
 export default async function ProjectsByStatusPage({ params }: { params: { status: string } }) {
     const statusFilter = params.status || 'all';
+    const statusConfig = statusMap[statusFilter];
 
-    let pageTitle = "All Projects";
-    let normalizedStatus = 'all';
-
-    if (statusFilter && statusFilter !== 'all') {
-        normalizedStatus = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-        pageTitle = `${normalizedStatus} Projects`;
-    }
+    // If the status from the URL is not in our map, default to 'all'.
+    const pageTitle = statusConfig ? statusConfig.title : statusMap['all'].title;
+    const dbStatus = statusConfig ? statusConfig.dbValue : 'all';
     
     const projects = await (async () => {
-        if (normalizedStatus === 'all') {
+        if (dbStatus === 'all') {
             return getProjects();
         }
-        return getProjectsByStatus(normalizedStatus);
+        return getProjectsByStatus(dbStatus);
     })();
 
   return (
@@ -41,7 +46,7 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
           </Button>
         </Link>
       </PageHeader>
-      <ProjectClient projects={projects} initialStatusFilter={statusFilter} />
+      <ProjectClient projects={projects} />
     </div>
   );
 }
