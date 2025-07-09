@@ -10,13 +10,19 @@ import { Label } from "@/components/ui/label";
 import { useSettings } from "@/contexts/settings-context";
 import { EmailIntegrationForm } from "@/components/settings/email-integration-form";
 import { AccountForm } from "@/components/settings/account-form";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const { 
     inAppNotifications, 
     setInAppNotifications,
     emailNotifications,
-    setEmailNotifications
+    setEmailNotifications,
+    agentPanelEnabled,
+    setAgentPanelEnabled,
+    customerPanelEnabled,
+    setCustomerPanelEnabled
   } = useSettings();
 
   return (
@@ -30,6 +36,7 @@ export default function SettingsPage() {
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          {user?.role === 'Admin' && <TabsTrigger value="access">Access Control</TabsTrigger>}
           <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
 
@@ -93,6 +100,52 @@ export default function SettingsPage() {
         <TabsContent value="integrations">
             <EmailIntegrationForm />
         </TabsContent>
+         {user?.role === 'Admin' && (
+          <TabsContent value="access">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Access Control</CardTitle>
+                      <CardDescription>
+                          Globally enable or disable access for different user roles.
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                              <Label htmlFor="agent-panel" className="text-base">
+                                  Agent Panel
+                              </Label>
+                              <p className="text-sm text-muted-foreground">
+                                  Enable access for users with the 'Agent' role.
+                              </p>
+                          </div>
+                          <Switch
+                              id="agent-panel"
+                              checked={agentPanelEnabled}
+                              onCheckedChange={setAgentPanelEnabled}
+                              aria-label="Toggle agent panel access"
+                          />
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                              <Label htmlFor="customer-panel" className="text-base">
+                                  Customer Panel
+                              </Label>
+                              <p className="text-sm text-muted-foreground">
+                                  Enable access for users with the 'Customer' role.
+                              </p>
+                          </div>
+                          <Switch
+                              id="customer-panel"
+                              checked={customerPanelEnabled}
+                              onCheckedChange={setCustomerPanelEnabled}
+                              aria-label="Toggle customer panel access"
+                          />
+                      </div>
+                  </CardContent>
+              </Card>
+          </TabsContent>
+         )}
         <TabsContent value="account">
             <AccountForm />
         </TabsContent>

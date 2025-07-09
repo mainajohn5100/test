@@ -10,6 +10,10 @@ interface SettingsContextType {
   setInAppNotifications: (enabled: boolean) => void;
   emailNotifications: boolean;
   setEmailNotifications: (enabled: boolean) => void;
+  agentPanelEnabled: boolean;
+  setAgentPanelEnabled: (enabled: boolean) => void;
+  customerPanelEnabled: boolean;
+  setCustomerPanelEnabled: (enabled: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -18,6 +22,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [showFullScreenButton, _setShowFullScreenButton] = useState(true);
     const [inAppNotifications, _setInAppNotifications] = useState(true);
     const [emailNotifications, _setEmailNotifications] = useState(false);
+    const [agentPanelEnabled, _setAgentPanelEnabled] = useState(true);
+    const [customerPanelEnabled, _setCustomerPanelEnabled] = useState(true);
 
     useEffect(() => {
         const storedFullScreen = localStorage.getItem('show-fullscreen-button');
@@ -33,6 +39,16 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         const storedEmail = localStorage.getItem('email-notifications');
         if (storedEmail !== null) {
             _setEmailNotifications(storedEmail === 'true');
+        }
+
+        const storedAgentPanel = localStorage.getItem('agent-panel-enabled');
+        if (storedAgentPanel !== null) {
+            _setAgentPanelEnabled(storedAgentPanel === 'true');
+        }
+
+        const storedCustomerPanel = localStorage.getItem('customer-panel-enabled');
+        if (storedCustomerPanel !== null) {
+            _setCustomerPanelEnabled(storedCustomerPanel === 'true');
         }
 
     }, []);
@@ -52,13 +68,27 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         localStorage.setItem('email-notifications', String(enabled));
     };
 
+    const setAgentPanelEnabled = (enabled: boolean) => {
+        _setAgentPanelEnabled(enabled);
+        localStorage.setItem('agent-panel-enabled', String(enabled));
+    };
+
+    const setCustomerPanelEnabled = (enabled: boolean) => {
+        _setCustomerPanelEnabled(enabled);
+        localStorage.setItem('customer-panel-enabled', String(enabled));
+    };
+
     const value = { 
         showFullScreenButton, 
         setShowFullScreenButton,
         inAppNotifications,
         setInAppNotifications,
         emailNotifications,
-        setEmailNotifications
+        setEmailNotifications,
+        agentPanelEnabled,
+        setAgentPanelEnabled,
+        customerPanelEnabled,
+        setCustomerPanelEnabled
     };
 
     return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
