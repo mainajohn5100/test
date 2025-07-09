@@ -104,19 +104,37 @@ export function AccountForm() {
                         <CardDescription>Additional details about your account.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {user.phone && (<div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{user.phone}</span></div>)}
-                            {user.gender && (<div className="flex justify-between"><span className="text-muted-foreground">Gender</span><span>{user.gender}</span></div>)}
+                        <div className="space-y-2">
+                            <div className="flex justify-between"><span className="text-muted-foreground">User ID</span><code>{user.id}</code></div>
                         </div>
-                        {user.dob && (<div className="flex justify-between"><span className="text-muted-foreground">Birthday</span><span>{format(new Date(user.dob), "PPP")}</span></div>)}
-                        <Separator />
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {user.city && (<div className="flex justify-between"><span className="text-muted-foreground">City</span><span>{user.city}</span></div>)}
-                            {user.country && (<div className="flex justify-between"><span className="text-muted-foreground">Country</span><span>{user.country}</span></div>)}
-                        </div>
-                        {user.zipCode && (<div className="flex justify-between"><span className="text-muted-foreground">Zip Code</span><span>{user.zipCode}</span></div>)}
+
+                        {(user.phone || user.gender || user.dob) && (
+                            <>
+                                <Separator />
+                                <div className="space-y-2">
+                                    {user.phone && (<div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{user.phone}</span></div>)}
+                                    {user.gender && (<div className="flex justify-between"><span className="text-muted-foreground">Gender</span><span>{user.gender}</span></div>)}
+                                    {user.dob && (<div className="flex justify-between"><span className="text-muted-foreground">Birthday</span><span>{format(new Date(user.dob), "PPP")}</span></div>)}
+                                </div>
+                            </>
+                        )}
+                        
+                        {(user.city || user.country || user.zipCode) && (
+                            <>
+                                <Separator />
+                                <div className="space-y-2">
+                                    {user.city && (<div className="flex justify-between"><span className="text-muted-foreground">City</span><span>{user.city}</span></div>)}
+                                    {user.country && (<div className="flex justify-between"><span className="text-muted-foreground">Country</span><span>{user.country}</span></div>)}
+                                    {user.zipCode && (<div className="flex justify-between"><span className="text-muted-foreground">Zip Code</span><span>{user.zipCode}</span></div>)}
+                                </div>
+                            </>
+                        )}
+
                         {!user.phone && !user.country && !user.city && !user.zipCode && !user.dob && !user.gender && (
-                            <p className="text-muted-foreground text-center py-8">No additional information provided. Edit your profile to add more details.</p>
+                            <>
+                                <Separator />
+                                <p className="text-muted-foreground text-center py-8">No additional information provided. Edit your profile to add more details.</p>
+                            </>
                         )}
                     </CardContent>
                 </Card>
