@@ -17,8 +17,6 @@ interface TicketTableToolbarProps {
   statusFilter: string;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
-  priorityFilter: string;
-  setPriorityFilter: (value: string) => void;
   sortBy: string;
   setSortBy: (value: string) => void;
   isFilteredView: boolean;
@@ -28,8 +26,6 @@ export function TicketTableToolbar({
   statusFilter,
   searchTerm,
   setSearchTerm,
-  priorityFilter,
-  setPriorityFilter,
   sortBy,
   setSortBy,
   isFilteredView,
@@ -42,7 +38,6 @@ export function TicketTableToolbar({
 
   const handleReset = () => {
     setSearchTerm('');
-    setPriorityFilter('all');
     setSortBy('updatedAt_desc');
     // Only navigate if we are not on the 'all' page already
     if (statusFilter !== 'all') {
@@ -76,21 +71,6 @@ export function TicketTableToolbar({
                 <SelectItem value="on-hold">On Hold</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
                 <SelectItem value="terminated">Terminated</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={priorityFilter}
-              onValueChange={(value) => setPriorityFilter(value)}
-            >
-              <SelectTrigger className="h-9 w-full md:w-auto">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>

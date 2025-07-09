@@ -15,18 +15,12 @@ interface TicketClientProps {
 
 export function TicketClient({ tickets, users, initialStatusFilter }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('all');
   const [sortBy, setSortBy] = useState('updatedAt_desc');
 
   const isFilteredView = initialStatusFilter !== 'all';
 
   const filteredAndSortedTickets = useMemo(() => {
     let filteredTickets = [...(tickets || [])];
-
-    // Filter by priority from toolbar
-    if (priorityFilter && priorityFilter !== 'all') {
-      filteredTickets = filteredTickets.filter(t => t.priority.toLowerCase() === priorityFilter);
-    }
 
     // Filter by search term
     if (searchTerm) {
@@ -62,7 +56,7 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
     });
 
     return filteredTickets;
-  }, [tickets, searchTerm, priorityFilter, sortBy]);
+  }, [tickets, searchTerm, sortBy]);
 
 
   return (
@@ -73,8 +67,6 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
             statusFilter={initialStatusFilter}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            priorityFilter={priorityFilter}
-            setPriorityFilter={setPriorityFilter}
             sortBy={sortBy}
             setSortBy={setSortBy}
             isFilteredView={isFilteredView}
