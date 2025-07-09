@@ -23,9 +23,18 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getUserById, getTicketsByAssignee, getTicketsByReporter, getProjectsByManager } from "@/lib/firestore";
 import type { User, Ticket, Project } from "@/lib/data";
 import { EditProfileForm } from "@/components/settings/edit-profile-form";
+import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
+import { updateUserRoleAction } from "../actions";
 
 
 const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -41,6 +50,8 @@ const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destru
 export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const { user: currentUser } = useAuth();
+  const { toast } = useToast();
 
   const [user, setUser] = React.useState<User | null>(null);
   const [assignedTickets, setAssignedTickets] = React.useState<Ticket[]>([]);
@@ -48,7 +59,15 @@ export default function UserProfilePage() {
   const [managedProjects, setManagedProjects] = React.useState<Project[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isEditDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [isUpdating, startTransition] = React.useTransition();
 
+  const [optimisticRole, setOptimisticRole] = React.useState<User['role'] | undefined>();
+
+  React.useEffect(() => {
+    if (user) {
+      setOptimisticRole(user.role);
+    }
+  }, [user]);
 
   React.useEffect(() => {
     if (!params.id) return;
@@ -77,6 +96,30 @@ export default function UserProfilePage() {
     };
     fetchData();
   }, [params.id, isEditDialogOpen]);
+  
+  const handleRoleChange = (newRole: User['role']) => {
+    if (!user || !currentUser || currentUser.id === user.id || isUpdating) return;
+    
+    const previousRole = optimisticRole;
+    setOptimisticRole(newRole); 
+
+    startTransition(async () => {
+      const result = await updateUserRoleAction(user.id, newRole);
+      if (result?.error) {
+        setOptimisticRole(previousRole); 
+        toast({
+          title: "Update Failed",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Role Updated",
+          description: `User role has been successfully changed to ${newRole}.`,
+        });
+      }
+    });
+  };
 
   if (loading) {
     return (
@@ -125,6 +168,35 @@ export default function UserProfilePage() {
                   </Dialog>
                 </CardContent>
             </Card>
+            {currentUser?.role === 'Admin' && (
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Role Management</CardTitle>
+                      <CardDescription>Assign or change the user's role.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">User Role</span>
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" className="min-w-[120px]" disabled={isUpdating || currentUser.id === user.id}>
+                                      {isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                      {optimisticRole}
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onSelect={() => handleRoleChange('Admin')}>Admin</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => handleRoleChange('Agent')}>Agent</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => handleRoleChange('Customer')}>Customer</DropdownMenuItem>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+                      </div>
+                      {currentUser.id === user.id && (
+                          <p className="text-xs text-muted-foreground mt-2 text-center">You cannot change your own role.</p>
+                      )}
+                  </CardContent>
+              </Card>
+            )}
              <Card>
                 <CardHeader>
                     <CardTitle>Security Settings</CardTitle>
@@ -239,3 +311,5 @@ export default function UserProfilePage() {
     </div>
   );
 }
+
+    

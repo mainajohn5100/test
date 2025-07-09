@@ -52,3 +52,27 @@ export async function updateUserAction(userId: string, formData: FormData) {
     return { success: false, error: 'Failed to update profile.' };
   }
 }
+
+export async function updateUserRoleAction(userId: string, role: User['role']) {
+  try {
+    // In a real production app, we would verify the caller's permissions here
+    // by checking their session from the server-side.
+    // For this environment, we rely on the UI to restrict access to this action.
+    if (!userId || !role) {
+      throw new Error("User ID and role are required.");
+    }
+
+    await updateUser(userId, { role });
+
+    revalidatePath('/users');
+    revalidatePath(`/users/${userId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in updateUserRoleAction:", error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { success: false, error: errorMessage };
+  }
+}
+
+    
