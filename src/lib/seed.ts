@@ -44,12 +44,10 @@ async function seedDatabase() {
   const usersCollection = collection(db, 'users');
   users.forEach(user => {
     const userRef = doc(usersCollection, user.id);
-    batch.set(userRef, {
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-      role: user.role,
-    });
+    // Spreading the user object and removing the id is a clean way
+    // to handle both required and optional fields.
+    const { id, ...userData } = user;
+    batch.set(userRef, userData);
   });
   console.log(`- ${users.length} users queued for creation.`);
 

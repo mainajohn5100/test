@@ -9,6 +9,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import { KeyRound, ShieldCheck, Loader } from 'lucide-react';
 import { EditProfileForm } from './edit-profile-form';
+import { format } from 'date-fns';
+import { Separator } from '../ui/separator';
 
 export function AccountForm() {
     const { user, loading, refreshUser } = useAuth();
@@ -51,48 +53,74 @@ export function AccountForm() {
     }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-16 w-16">
-                            <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback className="text-xl">{user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <CardTitle className="text-2xl">{user.name}</CardTitle>
-                            <CardDescription>{user.email}</CardDescription>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-4">
+                            <Avatar className="h-16 w-16">
+                                <AvatarImage src={user.avatar} alt={user.name} />
+                                <AvatarFallback className="text-xl">{user.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <CardTitle className="text-2xl">{user.name}</CardTitle>
+                                <CardDescription>{user.email}</CardDescription>
+                            </div>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                  <Dialog open={isEditDialogOpen} onOpenChange={handleOpenChange}>
-                    <DialogTrigger asChild>
-                      <Button className="w-full" variant="outline">Edit Profile</Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <EditProfileForm user={user} setOpen={setEditDialogOpen} />
-                    </DialogContent>
-                  </Dialog>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Security Settings</CardTitle>
-                    <CardDescription>Manage account security.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <Button className="w-full" variant="outline" disabled>
-                        <KeyRound className="mr-2"/>
-                        Change Password
-                    </Button>
-                    <Button className="w-full" variant="outline" disabled>
-                        <ShieldCheck className="mr-2"/>
-                        Enable Two-Factor Auth
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center pt-2">SSO/OAuth settings would appear here.</p>
-                </CardContent>
-            </Card>
+                    </CardHeader>
+                    <CardContent>
+                    <Dialog open={isEditDialogOpen} onOpenChange={handleOpenChange}>
+                        <DialogTrigger asChild>
+                        <Button className="w-full" variant="outline">Edit Profile</Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl">
+                          <EditProfileForm user={user} setOpen={setEditDialogOpen} />
+                        </DialogContent>
+                    </Dialog>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Security Settings</CardTitle>
+                        <CardDescription>Manage account security.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Button className="w-full" variant="outline" disabled>
+                            <KeyRound className="mr-2"/>
+                            Change Password
+                        </Button>
+                        <Button className="w-full" variant="outline" disabled>
+                            <ShieldCheck className="mr-2"/>
+                            Enable Two-Factor Auth
+                        </Button>
+                        <p className="text-xs text-muted-foreground text-center pt-2">SSO/OAuth settings would appear here.</p>
+                    </CardContent>
+                </Card>
+            </div>
+             <div className="lg:col-span-2">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Personal Information</CardTitle>
+                        <CardDescription>Additional details about your account.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {user.phone && (<div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{user.phone}</span></div>)}
+                            {user.gender && (<div className="flex justify-between"><span className="text-muted-foreground">Gender</span><span>{user.gender}</span></div>)}
+                        </div>
+                        {user.dob && (<div className="flex justify-between"><span className="text-muted-foreground">Birthday</span><span>{format(new Date(user.dob), "PPP")}</span></div>)}
+                        <Separator />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {user.city && (<div className="flex justify-between"><span className="text-muted-foreground">City</span><span>{user.city}</span></div>)}
+                            {user.country && (<div className="flex justify-between"><span className="text-muted-foreground">Country</span><span>{user.country}</span></div>)}
+                        </div>
+                        {user.zipCode && (<div className="flex justify-between"><span className="text-muted-foreground">Zip Code</span><span>{user.zipCode}</span></div>)}
+                        {!user.phone && !user.country && !user.city && !user.zipCode && !user.dob && !user.gender && (
+                            <p className="text-muted-foreground text-center py-8">No additional information provided. Edit your profile to add more details.</p>
+                        )}
+                    </CardContent>
+                </Card>
+             </div>
         </div>
     );
 }

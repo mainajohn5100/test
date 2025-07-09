@@ -3,6 +3,7 @@
 
 import { notFound, useParams, useRouter } from "next/navigation";
 import React from "react";
+import { format } from "date-fns";
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import { EditProfileForm } from "@/components/settings/edit-profile-form";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserRoleAction } from "../actions";
+import { Separator } from "@/components/ui/separator";
 
 
 const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -168,6 +170,26 @@ export default function UserProfilePage() {
                   </Dialog>
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Personal Information</CardTitle>
+                    <CardDescription>Additional details about the user.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                    {user.phone && (<div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{user.phone}</span></div>)}
+                    {user.gender && (<div className="flex justify-between"><span className="text-muted-foreground">Gender</span><span>{user.gender}</span></div>)}
+                    {user.dob && (<div className="flex justify-between"><span className="text-muted-foreground">Birthday</span><span>{format(new Date(user.dob), "PPP")}</span></div>)}
+                    {(user.phone || user.gender || user.dob) && <Separator />}
+                    {user.city && (<div className="flex justify-between"><span className="text-muted-foreground">City</span><span>{user.city}</span></div>)}
+                    {user.country && (<div className="flex justify-between"><span className="text-muted-foreground">Country</span><span>{user.country}</span></div>)}
+                    {user.zipCode && (<div className="flex justify-between"><span className="text-muted-foreground">Zip Code</span><span>{user.zipCode}</span></div>)}
+                    {!user.phone && !user.country && !user.city && !user.zipCode && !user.dob && !user.gender && (
+                        <p className="text-muted-foreground text-center">No additional information provided.</p>
+                    )}
+                </CardContent>
+            </Card>
+
             {currentUser?.role === 'Admin' && (
               <Card>
                   <CardHeader>
@@ -311,5 +333,3 @@ export default function UserProfilePage() {
     </div>
   );
 }
-
-    

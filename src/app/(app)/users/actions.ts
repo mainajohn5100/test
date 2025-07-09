@@ -11,21 +11,20 @@ import type { User } from '@/lib/data';
 
 export async function updateUserAction(userId: string, formData: FormData) {
   try {
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
+    const updateData: {[key: string]: any} = {};
+    
+    // Process all fields from FormData
+    const fields: (keyof Omit<User, 'id' | 'avatar' | 'role'>)[] = ['name', 'email', 'phone', 'country', 'city', 'zipCode', 'dob', 'gender'];
+    
+    fields.forEach(field => {
+      const value = formData.get(field) as string;
+      // We check for `has` because an empty string is a valid value to clear a field.
+      if (formData.has(field)) {
+          updateData[field] = value || null; // Store empty string as null to clear field
+      }
+    });
+
     const avatarFile = formData.get('avatar') as File | null;
-
-    const validatedData = updateUserSchema.parse({ name, email });
-
-    const updateData: Partial<Omit<User, 'id'>> = {};
-
-    if (validatedData.name) {
-      updateData.name = validatedData.name;
-    }
-    if (validatedData.email) {
-      updateData.email = validatedData.email;
-    }
-
     if (avatarFile && avatarFile.size > 0) {
       const filePath = `avatars/${userId}/${Date.now()}_${avatarFile.name}`;
       const storageRef = ref(storage, filePath);
@@ -74,5 +73,3 @@ export async function updateUserRoleAction(userId: string, role: User['role']) {
     return { success: false, error: errorMessage };
   }
 }
-
-    
