@@ -1,9 +1,11 @@
 
 
 
+
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User, Notification } from './data';
+import { cache } from 'react';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -44,7 +46,7 @@ function docToData<T>(docSnap: DocumentSnapshot): T | null {
     } as T;
 }
 
-export async function getTickets(): Promise<Ticket[]> {
+export const getTickets = cache(async (): Promise<Ticket[]> => {
   try {
     const ticketsCol = collection(db, 'tickets');
     const ticketSnapshot = await getDocs(ticketsCol);
@@ -53,7 +55,7 @@ export async function getTickets(): Promise<Ticket[]> {
     console.error("Error fetching tickets:", error);
     return [];
   }
-}
+});
 
 export async function getTicketsByStatus(status: string): Promise<Ticket[]> {
   try {
@@ -115,7 +117,7 @@ export async function getTicketsByReporter(reporterName: string): Promise<Ticket
 }
 
 
-export async function getProjects(): Promise<Project[]> {
+export const getProjects = cache(async (): Promise<Project[]> => {
   try {
     const projectsCol = collection(db, 'projects');
     const projectSnapshot = await getDocs(projectsCol);
@@ -124,7 +126,7 @@ export async function getProjects(): Promise<Project[]> {
     console.error("Error fetching projects:", error);
     return [];
   }
-}
+});
 
 export async function getProjectsByStatus(status: string): Promise<Project[]> {
     try {
@@ -161,7 +163,7 @@ export async function getProjectsByManager(managerId: string): Promise<Project[]
     }
 }
 
-export async function getUsers(): Promise<User[]> {
+export const getUsers = cache(async (): Promise<User[]> => {
   try {
     const usersCol = collection(db, 'users');
     const userSnapshot = await getDocs(usersCol);
@@ -170,7 +172,7 @@ export async function getUsers(): Promise<User[]> {
     console.error("Error fetching users:", error);
     return [];
   }
-}
+});
 
 export async function getUserById(id: string): Promise<User | null> {
     try {
