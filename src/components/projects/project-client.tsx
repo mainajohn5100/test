@@ -11,6 +11,7 @@ import { ArrowRight, ListFilter, Search } from "lucide-react";
 import { format } from 'date-fns';
 import Link from "next/link";
 import type { Project } from "@/lib/data";
+import { Button } from "@/components/ui/button";
 
 interface ProjectClientProps {
   projects: Project[];
@@ -28,24 +29,24 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const router = useRouter();
-  
-  // The status filter is now determined by the page, not client-side state.
-  // We use `initialStatusFilter` directly to control UI elements.
-  const isFilteredView = initialStatusFilter !== 'all';
 
   const handleStatusChange = (newStatus: string) => {
     router.push(`/projects/${newStatus}`);
   };
 
   const filteredAndSortedProjects = React.useMemo(() => {
-    // The `projects` prop is already pre-filtered. We just apply client-side search and sort.
-    let filteredProjects = [...(projects || [])];
+    let filteredProjects = projects || [];
+
+    if (initialStatusFilter !== 'all') {
+      const normalizedStatus = initialStatusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      filteredProjects = filteredProjects.filter(p => p.status === normalizedStatus);
+    }
     
     if (searchTerm) {
       const lowercasedTerm = searchTerm.toLowerCase();
       filteredProjects = filteredProjects.filter(p => 
         p.name.toLowerCase().includes(lowercasedTerm) ||
-        p.manager.toLowerCase().includes(lowercasedTerm)
+        (p.manager && p.manager.toLowerCase().includes(lowercasedTerm))
       );
     }
 
@@ -57,7 +58,9 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
     });
 
     return filteredProjects;
-  }, [projects, searchTerm, sortBy]);
+  }, [projects, searchTerm, sortBy, initialStatusFilter]);
+
+  const isFilteredView = initialStatusFilter !== 'all';
 
   return (
     <>

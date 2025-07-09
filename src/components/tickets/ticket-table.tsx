@@ -1,4 +1,4 @@
-
+//ticket-table.tsx
 "use client";
 
 import * as React from "react";
@@ -54,7 +54,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                         <TableCell>{ticket.title}</TableCell>
                         <TableCell>
                           <Badge
-                            variant="outline" 
+                            variant="outline"
                             className={cn(
                                 "font-medium capitalize",
                                 ticket.status === 'New' && 'text-blue-700 border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20',
