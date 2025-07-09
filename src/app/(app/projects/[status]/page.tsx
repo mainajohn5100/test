@@ -1,41 +1,32 @@
-
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
-import { getProjects, getProjectsByStatus } from "@/lib/firestore";
+import { getProjectsByStatus } from "@/lib/firestore";
 import { ProjectClient } from "@/components/projects/project-client";
 
-// This is crucial to prevent Next.js from caching the page and to ensure
-// fresh data is fetched from Firestore on every visit.
 export const dynamic = 'force-dynamic';
 
+const statusMap: { [key: string]: { dbValue: string; title: string } } = {
+  'all': { dbValue: 'all', title: 'All Projects' },
+  'new': { dbValue: 'New', title: 'New Projects' },
+  'active': { dbValue: 'Active', title: 'Active Projects' },
+  'on-hold': { dbValue: 'On Hold', title: 'On Hold Projects' },
+  'completed': { dbValue: 'Completed', title: 'Completed Projects' },
+};
+
 export default async function ProjectsByStatusPage({ params }: { params: { status: string } }) {
-    const statusFilter = params.status || 'all';
-    console.log(`[Projects Page] URL status filter: "${statusFilter}"`);
+  const statusFilter = params.status || 'all';
+  const statusConfig = statusMap[statusFilter];
 
-    let pageTitle: string;
-    let normalizedStatus: string;
+  const pageTitle = statusConfig ? statusConfig.title : statusMap['all'].title;
+  const dbStatus = statusConfig ? statusConfig.dbValue : 'all';
 
-    if (statusFilter === 'all') {
-        pageTitle = 'All Projects';
-        normalizedStatus = 'all';
-    } else {
-        const statusMap: { [key: string]: string } = {
-            'on-hold': 'On Hold'
-        };
-        normalizedStatus = statusMap[statusFilter] || statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
-        pageTitle = `${normalizedStatus} Projects`;
-    }
-    console.log(`[Projects Page] Normalized status for DB query: "${normalizedStatus}"`);
-    
-    const projects = await (async () => {
-        if (normalizedStatus === 'all') {
-            return getProjects();
-        }
-        return getProjectsByStatus(normalizedStatus);
-    })();
-    console.log(`[Projects Page] Fetched ${projects.length} projects from Firestore.`);
+  console.log(`[Projects Page] URL status filter: "${statusFilter}"`);
+  console.log(`[Projects Page] Normalized status for DB query: "${dbStatus}"`);
+
+  const projects = await getProjectsByStatus(dbStatus);
+  console.log(`[Projects Page] Fetched ${projects.length} projects from Firestore.`);
 
   return (
     <div className="flex flex-col gap-6">
