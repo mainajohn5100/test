@@ -21,10 +21,12 @@ import { ticketSchema } from "./schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { getProjects, getUsers } from "@/lib/firestore";
 import type { Project, User } from "@/lib/data";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function NewTicketPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const { user } = useAuth();
 
   const [tagInput, setTagInput] = useState('');
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
@@ -34,26 +36,28 @@ export default function NewTicketPage() {
   const [users, setUsers] = React.useState<User[]>([]);
 
   React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [projectsData, usersData] = await Promise.all([
-          getProjects(),
-          getUsers()
-        ]);
-        setProjects(projectsData);
-        // Filter for users who can be assigned tickets
-        setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
-      } catch (error) {
-        console.error("Failed to fetch projects or users", error);
-        toast({
-          title: "Error",
-          description: "Could not load data for projects and assignees.",
-          variant: "destructive",
-        });
-      }
-    };
-    fetchData();
-  }, [toast]);
+    if (user) {
+      const fetchData = async () => {
+        try {
+          const [projectsData, usersData] = await Promise.all([
+            getProjects(user),
+            getUsers()
+          ]);
+          setProjects(projectsData);
+          // Filter for users who can be assigned tickets
+          setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
+        } catch (error) {
+          console.error("Failed to fetch projects or users", error);
+          toast({
+            title: "Error",
+            description: "Could not load data for projects and assignees.",
+            variant: "destructive",
+          });
+        }
+      };
+      fetchData();
+    }
+  }, [user, toast]);
 
 
   const form = useForm<z.infer<typeof ticketSchema>>({
