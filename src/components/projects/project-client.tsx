@@ -1,7 +1,8 @@
 
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -25,31 +26,23 @@ const projectStatusVariantMap: { [key: string]: string } = {
 
 export function ProjectClient({ projects, initialStatusFilter }: ProjectClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [sortBy, setSortBy] = useState('newest');
+  const router = useRouter();
   
   const isFilteredView = initialStatusFilter !== 'all';
 
-  // This effect ensures the component's internal filter state
-  // syncs with the URL when navigating between pages.
-  useEffect(() => {
-    setStatusFilter(initialStatusFilter);
-  }, [initialStatusFilter]);
+  const handleStatusChange = (newStatus: string) => {
+    router.push(`/projects/${newStatus}`);
+  };
 
   const filteredAndSortedProjects = React.useMemo(() => {
-    let filteredProjects = [...projects];
-    
-    // Client-side filtering by status
-    if (statusFilter && statusFilter !== 'all') {
-      const normalizedStatus = statusFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      filteredProjects = filteredProjects.filter(p => p.status === normalizedStatus);
-    }
+    let filteredProjects = [...(projects || [])];
     
     if (searchTerm) {
       const lowercasedTerm = searchTerm.toLowerCase();
       filteredProjects = filteredProjects.filter(p => 
         p.name.toLowerCase().includes(lowercasedTerm) ||
-        p.manager.toLowerCase().includes(lowercasedTerm) // This will search by manager ID string
+        p.manager.toLowerCase().includes(lowercasedTerm)
       );
     }
 
@@ -61,7 +54,7 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
     });
 
     return filteredProjects;
-  }, [projects, searchTerm, statusFilter, sortBy]);
+  }, [projects, searchTerm, sortBy]);
 
   return (
     <>
@@ -77,7 +70,7 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
         </div>
         {!isFilteredView && (
             <div className="flex gap-2 w-full sm:w-auto">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={initialStatusFilter} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>

@@ -11,10 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ListOrdered, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface TicketTableToolbarProps {
   statusFilter: string;
-  setStatusFilter: (value: string) => void;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   priorityFilter: string;
@@ -26,7 +26,6 @@ interface TicketTableToolbarProps {
 
 export function TicketTableToolbar({
   statusFilter,
-  setStatusFilter,
   searchTerm,
   setSearchTerm,
   priorityFilter,
@@ -35,12 +34,20 @@ export function TicketTableToolbar({
   setSortBy,
   isFilteredView,
 }: TicketTableToolbarProps) {
+  const router = useRouter();
+
+  const handleStatusChange = (newStatus: string) => {
+    router.push(`/tickets/${newStatus}`);
+  };
 
   const handleReset = () => {
     setSearchTerm('');
     setPriorityFilter('all');
     setSortBy('updatedAt_desc');
-    setStatusFilter('all');
+    // Only navigate if we are not on the 'all' page already
+    if (statusFilter !== 'all') {
+      router.push('/tickets/all');
+    }
   };
 
   return (
@@ -56,7 +63,7 @@ export function TicketTableToolbar({
           <>
             <Select
               value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value)}
+              onValueChange={handleStatusChange}
             >
               <SelectTrigger className="h-9 w-full md:w-auto">
                 <SelectValue placeholder="Status" />

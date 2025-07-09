@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { TicketTableToolbar } from "@/components/tickets/ticket-table-toolbar";
 import { TicketTable } from "@/components/tickets/ticket-table";
 import type { Ticket, User } from "@/lib/data";
@@ -15,28 +15,13 @@ interface TicketClientProps {
 
 export function TicketClient({ tickets, users, initialStatusFilter }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sortBy, setSortBy] = useState('updatedAt_desc');
 
   const isFilteredView = initialStatusFilter !== 'all';
-  
-  // This effect ensures the component's internal filter state
-  // syncs with the URL when navigating between pages.
-  useEffect(() => {
-    setStatusFilter(initialStatusFilter);
-  }, [initialStatusFilter]);
 
   const filteredAndSortedTickets = useMemo(() => {
-    let filteredTickets = [...tickets];
-
-    // Filter by status from URL/toolbar
-    if (statusFilter && statusFilter !== 'all') {
-      const normalizedStatus = statusFilter === 'new-status' 
-        ? 'New' 
-        : statusFilter.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      filteredTickets = filteredTickets.filter(t => t.status === normalizedStatus);
-    }
+    let filteredTickets = [...(tickets || [])];
 
     // Filter by priority from toolbar
     if (priorityFilter && priorityFilter !== 'all') {
@@ -77,7 +62,7 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
     });
 
     return filteredTickets;
-  }, [tickets, searchTerm, statusFilter, priorityFilter, sortBy]);
+  }, [tickets, searchTerm, priorityFilter, sortBy]);
 
 
   return (
@@ -85,8 +70,7 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
       <CardContent className="pt-6">
         <div className="space-y-4">
           <TicketTableToolbar 
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
+            statusFilter={initialStatusFilter}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             priorityFilter={priorityFilter}

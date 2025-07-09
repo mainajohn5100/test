@@ -4,7 +4,7 @@ import { TicketClient } from "@/components/tickets/ticket-client";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
-import { getTickets, getUsers } from "@/lib/firestore";
+import { getTickets, getUsers, getTicketsByStatus } from "@/lib/firestore";
 import { users as mockUsers } from "@/lib/data";
 
 // This is crucial to prevent Next.js from caching the page and to ensure
@@ -15,20 +15,27 @@ export default async function TicketsPage({ params }: { params: { status: string
   const statusFilter = params.status || 'all';
 
   let pageTitle = "All Tickets";
+  let normalizedStatus = 'all';
   
   // Normalize the status from the URL to match the database values 
   // (e.g., 'new-status' -> 'New', 'on-hold' -> 'On Hold')
   if (statusFilter !== 'all') {
     if (statusFilter === 'new-status') {
+      normalizedStatus = 'New';
       pageTitle = "New Tickets";
     } else {
-      const normalizedStatus = statusFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      normalizedStatus = statusFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       pageTitle = `${normalizedStatus} Tickets`;
     }
   }
   
-  // Fetch all tickets. The filtering will be done on the client for responsiveness.
-  const tickets = await getTickets();
+  const tickets = await (async () => {
+    if (normalizedStatus === 'all') {
+      return getTickets();
+    }
+    return getTicketsByStatus(normalizedStatus);
+  })();
+
   const users = await getUsers();
 
   return (
