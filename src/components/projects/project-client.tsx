@@ -29,6 +29,8 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
   const [sortBy, setSortBy] = useState('newest');
   const router = useRouter();
   
+  // The status filter is now determined by the page, not client-side state.
+  // We use `initialStatusFilter` directly to control UI elements.
   const isFilteredView = initialStatusFilter !== 'all';
 
   const handleStatusChange = (newStatus: string) => {
@@ -36,6 +38,7 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
   };
 
   const filteredAndSortedProjects = React.useMemo(() => {
+    // The `projects` prop is already pre-filtered. We just apply client-side search and sort.
     let filteredProjects = [...(projects || [])];
     
     if (searchTerm) {
