@@ -31,34 +31,32 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
   const router = useRouter();
 
   const handleStatusChange = (newStatus: string) => {
+    // Navigate to the new page. The server will handle fetching the correct data.
     router.push(`/projects/${newStatus}`);
   };
 
   const filteredAndSortedProjects = React.useMemo(() => {
-    let filteredProjects = projects || [];
+    // The `projects` prop is already pre-filtered by status on the server.
+    // We only need to apply client-side search and sort.
+    let displayProjects = projects || [];
 
-    if (initialStatusFilter !== 'all') {
-      const normalizedStatus = initialStatusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      filteredProjects = filteredProjects.filter(p => p.status === normalizedStatus);
-    }
-    
     if (searchTerm) {
       const lowercasedTerm = searchTerm.toLowerCase();
-      filteredProjects = filteredProjects.filter(p => 
+      displayProjects = displayProjects.filter(p => 
         p.name.toLowerCase().includes(lowercasedTerm) ||
-        (p.manager && p.manager.toLowerCase().includes(lowercasedTerm))
+        (p.description && p.description.toLowerCase().includes(lowercasedTerm))
       );
     }
 
-    filteredProjects.sort((a, b) => {
+    displayProjects.sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       if (sortBy === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       if (sortBy === 'deadline') return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
       return 0;
     });
 
-    return filteredProjects;
-  }, [projects, searchTerm, sortBy, initialStatusFilter]);
+    return displayProjects;
+  }, [projects, searchTerm, sortBy]);
 
   const isFilteredView = initialStatusFilter !== 'all';
 
@@ -68,39 +66,39 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
         <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search by name, manager..." 
+              placeholder="Search by name or description..." 
               className="pl-9" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
         </div>
-        {!isFilteredView && (
-            <div className="flex gap-2 w-full sm:w-auto">
-                <Select value={initialStatusFilter} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="on-hold">On Hold</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-                </Select>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                    <ListFilter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="oldest">Oldest</SelectItem>
-                    <SelectItem value="deadline">By Deadline</SelectItem>
-                </SelectContent>
-                </Select>
-            </div>
-        )}
+        <div className="flex gap-2 w-full sm:w-auto">
+          {!isFilteredView && (
+            <Select value={initialStatusFilter} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="on-hold">On Hold</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+                <ListFilter className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="oldest">Oldest</SelectItem>
+                <SelectItem value="deadline">By Deadline</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -117,10 +115,6 @@ export function ProjectClient({ projects, initialStatusFilter }: ProjectClientPr
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
               <p className="text-sm text-muted-foreground line-clamp-3">{project.description || "A brief summary of the project goals and objectives. This provides a quick overview for anyone looking at the project list."}</p>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Project Manager</p>
-                <p className="text-sm text-muted-foreground">{project.manager}</p>
-              </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-foreground">Deadline</p>
                 <p className="text-sm text-muted-foreground">{format(new Date(project.deadline), 'PP')}</p>

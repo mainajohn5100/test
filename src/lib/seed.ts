@@ -61,6 +61,7 @@ async function seedDatabase() {
     const projectRef = doc(projectsCollection, project.id);
     batch.set(projectRef, {
         name: project.name,
+        description: project.description,
         status: project.status,
         manager: project.manager,
         team: project.team,
