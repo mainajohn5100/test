@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function ProjectsByStatusPage({ params }: { params: { status: string } }) {
     const statusFilter = params.status || 'all';
+    console.log(`[Projects Page] URL status filter: "${statusFilter}"`);
 
     let pageTitle: string;
     let normalizedStatus: string;
@@ -26,6 +27,7 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
         normalizedStatus = statusMap[statusFilter] || statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
         pageTitle = `${normalizedStatus} Projects`;
     }
+    console.log(`[Projects Page] Normalized status for DB query: "${normalizedStatus}"`);
     
     const projects = await (async () => {
         if (normalizedStatus === 'all') {
@@ -33,6 +35,7 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
         }
         return getProjectsByStatus(normalizedStatus);
     })();
+    console.log(`[Projects Page] Fetched ${projects.length} projects from Firestore.`);
 
   return (
     <div className="flex flex-col gap-6">

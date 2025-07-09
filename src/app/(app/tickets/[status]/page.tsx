@@ -17,6 +17,7 @@ export default async function TicketsPage({
   params: { status: string } 
 }) {
   const statusFilter = params.status || 'all';
+  console.log(`[Tickets Page] URL status filter: "${statusFilter}"`);
   
   let pageTitle: string;
   let normalizedStatus: string;
@@ -34,6 +35,7 @@ export default async function TicketsPage({
     normalizedStatus = statusMap[statusFilter] || statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
     pageTitle = `${normalizedStatus} Tickets`;
   }
+  console.log(`[Tickets Page] Normalized status for DB query: "${normalizedStatus}"`);
   
   // Fetch tickets based on the normalized status
   const tickets = await (async () => {
@@ -42,6 +44,7 @@ export default async function TicketsPage({
     }
     return getTicketsByStatus(normalizedStatus);
   })();
+  console.log(`[Tickets Page] Fetched ${tickets.length} tickets from Firestore.`);
 
   const users = await getUsers();
   
