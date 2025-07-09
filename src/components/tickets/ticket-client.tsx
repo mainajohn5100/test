@@ -1,8 +1,7 @@
-
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { TicketTableToolbar } from "@/components/tickets/ticket-table-toolbar";
 import { TicketTable } from "@/components/tickets/ticket-table";
 import type { Ticket, User } from "@/lib/data";
@@ -16,20 +15,40 @@ interface TicketClientProps {
 export function TicketClient({ tickets, users, initialStatusFilter }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('updatedAt_desc');
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
 
-  const isFilteredView = initialStatusFilter !== 'all';
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+  }, [initialStatusFilter]);
 
+  const isFilteredView = statusFilter !== 'all';
+  
   const filteredAndSortedTickets = useMemo(() => {
-    let filteredTickets = [...(tickets || [])];
+    let filteredTickets = tickets ? [...tickets] : [];
 
+    // Filter by status if not 'all'
+    if (statusFilter !== 'all') {
+      // Correctly normalize URL status (e.g., 'new-status' -> 'New', 'on-hold' -> 'On Hold')
+      let normalizedStatus: string;
+      if (statusFilter === 'new-status') {
+        normalizedStatus = "New";
+      } else {
+        normalizedStatus = statusFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      }
+      
+      filteredTickets = filteredTickets.filter(
+        (ticket) => ticket.status === normalizedStatus
+      );
+    }
+    
     // Filter by search term
     if (searchTerm) {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
       filteredTickets = filteredTickets.filter(t => 
         t.title.toLowerCase().includes(lowercasedSearchTerm) ||
         t.id.toLowerCase().includes(lowercasedSearchTerm) ||
-        t.assignee.toLowerCase().includes(lowercasedSearchTerm) ||
-        t.reporter.toLowerCase().includes(lowercasedSearchTerm)
+        (t.assignee && t.assignee.toLowerCase().includes(lowercasedSearchTerm)) ||
+        (t.reporter && t.reporter.toLowerCase().includes(lowercasedSearchTerm))
       );
     }
     
@@ -56,7 +75,7 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
     });
 
     return filteredTickets;
-  }, [tickets, searchTerm, sortBy]);
+  }, [tickets, searchTerm, sortBy, statusFilter]);
 
 
   return (
@@ -64,7 +83,6 @@ export function TicketClient({ tickets, users, initialStatusFilter }: TicketClie
       <CardContent className="pt-6">
         <div className="space-y-4">
           <TicketTableToolbar 
-            statusFilter={initialStatusFilter}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             sortBy={sortBy}
