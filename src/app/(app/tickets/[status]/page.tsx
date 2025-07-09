@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { getTickets, getUsers, getTicketsByStatus } from "@/lib/firestore";
-import { users as mockUsers } from "@/lib/data";
 
 // This is crucial to prevent Next.js from caching the page and to ensure
 // fresh data is fetched from Firestore on every visit.
@@ -29,12 +28,17 @@ export default async function TicketsPage({ params }: { params: { status: string
   const pageTitle = statusConfig ? statusConfig.title : statusMap['all'].title;
   const dbStatus = statusConfig ? statusConfig.dbValue : 'all';
 
+  console.log(`[TicketsPage] URL status: "${statusFilter}", DB status: "${dbStatus}"`);
+
   const tickets = await (async () => {
     if (dbStatus === 'all') {
       return getTickets();
     }
     return getTicketsByStatus(dbStatus);
   })();
+
+  console.log(`[TicketsPage] Fetched ${tickets.length} tickets for status "${dbStatus}"`);
+
 
   const users = await getUsers();
   
@@ -51,10 +55,8 @@ export default async function TicketsPage({ params }: { params: { status: string
       
       <TicketClient 
         tickets={tickets}
-        users={users.length > 0 ? users : mockUsers}
-        initialStatusFilter={statusFilter}
-        // showStatusFilter={statusFilter === 'all'}
-        showStatusFilter={true}
+        users={users}
+        statusFilter={statusFilter}
       />
     </div>
   );
