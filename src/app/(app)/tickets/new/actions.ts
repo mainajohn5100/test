@@ -2,14 +2,37 @@
 'use server';
 
 import { z } from 'zod';
-import { addTicket, createNotification, getUserByName } from '@/lib/firestore';
+import { addTicket, createNotification, getUserByName, updateTicket } from '@/lib/firestore';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { ticketSchema } from './schema';
-import type { Ticket } from '@/lib/data';
+import type { Ticket, Attachment } from '@/lib/data';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
-  // Define a stricter type for the priority map
+export async function createTicketAction(formData: FormData) {
+  const values = {
+    title: formData.get('title') as string,
+    description: formData.get('description') as string,
+    reporter: formData.get('reporter') as string,
+    email: formData.get('email') as string,
+    priority: formData.get('priority') as 'low' | 'medium' | 'high' | 'urgent',
+    project: formData.get('project') as string,
+    assignee: formData.get('assignee') as string,
+    tags: formData.getAll('tags') as string[] || [],
+  };
+
+  const validatedFields = ticketSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    console.error("Validation failed:", validatedFields.error.flatten().fieldErrors);
+    return {
+      error: 'Invalid form data provided. Please check the fields and try again.',
+    };
+  }
+  
+  const { title, description, reporter, email, priority, project, assignee, tags } = validatedFields.data;
+  
   const priorityMap: { [key: string]: Ticket['priority'] } = {
     low: 'Low',
     medium: 'Medium',
@@ -17,37 +40,47 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
     urgent: 'Urgent',
   };
 
-  const finalAssignee = (!values.assignee || values.assignee === 'unassigned') ? 'Unassigned' : values.assignee;
-  const finalProject = (!values.project || values.project === 'none') ? null : values.project;
+  const finalAssignee = (!assignee || assignee === 'unassigned') ? 'Unassigned' : assignee;
+  const finalProject = (!project || project === 'none') ? null : project;
 
-  // Build the ticket data object carefully.
-  // This object will be of a type that's a subset of what `addTicket` expects.
-  const ticketData: {
-    title: string;
-    description: string;
-    reporter: string;
-    reporterEmail?: string;
-    tags: string[];
-    priority: Ticket['priority'];
-    assignee: string;
-    project: string | null;
-  } = {
-    title: values.title,
-    description: values.description,
-    reporter: values.reporter,
-    reporterEmail: values.email,
-    tags: values.tags || [],
-    priority: priorityMap[values.priority],
+  const ticketData = {
+    title,
+    description,
+    reporter,
+    reporterEmail: email,
+    tags: tags || [],
+    priority: priorityMap[priority],
     assignee: finalAssignee,
     project: finalProject,
   };
 
   let newTicketId: string;
   try {
-    // The `addTicket` function will add status and timestamps.
     newTicketId = await addTicket(ticketData);
 
-    // Create notification if assigned
+    const attachments: Attachment[] = [];
+    const files = formData.getAll('attachments') as File[];
+
+    if (files.length > 0) {
+        for (const file of files) {
+            if (file.size > 0) {
+                const filePath = `ticket-attachments/${newTicketId}/${file.name}`;
+                const storageRef = ref(storage, filePath);
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+                attachments.push({
+                    name: file.name,
+                    url: downloadURL,
+                    type: file.type,
+                });
+            }
+        }
+    }
+
+    if (attachments.length > 0) {
+        await updateTicket(newTicketId, { attachments });
+    }
+
     if (finalAssignee !== 'Unassigned') {
       const assigneeUser = await getUserByName(finalAssignee);
       if (assigneeUser) {
@@ -60,7 +93,6 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
       }
     }
 
-    // Revalidate paths to reflect the new ticket in lists
     revalidatePath('/tickets', 'layout');
     revalidatePath('/dashboard');
   } catch (error) {
@@ -70,7 +102,5 @@ export async function createTicketAction(values: z.infer<typeof ticketSchema>) {
     };
   }
 
-  // Redirect is called outside the try/catch block
-  // as it throws an error that should not be caught.
   redirect(`/tickets/view/${newTicketId}`);
 }

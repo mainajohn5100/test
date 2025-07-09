@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, FileUp, Send, XCircle, Loader } from "lucide-react";
+import { Sparkles, FileUp, Send, XCircle, Loader, Trash2 } from "lucide-react";
 import React, { useState, useTransition } from "react";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,7 @@ export default function NewTicketPage() {
   const [tagInput, setTagInput] = useState('');
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
   
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
@@ -44,7 +45,6 @@ export default function NewTicketPage() {
             getUsers()
           ]);
           setProjects(projectsData);
-          // Filter for users who can be assigned tickets
           setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
         } catch (error) {
           console.error("Failed to fetch projects or users", error);
@@ -74,9 +74,36 @@ export default function NewTicketPage() {
     },
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setFiles(prevFiles => [...prevFiles, ...newFiles]);
+    }
+  };
+
+  const removeFile = (fileNameToRemove: string) => {
+    setFiles(prevFiles => prevFiles.filter(file => file.name !== fileNameToRemove));
+  };
+
   const onSubmit = (values: z.infer<typeof ticketSchema>) => {
     startTransition(async () => {
-      const result = await createTicketAction(values);
+      const formData = new FormData();
+      
+      Object.entries(values).forEach(([key, value]) => {
+        if (value) {
+          if (Array.isArray(value)) {
+            value.forEach(item => formData.append(key, item));
+          } else {
+            formData.append(key, value as string);
+          }
+        }
+      });
+      
+      files.forEach(file => {
+        formData.append('attachments', file);
+      });
+
+      const result = await createTicketAction(formData);
       if (result?.error) {
         toast({
           title: "Error creating ticket",
@@ -88,7 +115,6 @@ export default function NewTicketPage() {
           title: "Ticket created successfully!",
           description: "Redirecting you to the new ticket...",
         });
-        // Redirect is handled in the server action
       }
     });
   };
@@ -228,11 +254,26 @@ export default function NewTicketPage() {
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
                               <FileUp className="w-8 h-8 mb-4 text-muted-foreground" />
                               <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                              <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
+                              <p className="text-xs text-muted-foreground">Attach images or log files</p>
                           </div>
-                          <Input id="dropzone-file" type="file" className="hidden" disabled />
+                          <Input id="dropzone-file" type="file" className="hidden" multiple onChange={handleFileChange} />
                       </label>
                   </div> 
+                  {files.length > 0 && (
+                    <div className="pt-2 space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Selected files:</p>
+                      <ul className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                        {files.map((file, i) => (
+                          <li key={i} className="flex items-center justify-between p-2 pl-3 text-sm">
+                            <span className="truncate pr-2">{file.name}</span>
+                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeFile(file.name)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

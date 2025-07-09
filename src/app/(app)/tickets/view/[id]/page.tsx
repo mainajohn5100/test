@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -319,7 +319,32 @@ export default function ViewTicketPage() {
         <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardContent className="pt-6">
-                    <p className="text-muted-foreground">{ticket.description}</p>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Attachments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {ticket.attachments && ticket.attachments.length > 0 ? (
+                        <ul className="space-y-2">
+                            {ticket.attachments.map((file, index) => (
+                                <li key={index}>
+                                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 -m-2 rounded-md hover:bg-muted">
+                                        {file.type.startsWith('image/') ? (
+                                            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                                        ) : (
+                                            <FileIcon className="h-5 w-5 text-muted-foreground" />
+                                        )}
+                                        <span className="font-medium hover:underline truncate">{file.name}</span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No attachments for this ticket.</p>
+                    )}
                 </CardContent>
             </Card>
             <Card>

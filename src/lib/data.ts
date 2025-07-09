@@ -1,3 +1,10 @@
+
+export type Attachment = {
+  name: string;
+  url: string;
+  type: string;
+};
+
 export type Ticket = {
   id: string;
   title: string;
@@ -11,6 +18,7 @@ export type Ticket = {
   updatedAt: string;
   tags: string[];
   project: string | null;
+  attachments?: Attachment[];
 };
 
 export type User = {
