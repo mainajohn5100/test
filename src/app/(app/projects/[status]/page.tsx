@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
-import { getProjects } from "@/lib/firestore";
+import { getProjects, getProjectsByStatus } from "@/lib/firestore";
 import { ProjectClient } from "@/components/projects/project-client";
 
 // This is crucial to prevent Next.js from caching the page and to ensure
@@ -13,23 +13,32 @@ export const dynamic = 'force-dynamic';
 export default async function ProjectsByStatusPage({ params }: { params: { status: string } }) {
     const statusFilter = params.status || 'all';
 
-    let pageTitle = "All Projects";
-    let pageDescription = "Browse and manage all your projects.";
+    let pageTitle: string;
+    let normalizedStatus: string;
 
-    if (statusFilter && statusFilter !== 'all') {
-        const normalizedStatus = statusFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    if (statusFilter === 'all') {
+        pageTitle = 'All Projects';
+        normalizedStatus = 'all';
+    } else {
+        const statusMap: { [key: string]: string } = {
+            'on-hold': 'On Hold'
+        };
+        normalizedStatus = statusMap[statusFilter] || statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
         pageTitle = `${normalizedStatus} Projects`;
-        pageDescription = `Browse and manage all ${statusFilter.replace('-', ' ')} projects.`
     }
-
-    // Fetch all projects. Filtering will be handled on the client.
-    const projects = await getProjects();
+    
+    const projects = await (async () => {
+        if (normalizedStatus === 'all') {
+            return getProjects();
+        }
+        return getProjectsByStatus(normalizedStatus);
+    })();
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title={pageTitle}
-        description={pageDescription}
+        description={`Browse and manage all ${statusFilter.replace('-', ' ')} projects.`}
       >
         <Link href="/projects/create" passHref>
           <Button>
