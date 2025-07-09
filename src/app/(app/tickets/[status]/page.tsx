@@ -28,16 +28,12 @@ export default async function TicketsPage({ params }: { params: { status: string
   const pageTitle = statusConfig ? statusConfig.title : statusMap['all'].title;
   const dbStatus = statusConfig ? statusConfig.dbValue : 'all';
 
-  console.log(`[TicketsPage] URL status: "${statusFilter}", DB status: "${dbStatus}"`);
-
   const tickets = await (async () => {
     if (dbStatus === 'all') {
       return getTickets();
     }
     return getTicketsByStatus(dbStatus);
   })();
-
-  console.log(`[TicketsPage] Fetched ${tickets.length} tickets for status "${dbStatus}"`);
 
   const users = await getUsers();
   

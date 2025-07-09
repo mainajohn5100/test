@@ -26,16 +26,12 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
     const pageTitle = statusConfig ? statusConfig.title : statusMap['all'].title;
     const dbStatus = statusConfig ? statusConfig.dbValue : 'all';
     
-    console.log(`[ProjectsPage] URL status: "${statusFilter}", DB status: "${dbStatus}"`);
-
     const projects = await (async () => {
         if (dbStatus === 'all') {
             return getProjects();
         }
         return getProjectsByStatus(dbStatus);
     })();
-
-    console.log(`[ProjectsPage] Fetched ${projects.length} projects for status "${dbStatus}"`);
 
   return (
     <div className="flex flex-col gap-6">
