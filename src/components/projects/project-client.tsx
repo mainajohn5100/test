@@ -28,7 +28,7 @@ export function ProjectClient({ projects }: ProjectClientProps) {
   const [sortBy, setSortBy] = useState('newest');
 
   const filteredAndSortedProjects = useMemo(() => {
-    let displayProjects = projects || [];
+    let displayProjects = projects ? [...projects] : [];
 
     if (searchTerm) {
       const lowercasedTerm = searchTerm.toLowerCase();

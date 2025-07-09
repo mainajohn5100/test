@@ -50,7 +50,7 @@ export default async function ProjectsByStatusPage({ params }: { params: { statu
           </Button>
         </Link>
       </PageHeader>
-      <ProjectClient projects={projects} statusFilter={statusFilter} />
+      <ProjectClient projects={projects} />
     </div>
   );
 }

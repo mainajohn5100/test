@@ -52,9 +52,8 @@ export default async function TicketsPage({ params }: { params: { status: string
       <TicketClient 
         tickets={tickets}
         users={users.length > 0 ? users : mockUsers}
-        initialStatusFilter={statusFilter}
-        // showStatusFilter={statusFilter === 'all'}
-        showStatusFilter={true}
+        
+
       />
     </div>
   );

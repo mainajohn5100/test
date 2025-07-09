@@ -39,7 +39,6 @@ export default async function TicketsPage({ params }: { params: { status: string
 
   console.log(`[TicketsPage] Fetched ${tickets.length} tickets for status "${dbStatus}"`);
 
-
   const users = await getUsers();
   
   return (
@@ -56,7 +55,6 @@ export default async function TicketsPage({ params }: { params: { status: string
       <TicketClient 
         tickets={tickets}
         users={users}
-        statusFilter={statusFilter}
       />
     </div>
   );
