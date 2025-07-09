@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from "next/navigation";
@@ -9,7 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, KeyRound, Loader, ShieldCheck } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader, ShieldAlert, ShieldCheck } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -37,6 +38,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserRoleAction } from "../actions";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 
 const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -123,7 +125,7 @@ export default function UserProfilePage() {
     });
   };
 
-  if (loading) {
+  if (loading || !currentUser) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -134,6 +136,22 @@ export default function UserProfilePage() {
   if (!user) {
     notFound();
   }
+  
+  const canViewPage = currentUser.role === 'Admin' || currentUser.id === user.id;
+
+  if (!canViewPage) {
+    return (
+       <div className="flex flex-col items-center justify-center h-full text-center">
+          <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
+          <h2 className="text-2xl font-bold">Access Denied</h2>
+          <p className="text-muted-foreground">You do not have permission to view this page.</p>
+          <Button asChild className="mt-4">
+              <Link href="/dashboard">Return to Dashboard</Link>
+          </Button>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col gap-6">

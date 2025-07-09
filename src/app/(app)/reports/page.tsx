@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -19,7 +20,7 @@ export default function ReportsPage() {
 
   React.useEffect(() => {
     if (user) {
-       if (user.role === 'Customer') {
+       if (user.role !== 'Admin') {
         setLoading(false);
         return;
       }
@@ -45,7 +46,7 @@ export default function ReportsPage() {
     );
   }
 
-  if (user.role === 'Customer') {
+  if (user.role !== 'Admin') {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center">
           <ShieldAlert className="h-12 w-12 text-destructive mb-4" />

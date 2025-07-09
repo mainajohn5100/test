@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from "react";
@@ -11,26 +12,56 @@ import { useRouter } from "next/navigation";
 import { getUsers } from "@/lib/firestore";
 import type { User } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/auth-context";
+import { Loader, ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function UsersPage() {
   const router = useRouter();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const usersData = await getUsers();
-            setUsers(usersData);
-        } catch (error) {
-            console.error("Failed to fetch users:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-    fetchUsers();
-  }, []);
+    if (currentUser?.role === 'Admin') {
+      const fetchUsers = async () => {
+          setLoading(true);
+          try {
+              const usersData = await getUsers();
+              setUsers(usersData);
+          } catch (error) {
+              console.error("Failed to fetch users:", error);
+          } finally {
+              setLoading(false);
+          }
+      };
+      fetchUsers();
+    } else if (currentUser) {
+      setLoading(false);
+    }
+  }, [currentUser]);
+
+  if (loading || !currentUser) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (currentUser.role !== 'Admin') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center">
+          <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
+          <h2 className="text-2xl font-bold">Access Denied</h2>
+          <p className="text-muted-foreground">You do not have permission to view this page.</p>
+          <Button asChild className="mt-4">
+              <Link href="/dashboard">Return to Dashboard</Link>
+          </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

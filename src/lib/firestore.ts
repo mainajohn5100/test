@@ -1,7 +1,9 @@
 
+
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Ticket, Project, User, Notification } from './data';
+import { cache } from 'react';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -42,13 +44,17 @@ function docToData<T>(docSnap: DocumentSnapshot): T | null {
     } as T;
 }
 
-export async function getTickets(user: User): Promise<Ticket[]> {
+export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
   try {
     const ticketsCol = collection(db, 'tickets');
-    let ticketQuery = query(ticketsCol);
+    let ticketQuery;
 
     if (user.role === 'Customer') {
         ticketQuery = query(ticketsCol, where("reporter", "==", user.name));
+    } else if (user.role === 'Agent') {
+        ticketQuery = query(ticketsCol, where("assignee", "==", user.name));
+    } else { // Admin
+        ticketQuery = query(ticketsCol);
     }
     
     const ticketSnapshot = await getDocs(ticketQuery);
@@ -57,18 +63,20 @@ export async function getTickets(user: User): Promise<Ticket[]> {
     console.error("Error fetching tickets:", error);
     return [];
   }
-}
+});
 
-export async function getTicketsByStatus(status: string, user: User): Promise<Ticket[]> {
+export const getTicketsByStatus = cache(async (status: string, user: User): Promise<Ticket[]> => {
   try {
     const ticketsCol = collection(db, 'tickets');
-    
     const statusQuery = status !== 'all' ? [where("status", "==", status)] : [];
     
-    const roleQuery = user.role === 'Customer' 
-        ? [where("reporter", "==", user.name)] 
-        : [];
-
+    let roleQuery = [];
+    if (user.role === 'Customer') {
+        roleQuery.push(where("reporter", "==", user.name));
+    } else if (user.role === 'Agent') {
+        roleQuery.push(where("assignee", "==", user.name));
+    }
+    
     const q = query(ticketsCol, ...statusQuery, ...roleQuery);
     const ticketSnapshot = await getDocs(q);
     return snapshotToData<Ticket>(ticketSnapshot);
@@ -76,9 +84,9 @@ export async function getTicketsByStatus(status: string, user: User): Promise<Ti
     console.error(`Error fetching tickets with status "${status}":`, error);
     return [];
   }
-}
+});
 
-export async function getTicketById(id: string): Promise<Ticket | null> {
+export const getTicketById = cache(async (id: string): Promise<Ticket | null> => {
   try {
     const ticketRef = doc(db, 'tickets', id);
     const ticketSnap = await getDoc(ticketRef);
@@ -87,9 +95,9 @@ export async function getTicketById(id: string): Promise<Ticket | null> {
     console.error("Error fetching ticket by ID:", error);
     return null;
   }
-}
+});
 
-export async function getTicketsByProject(projectName: string): Promise<Ticket[]> {
+export const getTicketsByProject = cache(async (projectName: string): Promise<Ticket[]> => {
     try {
         const ticketsCol = collection(db, 'tickets');
         const q = query(ticketsCol, where("project", "==", projectName));
@@ -99,9 +107,9 @@ export async function getTicketsByProject(projectName: string): Promise<Ticket[]
         console.error("Error fetching tickets by project:", error);
         return [];
     }
-}
+});
 
-export async function getTicketsByAssignee(assigneeName: string): Promise<Ticket[]> {
+export const getTicketsByAssignee = cache(async (assigneeName: string): Promise<Ticket[]> => {
     try {
         const ticketsCol = collection(db, 'tickets');
         const q = query(ticketsCol, where("assignee", "==", assigneeName));
@@ -111,9 +119,9 @@ export async function getTicketsByAssignee(assigneeName: string): Promise<Ticket
         console.error("Error fetching tickets by assignee:", error);
         return [];
     }
-}
+});
 
-export async function getTicketsByReporter(reporterName: string): Promise<Ticket[]> {
+export const getTicketsByReporter = cache(async (reporterName: string): Promise<Ticket[]> => {
     try {
         const ticketsCol = collection(db, 'tickets');
         const q = query(ticketsCol, where("reporter", "==", reporterName));
@@ -123,38 +131,86 @@ export async function getTicketsByReporter(reporterName: string): Promise<Ticket
         console.error("Error fetching tickets by reporter:", error);
         return [];
     }
-}
+});
 
 
-export async function getProjects(user: User): Promise<Project[]> {
+export const getProjects = cache(async (user: User): Promise<Project[]> => {
   if (user.role === 'Customer') return [];
   try {
     const projectsCol = collection(db, 'projects');
-    const projectSnapshot = await getDocs(projectsCol);
-    return snapshotToData<Project>(projectSnapshot);
+    
+    if (user.role === 'Admin') {
+        const projectSnapshot = await getDocs(projectsCol);
+        return snapshotToData<Project>(projectSnapshot);
+    }
+    
+    if (user.role === 'Agent') {
+        const managerQuery = query(projectsCol, where("manager", "==", user.id));
+        const teamMemberQuery = query(projectsCol, where("team", "array-contains", user.id));
+        
+        const [managerSnapshot, teamMemberSnapshot] = await Promise.all([
+            getDocs(managerQuery),
+            getDocs(teamMemberQuery)
+        ]);
+
+        const projectsMap = new Map<string, Project>();
+        snapshotToData<Project>(managerSnapshot).forEach(p => projectsMap.set(p.id, p));
+        snapshotToData<Project>(teamMemberSnapshot).forEach(p => projectsMap.set(p.id, p));
+        
+        return Array.from(projectsMap.values());
+    }
+
+    return [];
   } catch (error) {
     console.error("Error fetching projects:", error);
     return [];
   }
-}
+});
 
-export async function getProjectsByStatus(status: string, user: User): Promise<Project[]> {
+export const getProjectsByStatus = cache(async (status: string, user: User): Promise<Project[]> => {
     if (user.role === 'Customer') return [];
+
     try {
         const projectsCol = collection(db, 'projects');
-        const q = status === 'all'
-            ? query(projectsCol)
-            : query(projectsCol, where("status", "==", status));
+        const statusFilter = status !== 'all' ? where("status", "==", status) : null;
 
-        const projectSnapshot = await getDocs(q);
-        return snapshotToData<Project>(projectSnapshot);
+        if (user.role === 'Admin') {
+            const q = statusFilter ? query(projectsCol, statusFilter) : query(projectsCol);
+            const projectSnapshot = await getDocs(q);
+            return snapshotToData<Project>(projectSnapshot);
+        }
+
+        if (user.role === 'Agent') {
+            const managerQueryConstraints = [where("manager", "==", user.id)];
+            if(statusFilter) managerQueryConstraints.push(statusFilter);
+
+            const teamMemberQueryConstraints = [where("team", "array-contains", user.id)];
+            if(statusFilter) teamMemberQueryConstraints.push(statusFilter);
+
+            const managerQuery = query(projectsCol, ...managerQueryConstraints);
+            const teamMemberQuery = query(projectsCol, ...teamMemberQueryConstraints);
+            
+            const [managerSnapshot, teamMemberSnapshot] = await Promise.all([
+                getDocs(managerQuery),
+                getDocs(teamMemberQuery)
+            ]);
+
+            const projectsMap = new Map<string, Project>();
+            snapshotToData<Project>(managerSnapshot).forEach(p => projectsMap.set(p.id, p));
+            snapshotToData<Project>(teamMemberSnapshot).forEach(p => projectsMap.set(p.id, p));
+            
+            return Array.from(projectsMap.values());
+        }
+
+        return [];
+
     } catch (error) {
         console.error(`Error fetching projects with status "${status}":`, error);
         return [];
     }
-}
+});
 
-export async function getProjectById(id: string): Promise<Project | null> {
+export const getProjectById = cache(async (id: string): Promise<Project | null> => {
     try {
         const projectRef = doc(db, 'projects', id);
         const projectSnap = await getDoc(projectRef);
@@ -163,9 +219,9 @@ export async function getProjectById(id: string): Promise<Project | null> {
         console.error("Error fetching project by ID:", error);
         return null;
     }
-}
+});
 
-export async function getProjectsByManager(managerId: string): Promise<Project[]> {
+export const getProjectsByManager = cache(async (managerId: string): Promise<Project[]> => {
     try {
         const projectsCol = collection(db, 'projects');
         const q = query(projectsCol, where("manager", "==", managerId));
@@ -175,9 +231,9 @@ export async function getProjectsByManager(managerId: string): Promise<Project[]
         console.error("Error fetching projects by manager:", error);
         return [];
     }
-}
+});
 
-export async function getUsers(): Promise<User[]> {
+export const getUsers = cache(async (): Promise<User[]> => {
   try {
     const usersCol = collection(db, 'users');
     const userSnapshot = await getDocs(usersCol);
@@ -186,9 +242,9 @@ export async function getUsers(): Promise<User[]> {
     console.error("Error fetching users:", error);
     return [];
   }
-}
+});
 
-export async function getUserById(id: string): Promise<User | null> {
+export const getUserById = cache(async (id: string): Promise<User | null> => {
     try {
         const userRef = doc(db, 'users', id);
         const userSnap = await getDoc(userRef);
@@ -197,9 +253,9 @@ export async function getUserById(id: string): Promise<User | null> {
         console.error("Error fetching user by ID:", error);
         return null;
     }
-}
+});
 
-export async function getUserByName(name: string): Promise<User | null> {
+export const getUserByName = cache(async (name: string): Promise<User | null> => {
     if (name === 'Unassigned') return null;
     try {
         const usersCol = collection(db, 'users');
@@ -213,7 +269,7 @@ export async function getUserByName(name: string): Promise<User | null> {
         console.error("Error fetching user by name:", error);
         return null;
     }
-}
+});
 
 export async function updateUser(userId: string, userData: Partial<Omit<User, 'id'>>): Promise<void> {
     try {
