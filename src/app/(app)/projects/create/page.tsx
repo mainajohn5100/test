@@ -19,9 +19,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-import { getProjects, getUsers } from "@/lib/firestore";
-import type { Project, User } from "@/lib/data";
+import { getUsers } from "@/lib/firestore";
+import type { User } from "@/lib/data";
 import { projectSchema } from "./schema";
 import { createProjectAction } from "./actions";
 
@@ -34,13 +42,13 @@ export default function CreateProjectPage() {
     const fetchData = async () => {
       try {
         const usersData = await getUsers();
-        // Filter for users who can be managers
+        // Filter for users who can be managers or team members
         setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
       } catch (error) {
         console.error("Failed to fetch users", error);
         toast({
           title: "Error",
-          description: "Could not load data for project managers.",
+          description: "Could not load data for project managers and team members.",
           variant: "destructive",
         });
       }
@@ -53,6 +61,7 @@ export default function CreateProjectPage() {
     defaultValues: {
       name: "",
       description: "",
+      team: [],
     },
   });
 
@@ -75,6 +84,9 @@ export default function CreateProjectPage() {
     });
   };
   
+  const teamValue = form.watch("team") || [];
+  const selectedTeamMembers = users.filter(user => teamValue.includes(user.id));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -182,6 +194,49 @@ export default function CreateProjectPage() {
                     )}
                     />
               </div>
+              <FormField
+                control={form.control}
+                name="team"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Team Members (Optional)</FormLabel>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <FormControl>
+                          <Button variant="outline" className="w-full justify-start font-normal text-left h-auto min-h-10 py-2">
+                            <span className="truncate">
+                              {selectedTeamMembers.length > 0
+                                ? selectedTeamMembers.map(u => u.name).join(', ')
+                                : "Select team members"}
+                            </span>
+                          </Button>
+                        </FormControl>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                        <DropdownMenuLabel>Assign Team Members</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {users.map(user => (
+                          <DropdownMenuCheckboxItem
+                            key={user.id}
+                            checked={field.value?.includes(user.id)}
+                            onCheckedChange={(checked) => {
+                              const currentTeam = field.value || [];
+                              if (checked) {
+                                field.onChange([...currentTeam, user.id]);
+                              } else {
+                                field.onChange(currentTeam.filter(id => id !== user.id));
+                              }
+                            }}
+                          >
+                            {user.name}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
           <div className="flex justify-end">

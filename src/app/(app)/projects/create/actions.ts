@@ -12,7 +12,7 @@ export async function createProjectAction(values: z.infer<typeof projectSchema>)
     name: values.name,
     description: values.description || '',
     manager: values.manager,
-    team: [],
+    team: values.team || [],
     deadline: values.deadline,
   };
 
@@ -26,6 +26,19 @@ export async function createProjectAction(values: z.infer<typeof projectSchema>)
         description: `A new project has been created and you have been assigned as the manager.`,
         link: `/projects/view/${newProjectId}`,
     });
+
+    // Notifications for team members
+    if (projectData.team.length > 0) {
+      const teamNotifications = projectData.team.map(userId => 
+          createNotification({
+              userId: userId,
+              title: `You've been added to a new project`,
+              description: `You are now a team member on the project: "${projectData.name}".`,
+              link: `/projects/view/${newProjectId}`,
+          })
+      );
+      await Promise.all(teamNotifications);
+    }
 
     revalidatePath('/projects', 'layout');
     revalidatePath('/dashboard');
