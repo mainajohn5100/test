@@ -35,7 +35,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          {user?.role === 'Admin' && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
           {user?.role === 'Admin' && <TabsTrigger value="access">Access Control</TabsTrigger>}
           <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
@@ -97,9 +97,11 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="integrations">
-            <EmailIntegrationForm />
-        </TabsContent>
+        {user?.role === 'Admin' && (
+          <TabsContent value="integrations">
+              <EmailIntegrationForm />
+          </TabsContent>
+        )}
          {user?.role === 'Admin' && (
           <TabsContent value="access">
               <Card>

@@ -28,8 +28,18 @@ type NavItem = {
     icon: React.ElementType;
     href?: string;
     roles: User['role'][];
-    subItems?: Omit<NavItem, 'icon'>[];
+    subItems?: Omit<NavItem, 'icon' | 'roles'>[];
 };
+
+const allTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
+    { label: "All Tickets", href: "/tickets/all" },
+    { label: "New", href: "/tickets/new-status" },
+    { label: "Active", href: "/tickets/active" },
+    { label: "Pending", href: "/tickets/pending" },
+    { label: "On Hold", href: "/tickets/on-hold" },
+    { label: "Closed", href: "/tickets/closed" },
+    { label: "Terminated", href: "/tickets/terminated" },
+];
 
 const menuItems: NavItem[] = [
   {
@@ -43,33 +53,27 @@ const menuItems: NavItem[] = [
     icon: Ticket,
     roles: ['Admin', 'Agent', 'Customer'],
     subItems: [
-      { label: "All Tickets", href: "/tickets/all", roles: ['Admin', 'Agent', 'Customer'] },
-      { label: "New", href: "/tickets/new-status", roles: ['Admin', 'Agent', 'Customer'] },
-      { label: "Active", href: "/tickets/active", roles: ['Admin', 'Agent', 'Customer'] },
-      { label: "Pending", href: "/tickets/pending", roles: ['Admin', 'Agent', 'Customer'] },
-      { label: "On Hold", href: "/tickets/on-hold", roles: ['Admin', 'Agent', 'Customer'] },
-      { label: "Closed", href: "/tickets/closed", roles: ['Admin', 'Agent', 'Customer'] },
-      { label: "Terminated", href: "/tickets/terminated", roles: ['Admin', 'Agent', 'Customer'] },
-      { label: "Create Ticket", href: "/tickets/new", roles: ['Admin', 'Agent'] },
+      ...allTicketSubItems,
+      { label: "Create Ticket", href: "/tickets/new" },
     ],
   },
   {
     label: "Reports",
     href: "/reports",
     icon: BarChart2,
-    roles: ['Admin', 'Agent'],
+    roles: ['Admin'],
   },
   {
     label: "Projects",
     icon: Briefcase,
     roles: ['Admin', 'Agent'],
     subItems: [
-      { label: "All Projects", href: "/projects/all", roles: ['Admin', 'Agent'] },
-      { label: "New", href: "/projects/new", roles: ['Admin', 'Agent'] },
-      { label: "Active", href: "/projects/active", roles: ['Admin', 'Agent'] },
-      { label: "On Hold", href: "/projects/on-hold", roles: ['Admin', 'Agent'] },
-      { label: "Completed", href: "/projects/completed", roles: ['Admin', 'Agent'] },
-      { label: "Create Project", href: "/projects/create", roles: ['Admin', 'Agent'] },
+      { label: "All Projects", href: "/projects/all" },
+      { label: "New", href: "/projects/new" },
+      { label: "Active", href: "/projects/active" },
+      { label: "On Hold", href: "/projects/on-hold" },
+      { label: "Completed", href: "/projects/completed" },
+      { label: "Create Project", href: "/projects/create" },
     ],
   },
   {
@@ -82,35 +86,45 @@ const menuItems: NavItem[] = [
     label: "Settings",
     href: "/settings",
     icon: Settings,
-    roles: ['Admin'],
+    roles: ['Admin', 'Agent'],
   },
 ];
+
+const customerTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = allTicketSubItems;
 
 export function MainNav() {
   const pathname = usePathname();
   const { user } = useAuth();
 
   if (!user) {
-    // or return a loading skeleton
     return null;
   }
   
-  const accessibleMenuItems = menuItems.filter(item => 
-    item.roles.includes(user.role)
-  ).map(item => {
-    if (item.subItems) {
-      return {
-        ...item,
-        subItems: item.subItems.filter(subItem => subItem.roles.includes(user.role))
-      };
-    }
-    return item;
-  });
+  const accessibleMenuItems = menuItems
+    .filter(item => item.roles.includes(user.role))
+    .map(item => {
+      if (!item.subItems) return item;
 
+      let subItems;
+      if (user.role === 'Customer' && item.label === 'Tickets') {
+        subItems = customerTicketSubItems;
+      } else if (user.role === 'Agent' && item.label === 'Tickets') {
+         subItems = [...allTicketSubItems, { label: "Create Ticket", href: "/tickets/new" }];
+      } else {
+        subItems = item.subItems;
+      }
+
+      // Admins and Agents have specific sub-items for projects
+      if ((user.role === 'Admin' || user.role === 'Agent') && item.label === 'Projects') {
+          subItems = item.subItems;
+      }
+
+      return { ...item, subItems };
+    });
 
   return (
     <nav className="flex flex-col p-4 space-y-2">
-      <Accordion type="multiple" className="w-full" defaultValue={['item-0', 'item-1', 'item-2', 'item-3']}>
+      <Accordion type="multiple" className="w-full" defaultValue={['item-0', 'item-1', 'item-2', 'item-3', 'item-4', 'item-5']}>
         {accessibleMenuItems.map((item, index) =>
           item.subItems && item.subItems.length > 0 ? (
             <AccordionItem value={`item-${index}`} key={index} className="border-b-0">
