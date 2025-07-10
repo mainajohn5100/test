@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { storage, auth } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import type { User } from '@/lib/data';
-import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, updateProfile, verifyBeforeUpdateEmail } from 'firebase/auth';
 
 export async function updateUserAction(userId: string, formData: FormData) {
   try {
@@ -21,22 +21,19 @@ export async function updateUserAction(userId: string, formData: FormData) {
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
 
-    // Handle email change
+    // Handle email change securely
     if (email && email !== currentUser.email) {
-      // The updateEmail function is not available in the version of the SDK being used.
-      // This would require re-authentication. For now, we'll log this action.
-      console.log(`Attempting to change email to: ${email}. This requires re-authentication.`);
-      // In a real scenario, you'd trigger a re-auth flow.
-      // For this implementation, we will update Firestore but not Firebase Auth email.
-      updateData.email = email; 
+      await verifyBeforeUpdateEmail(currentUser, email);
+      updateData.email = email;
     }
 
+    // Handle name change
     if (name && name !== currentUser.displayName) {
-        // updateProfile is also not available in this Admin SDK context.
-        // We will update it in Firestore.
+        await updateProfile(currentUser, { displayName: name });
         updateData.name = name;
     }
 
+    // Handle avatar change
     const avatarFile = formData.get('avatar') as File | null;
     if (avatarFile && avatarFile.size > 0) {
       const filePath = `avatars/${userId}/${Date.now()}_${avatarFile.name}`;
@@ -47,6 +44,7 @@ export async function updateUserAction(userId: string, formData: FormData) {
       updateData.avatar = avatarUrl;
     }
 
+    // Update Firestore only if there are changes
     if (Object.keys(updateData).length > 0) {
         await updateFirestoreUser(userId, updateData);
     }
@@ -55,7 +53,12 @@ export async function updateUserAction(userId: string, formData: FormData) {
     revalidatePath('/settings');
     revalidatePath('/(app)', 'layout'); // Revalidate layout to update user info in sidebar
 
-    return { success: true, message: "Profile updated successfully." };
+    let message = "Profile updated successfully.";
+    if (updateData.email) {
+      message += ` A verification email has been sent to ${updateData.email}. Please check your inbox to complete the update.`
+    }
+    return { success: true, message };
+
   } catch (error) {
     console.error("Error updating user:", error);
     return { success: false, error: 'Failed to update profile.' };

@@ -16,7 +16,6 @@ import type { User } from "@/lib/data";
 import { updateUserSchema } from "@/app/(app)/users/schema";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserAction } from "@/app/(app)/users/actions";
-import { ReauthenticationForm } from "./reauthentication-form";
 import { useAuth } from "@/contexts/auth-context";
 import { ChangePasswordForm } from "./change-password-form";
 
@@ -24,8 +23,6 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
   const { toast } = useToast();
   const { refreshUser } = useAuth();
   const [isPending, startTransition] = React.useTransition();
-  const [needsReauth, setNeedsReauth] = React.useState(false);
-  const [formData, setFormData] = React.useState<FormData | null>(null);
   const [isPasswordDialogOpen, setPasswordDialogOpen] = React.useState(false);
 
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
@@ -47,32 +44,22 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
     }
   };
 
-  const handleFormSubmit = async (values: z.infer<typeof updateUserSchema>) => {
-    const currentFormData = new FormData();
-    currentFormData.append('name', values.name || '');
-    currentFormData.append('email', values.email || '');
-
-    if (selectedFile) {
-        currentFormData.append('avatar', selectedFile);
-    }
-    setFormData(currentFormData);
-
-    const emailChanged = values.email !== user.email;
-
-    if (emailChanged) {
-        setNeedsReauth(true);
-    } else {
-        await proceedWithUpdate(currentFormData);
-    }
-  };
-
-  const proceedWithUpdate = async (data: FormData) => {
+  const handleFormSubmit = (values: z.infer<typeof updateUserSchema>) => {
     startTransition(async () => {
-      const result = await updateUserAction(user.id, data);
+      const formData = new FormData();
+      formData.append('name', values.name || '');
+      formData.append('email', values.email || '');
+
+      if (selectedFile) {
+          formData.append('avatar', selectedFile);
+      }
+      
+      const result = await updateUserAction(user.id, formData);
       if (result.success) {
         toast({
-          title: "Profile Updated",
+          title: "Profile Update Initiated",
           description: result.message,
+          duration: 8000
         });
         await refreshUser();
         setOpen(false);
@@ -83,27 +70,11 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
           variant: "destructive",
         });
       }
-      setNeedsReauth(false);
     });
   };
 
-  const handleReathSuccess = () => {
-    if (formData) {
-        proceedWithUpdate(formData);
-    }
-  }
-
   return (
     <>
-      <Dialog open={needsReauth} onOpenChange={setNeedsReauth}>
-        <DialogContent>
-            <ReauthenticationForm
-                onSuccess={handleReathSuccess}
-                onCancel={() => setNeedsReauth(false)}
-                description="For your security, please confirm your password to change your email address."
-            />
-        </DialogContent>
-      </Dialog>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
           <DialogHeader>

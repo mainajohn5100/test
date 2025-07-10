@@ -23,7 +23,9 @@ export async function changePasswordAction(values: z.infer<typeof passwordSchema
 
     const validated = passwordSchema.safeParse(values);
     if (!validated.success) {
-      return { success: false, error: "Invalid data provided." };
+      const issues = validated.error.flatten().fieldErrors;
+      const errorMessage = Object.values(issues).flat().join(' ');
+      return { success: false, error: errorMessage || "Invalid data provided." };
     }
 
     const { currentPassword, newPassword } = validated.data;
