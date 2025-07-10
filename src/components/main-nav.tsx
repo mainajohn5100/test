@@ -86,11 +86,15 @@ const menuItems: NavItem[] = [
     label: "Settings",
     href: "/settings",
     icon: Settings,
-    roles: ['Admin', 'Agent'],
+    roles: ['Admin', 'Agent', 'Customer'],
   },
 ];
 
-const customerTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = allTicketSubItems;
+const customerTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
+    ...allTicketSubItems,
+    { label: "Create Ticket", href: "/tickets/new" },
+];
+
 const customerProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
     { label: "All Projects", href: "/projects/all" },
 ];
@@ -122,6 +126,10 @@ export function MainNav() {
         }
       }
       
+      if (item.label === 'Settings' && user.role === 'Customer') {
+          return { ...item, subItems: undefined } // Direct link, no sub-items for customer
+      }
+
       return { ...item, subItems: finalSubItems };
     });
 

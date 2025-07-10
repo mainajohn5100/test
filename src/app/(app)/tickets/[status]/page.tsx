@@ -62,20 +62,17 @@ export default function TicketsPage({ params }: { params: { status: string } }) 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={pageTitle} description="View, manage, and filter your tickets.">
-        {(user.role === 'Admin' || user.role === 'Agent') && (
-          <Link href="/tickets/new" passHref>
-            <Button>
-              <PlusCircle />
-              New Ticket
-            </Button>
-          </Link>
-        )}
+        <Link href="/tickets/new" passHref>
+          <Button>
+            <PlusCircle />
+            New Ticket
+          </Button>
+        </Link>
       </PageHeader>
       
       <TicketClient 
         tickets={tickets}
         users={users}
-        statusFilter={statusFilter}
       />
     </div>
   );

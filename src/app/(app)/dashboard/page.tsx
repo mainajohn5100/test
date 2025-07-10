@@ -88,14 +88,12 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Dashboard" description="Here's a snapshot of your helpdesk activity.">
-        {(user.role === 'Admin' || user.role === 'Agent') && (
-            <Link href="/tickets/new" passHref>
-              <Button>
-                <PlusCircle />
-                New Ticket
-              </Button>
-            </Link>
-        )}
+        <Link href="/tickets/new" passHref>
+          <Button>
+            <PlusCircle />
+            New Ticket
+          </Button>
+        </Link>
       </PageHeader>
       
       <StatsCards tickets={tickets} projects={projects} />

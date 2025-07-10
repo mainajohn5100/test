@@ -75,6 +75,14 @@ export default function NewTicketPage() {
       tags: [],
     },
   });
+  
+  React.useEffect(() => {
+    if (user) {
+      form.setValue('reporter', user.name);
+      form.setValue('email', user.email);
+    }
+  }, [user, form]);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -199,7 +207,7 @@ export default function NewTicketPage() {
                       <FormItem>
                         <FormLabel>Customer Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="John Doe" {...field} />
+                          <Input placeholder="John Doe" {...field} disabled={user?.role === 'Customer'} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -212,7 +220,7 @@ export default function NewTicketPage() {
                       <FormItem>
                         <FormLabel>Customer Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="john.doe@example.com" {...field} />
+                          <Input type="email" placeholder="john.doe@example.com" {...field} disabled={user?.role === 'Customer'} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
