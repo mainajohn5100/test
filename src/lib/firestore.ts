@@ -135,7 +135,29 @@ export const getTicketsByReporter = cache(async (reporterName: string): Promise<
 
 
 export const getProjects = cache(async (user: User): Promise<Project[]> => {
-  if (!user || user.role === 'Customer') return [];
+  if (!user) return [];
+
+  // Customers can only see projects associated with tickets they've reported.
+  if (user.role === 'Customer') {
+      try {
+          const customerTickets = await getTicketsByReporter(user.name);
+          if (customerTickets.length === 0) return [];
+          
+          const projectNames = [...new Set(customerTickets.map(t => t.project).filter(Boolean))];
+          if (projectNames.length === 0) return [];
+
+          const projectsCol = collection(db, 'projects');
+          const q = query(projectsCol, where("name", "in", projectNames));
+          const projectSnapshot = await getDocs(q);
+          return snapshotToData<Project>(projectSnapshot);
+
+      } catch (error) {
+          console.error("Error fetching projects for customer:", error);
+          return [];
+      }
+  }
+
+  // Logic for Admins and Agents
   try {
     const projectsCol = collection(db, 'projects');
     
@@ -168,8 +190,31 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
 });
 
 export const getProjectsByStatus = cache(async (status: string, user: User): Promise<Project[]> => {
-    if (!user || user.role === 'Customer') return [];
+    if (!user) return [];
 
+    // Customers can only see projects associated with tickets they've reported.
+    if (user.role === 'Customer') {
+        try {
+            const customerTickets = await getTicketsByReporter(user.name);
+            if (customerTickets.length === 0) return [];
+            
+            const projectNames = [...new Set(customerTickets.map(t => t.project).filter(Boolean))];
+            if (projectNames.length === 0) return [];
+
+            const projectsCol = collection(db, 'projects');
+            // Customers can't filter by status, so we ignore the status parameter for them.
+            const q = query(projectsCol, where("name", "in", projectNames));
+            const projectSnapshot = await getDocs(q);
+
+            return snapshotToData<Project>(projectSnapshot);
+
+        } catch (error) {
+            console.error("Error fetching projects for customer:", error);
+            return [];
+        }
+    }
+
+    // Logic for Admins and Agents
     try {
         const projectsCol = collection(db, 'projects');
         const statusFilter = status !== 'all' ? [where("status", "==", status)] : [];
@@ -313,6 +358,7 @@ export async function addProject(projectData: {
             ...projectData,
             status: 'New',
             createdAt: serverTimestamp(),
+            ticketsEnabled: true,
         });
         return docRef.id;
     } catch (error) {

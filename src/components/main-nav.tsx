@@ -66,7 +66,7 @@ const menuItems: NavItem[] = [
   {
     label: "Projects",
     icon: Briefcase,
-    roles: ['Admin', 'Agent'],
+    roles: ['Admin', 'Agent', 'Customer'],
     subItems: [
       { label: "All Projects", href: "/projects/all" },
       { label: "New", href: "/projects/new" },
@@ -91,6 +91,9 @@ const menuItems: NavItem[] = [
 ];
 
 const customerTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = allTicketSubItems;
+const customerProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
+    { label: "All Projects", href: "/projects/all" },
+];
 
 export function MainNav() {
   const pathname = usePathname();
@@ -105,21 +108,21 @@ export function MainNav() {
     .map(item => {
       if (!item.subItems) return item;
 
-      let subItems;
-      if (user.role === 'Customer' && item.label === 'Tickets') {
-        subItems = customerTicketSubItems;
-      } else if (user.role === 'Agent' && item.label === 'Tickets') {
-         subItems = [...allTicketSubItems, { label: "Create Ticket", href: "/tickets/new" }];
-      } else {
-        subItems = item.subItems;
-      }
+      let finalSubItems = item.subItems;
 
-      // Admins and Agents have specific sub-items for projects
-      if ((user.role === 'Admin' || user.role === 'Agent') && item.label === 'Projects') {
-          subItems = item.subItems;
+      if (item.label === 'Tickets') {
+        if (user.role === 'Customer') {
+          finalSubItems = customerTicketSubItems;
+        } else if (user.role === 'Agent') {
+          finalSubItems = [...allTicketSubItems, { label: "Create Ticket", href: "/tickets/new" }];
+        }
+      } else if (item.label === 'Projects') {
+        if (user.role === 'Customer') {
+          finalSubItems = customerProjectSubItems;
+        }
       }
-
-      return { ...item, subItems };
+      
+      return { ...item, subItems: finalSubItems };
     });
 
   return (

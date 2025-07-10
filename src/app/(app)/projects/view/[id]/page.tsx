@@ -47,6 +47,9 @@ import { getProjectById, getTicketsByProject, getUsers } from "@/lib/firestore";
 import type { Project, Ticket, User } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { updateProjectAction, deleteProjectAction } from "./actions";
+import { useAuth } from "@/contexts/auth-context";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -69,6 +72,7 @@ export default function ViewProjectPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [isUpdating, startTransition] = React.useTransition();
   const [isDeleting, startDeleteTransition] = React.useTransition();
 
@@ -78,6 +82,7 @@ export default function ViewProjectPage() {
   const [loading, setLoading] = React.useState(true);
 
   const [currentStatus, setCurrentStatus] = React.useState<string | undefined>();
+  const [ticketsEnabled, setTicketsEnabled] = React.useState(false);
   
   const userMap = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
 
@@ -94,6 +99,7 @@ export default function ViewProjectPage() {
         if (projectData) {
           setProject(projectData);
           setCurrentStatus(projectData.status);
+          setTicketsEnabled(projectData.ticketsEnabled ?? true);
           const ticketsData = await getTicketsByProject(projectData.name);
           setAssociatedTickets(ticketsData);
         } else {
@@ -124,6 +130,21 @@ export default function ViewProjectPage() {
     });
   };
 
+  const handleTicketsEnabledChange = (enabled: boolean) => {
+    if (!project) return;
+    startTransition(async () => {
+        const oldState = ticketsEnabled;
+        setTicketsEnabled(enabled);
+        const result = await updateProjectAction(project.id, { ticketsEnabled: enabled });
+        if (result.success) {
+            toast({ title: "Project settings updated!" });
+        } else {
+            toast({ title: "Error", description: result.error, variant: 'destructive' });
+            setTicketsEnabled(oldState); // Revert on failure
+        }
+    });
+  };
+
   const handleDeleteProject = async () => {
     if (!project) return;
     startDeleteTransition(async () => {
@@ -144,7 +165,7 @@ export default function ViewProjectPage() {
     });
   };
 
-  if (loading) {
+  if (loading || !currentUser) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -158,6 +179,7 @@ export default function ViewProjectPage() {
 
   const manager = userMap.get(project.manager);
   const teamMembers = project.team.map(userId => userMap.get(userId)).filter(Boolean) as User[];
+  const isManagerOrAdmin = project && currentUser && (currentUser.role === 'Admin' || project.manager === currentUser.id);
   
   return (
     <div className="flex flex-col gap-6">
@@ -229,20 +251,22 @@ export default function ViewProjectPage() {
                         <span className="text-muted-foreground">Status</span>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isUpdating}>
+                                <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isUpdating || !isManagerOrAdmin}>
                                     <Badge className={`${projectStatusVariantMap[currentStatus]} cursor-pointer`}>
                                       {isUpdating ? <Loader className="h-3 w-3 animate-spin mr-1.5"/> : null}
                                       {currentStatus}
                                     </Badge>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {Object.keys(projectStatusVariantMap).map(status => (
-                                    <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as any)} disabled={isUpdating}>
-                                        {status}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
+                            {isManagerOrAdmin && (
+                                <DropdownMenuContent align="end">
+                                    {Object.keys(projectStatusVariantMap).map(status => (
+                                        <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as any)} disabled={isUpdating}>
+                                            {status}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            )}
                         </DropdownMenu>
                     </div>
                      <Separator />
@@ -293,42 +317,71 @@ export default function ViewProjectPage() {
                     </div>
                 </CardContent>
             </Card>
-            <Card className="border-destructive/50">
-                <CardHeader>
-                    <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
-                    <CardDescription>This action is irreversible.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="w-full">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete Project
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this
-                            project and remove its data from our servers.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={handleDeleteProject}
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Continue
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                </CardContent>
-            </Card>
+            {isManagerOrAdmin && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Project Settings</CardTitle>
+                        <CardDescription>Control settings for this project.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <Label htmlFor="tickets-enabled" className="text-base">
+                                    Enable Tickets
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Allow new tickets to be created for this project.
+                                </p>
+                            </div>
+                            <Switch
+                                id="tickets-enabled"
+                                checked={ticketsEnabled}
+                                onCheckedChange={handleTicketsEnabledChange}
+                                disabled={isUpdating}
+                                aria-label="Toggle ticket creation"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+            {isManagerOrAdmin && (
+                <Card className="border-destructive/50">
+                    <CardHeader>
+                        <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
+                        <CardDescription>This action is irreversible.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" className="w-full">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Project
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this
+                                project and remove its data from our servers.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={handleDeleteProject}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Continue
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                        </AlertDialog>
+                    </CardContent>
+                </Card>
+            )}
         </div>
       </div>
     </div>

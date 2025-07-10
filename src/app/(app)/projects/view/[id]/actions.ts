@@ -13,6 +13,7 @@ export async function updateProjectAction(
   try {
     const dataToUpdate: { [key: string]: any } = {};
     if (updates.status) dataToUpdate.status = updates.status;
+    if (updates.ticketsEnabled !== undefined) dataToUpdate.ticketsEnabled = updates.ticketsEnabled;
     
     // Only proceed if there are actual changes
     if (Object.keys(dataToUpdate).length > 0) {

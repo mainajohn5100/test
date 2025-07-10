@@ -67,6 +67,7 @@ async function seedDatabase() {
         createdAt: Timestamp.fromDate(new Date(project.createdAt)),
         deadline: Timestamp.fromDate(new Date(project.deadline)),
         creatorId: project.creatorId,
+        ticketsEnabled: project.ticketsEnabled ?? true,
     });
   });
   console.log(`- ${projects.length} projects queued for creation.`);

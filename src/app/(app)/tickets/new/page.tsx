@@ -44,7 +44,9 @@ export default function NewTicketPage() {
             getProjects(user),
             getUsers()
           ]);
-          setProjects(projectsData);
+          // Filter projects to only include those where tickets are enabled
+          const enabledProjects = projectsData.filter(p => p.ticketsEnabled !== false);
+          setProjects(enabledProjects);
           setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
         } catch (error) {
           console.error("Failed to fetch projects or users", error);

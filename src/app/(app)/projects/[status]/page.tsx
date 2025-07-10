@@ -4,7 +4,7 @@
 import React from 'react';
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader, ShieldAlert } from "lucide-react";
+import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
 import { getProjectsByStatus } from "@/lib/firestore";
 import { ProjectClient } from "@/components/projects/project-client";
@@ -31,12 +31,6 @@ export default function ProjectsByStatusPage({ params }: { params: { status: str
 
   React.useEffect(() => {
     if (user) {
-      if (user.role === 'Customer') {
-        setProjects([]);
-        setLoading(false);
-        return;
-      }
-
       const fetchData = async () => {
         setLoading(true);
         const projectsData = await getProjectsByStatus(dbStatus, user);
@@ -55,31 +49,20 @@ export default function ProjectsByStatusPage({ params }: { params: { status: str
     );
   }
 
-  if (user.role === 'Customer') {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center">
-          <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
-          <h2 className="text-2xl font-bold">Access Denied</h2>
-          <p className="text-muted-foreground">You do not have permission to view this page.</p>
-          <Button asChild className="mt-4">
-              <Link href="/dashboard">Return to Dashboard</Link>
-          </Button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title={pageTitle}
-        description={`Browse and manage all ${statusFilter.replace('-', ' ')} projects.`}
+        description={user.role === 'Customer' ? 'A list of projects you are associated with.' : `Browse and manage all ${statusFilter.replace('-', ' ')} projects.`}
       >
-        <Link href="/projects/create" passHref>
-          <Button>
-              <PlusCircle />
-              Create New Project
-          </Button>
-        </Link>
+        {(user.role === 'Admin' || user.role === 'Agent') && (
+            <Link href="/projects/create" passHref>
+            <Button>
+                <PlusCircle />
+                Create New Project
+            </Button>
+            </Link>
+        )}
       </PageHeader>
       <ProjectClient projects={projects} />
     </div>
