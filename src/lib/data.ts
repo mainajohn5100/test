@@ -33,6 +33,7 @@ export type User = {
   zipCode?: string;
   dob?: string; // ISO Date string
   gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
+  activityIsPublic?: boolean;
 };
 
 export type Project = {
@@ -70,7 +71,8 @@ export const users: User[] = [
         city: 'New York',
         zipCode: '10001',
         dob: '1985-05-15',
-        gender: 'Male'
+        gender: 'Male',
+        activityIsPublic: false
     },
     { 
         id: 'usr_2', 
@@ -83,10 +85,11 @@ export const users: User[] = [
         city: 'Madrid',
         zipCode: '28001',
         dob: '1992-11-20',
-        gender: 'Female'
+        gender: 'Female',
+        activityIsPublic: true
     },
-    { id: 'usr_3', name: 'James Smith', email: 'james.s@example.com', avatar: 'https://placehold.co/32x32/C2DFFF/4A4A4A.png?text=JS', role: 'Agent' },
-    { id: 'usr_4', name: 'Priya Patel', email: 'priya.p@example.com', avatar: 'https://placehold.co/32x32/FFE6B3/4A4A4A.png?text=PP', role: 'Customer' },
+    { id: 'usr_3', name: 'James Smith', email: 'james.s@example.com', avatar: 'https://placehold.co/32x32/C2DFFF/4A4A4A.png?text=JS', role: 'Agent', activityIsPublic: false },
+    { id: 'usr_4', name: 'Priya Patel', email: 'priya.p@example.com', avatar: 'https://placehold.co/32x32/FFE6B3/4A4A4A.png?text=PP', role: 'Customer', activityIsPublic: false },
 ];
 
 export const tickets: Ticket[] = [

@@ -73,3 +73,18 @@ export async function updateUserRoleAction(userId: string, role: User['role']) {
     return { success: false, error: errorMessage };
   }
 }
+
+export async function updateUserPrivacyAction(userId: string, activityIsPublic: boolean) {
+  // In a real production app, we would verify the caller's permissions here
+  // by checking their session. For this demo, we trust the client-side logic
+  // to only show this option to the correct user.
+  try {
+    await updateUser(userId, { activityIsPublic });
+    revalidatePath(`/users/${userId}`);
+    revalidatePath('/settings/account'); // revalidate account page
+    return { success: true, message: "Privacy settings updated." };
+  } catch (error) {
+    console.error("Error updating user privacy:", error);
+    return { success: false, error: 'Failed to update privacy settings.' };
+  }
+}

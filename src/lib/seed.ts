@@ -44,10 +44,11 @@ async function seedDatabase() {
   const usersCollection = collection(db, 'users');
   users.forEach(user => {
     const userRef = doc(usersCollection, user.id);
-    // Spreading the user object and removing the id is a clean way
-    // to handle both required and optional fields.
     const { id, ...userData } = user;
-    batch.set(userRef, userData);
+    batch.set(userRef, {
+      ...userData,
+      activityIsPublic: user.activityIsPublic ?? false,
+    });
   });
   console.log(`- ${users.length} users queued for creation.`);
 

@@ -54,7 +54,7 @@ const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destru
 export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth();
   const { toast } = useToast();
 
   const [user, setUser] = React.useState<User | null>(null);
@@ -75,6 +75,14 @@ export default function UserProfilePage() {
 
   React.useEffect(() => {
     if (!params.id) return;
+    
+    const handleOpenChange = (open: boolean) => {
+        setEditDialogOpen(open);
+        if (!open) {
+          refreshUser();
+        }
+    }
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -99,7 +107,7 @@ export default function UserProfilePage() {
         }
     };
     fetchData();
-  }, [params.id, isEditDialogOpen]);
+  }, [params.id, isEditDialogOpen, refreshUser]);
   
   const handleRoleChange = (newRole: User['role']) => {
     if (!user || !currentUser || currentUser.id === user.id || isUpdating) return;
@@ -137,22 +145,142 @@ export default function UserProfilePage() {
     notFound();
   }
   
-  const canViewPage = currentUser.role === 'Admin' || currentUser.id === user.id;
+  const isOwner = currentUser.id === user.id;
+  const isAdmin = currentUser.role === 'Admin';
 
-  if (!canViewPage) {
+  if (!isOwner && !isAdmin) {
+    // Limited Public View
     return (
-       <div className="flex flex-col items-center justify-center h-full text-center">
-          <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
-          <h2 className="text-2xl font-bold">Access Denied</h2>
-          <p className="text-muted-foreground">You do not have permission to view this page.</p>
-          <Button asChild className="mt-4">
-              <Link href="/dashboard">Return to Dashboard</Link>
-          </Button>
-      </div>
+        <div className="flex flex-col gap-6">
+            <PageHeader title={user.name} description={`Public profile for ${user.email}.`}>
+                <Button variant="outline" onClick={() => router.back()}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                </Button>
+            </PageHeader>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                    <AvatarFallback className="text-xl">{user.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <CardTitle className="text-2xl">{user.name}</CardTitle>
+                                    <CardDescription>{user.role}</CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                    </Card>
+                </div>
+                <div className="lg:col-span-2 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>User Activity</CardTitle>
+                            <CardDescription>A summary of public activity associated with this user.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {user.activityIsPublic ? (
+                                <div className="space-y-4">
+                                    {assignedTickets.length > 0 && (
+                                        <div>
+                                        <h3 className="font-medium mb-2">Assigned Tickets ({assignedTickets.length})</h3>
+                                        <div className="border rounded-md">
+                                            <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                <TableHead>Title</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Priority</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {assignedTickets.slice(0, 5).map((ticket) => (
+                                                <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
+                                                    <TableCell className="font-medium">{ticket.title}</TableCell>
+                                                    <TableCell>
+                                                    <Badge variant={ticketStatusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
+                                                    </TableCell>
+                                                    <TableCell>{ticket.priority}</TableCell>
+                                                </TableRow>
+                                                ))}
+                                            </TableBody>
+                                            </Table>
+                                        </div>
+                                        </div>
+                                    )}
+                                    {reportedTickets.length > 0 && (
+                                        <div>
+                                        <h3 className="font-medium mb-2">Reported Tickets ({reportedTickets.length})</h3>
+                                        <div className="border rounded-md">
+                                            <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                <TableHead>Title</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Priority</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {reportedTickets.slice(0, 5).map((ticket) => (
+                                                <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
+                                                    <TableCell className="font-medium">{ticket.title}</TableCell>
+                                                    <TableCell>
+                                                    <Badge variant={ticketStatusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
+                                                    </TableCell>
+                                                    <TableCell>{ticket.priority}</TableCell>
+                                                </TableRow>
+                                                ))}
+                                            </TableBody>
+                                            </Table>
+                                        </div>
+                                        </div>
+                                    )}
+                                    {managedProjects.length > 0 && (
+                                        <div>
+                                        <h3 className="font-medium mb-2">Managed Projects ({managedProjects.length})</h3>
+                                        <div className="border rounded-md">
+                                            <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                <TableHead>Project Name</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {managedProjects.map((project) => (
+                                                <TableRow key={project.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/projects/view/${project.id}`)}>
+                                                    <TableCell className="font-medium">{project.name}</TableCell>
+                                                    <TableCell>
+                                                    <Badge variant="secondary">{project.status}</Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                                ))}
+                                            </TableBody>
+                                            </Table>
+                                        </div>
+                                        </div>
+                                    )}
+                                    {assignedTickets.length === 0 && reportedTickets.length === 0 && managedProjects.length === 0 &&(
+                                        <p className="text-muted-foreground text-center py-4">No public activity found for this user.</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground text-center py-8">
+                                    This user's activity is private.
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </div>
     );
   }
 
-
+  // Full View for Owner or Admin
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={user.name} description={`Manage profile, settings, and activity for ${user.email}.`}>
