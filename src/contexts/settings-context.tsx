@@ -3,6 +3,17 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+const INACTIVITY_TIMEOUT_OPTIONS = [
+    { value: 1, label: '1 minute' },
+    { value: 2, label: '2 minutes' },
+    { value: 5, label: '5 minutes' },
+    { value: 10, label: '10 minutes' },
+    { value: 15, label: '15 minutes' },
+    { value: 20, label: '20 minutes' },
+    { value: 25, label: '25 minutes' },
+    { value: 30, label: '30 minutes' },
+];
+
 interface SettingsContextType {
   showFullScreenButton: boolean;
   setShowFullScreenButton: (show: boolean) => void;
@@ -26,6 +37,9 @@ interface SettingsContextType {
   setAgentSignupEnabled: (enabled: boolean) => void;
   customerSignupEnabled: boolean;
   setCustomerSignupEnabled: (enabled: boolean) => void;
+  inactivityTimeout: number;
+  setInactivityTimeout: (minutes: number) => void;
+  INACTIVITY_TIMEOUT_OPTIONS: typeof INACTIVITY_TIMEOUT_OPTIONS;
   loading: boolean;
 }
 
@@ -44,6 +58,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [agentEmailPattern, _setAgentEmailPattern] = useState('');
     const [agentSignupEnabled, _setAgentSignupEnabled] = useState(true);
     const [customerSignupEnabled, _setCustomerSignupEnabled] = useState(true);
+    const [inactivityTimeout, _setInactivityTimeout] = useState(2); // Default to 2 minutes
 
     useEffect(() => {
         const loadSettings = () => {
@@ -58,6 +73,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             _setAgentEmailPattern(localStorage.getItem('agent-email-pattern') || '*.agent.requestflow.app');
             _setAgentSignupEnabled(localStorage.getItem('agent-signup-enabled') !== 'false');
             _setCustomerSignupEnabled(localStorage.getItem('customer-signup-enabled') !== 'false');
+            const savedTimeout = localStorage.getItem('inactivity-timeout');
+            _setInactivityTimeout(savedTimeout ? Number(savedTimeout) : 2);
             
             setLoading(false);
         };
@@ -130,6 +147,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setItem('customer-signup-enabled', String(enabled));
     };
 
+    const setInactivityTimeout = (minutes: number) => {
+        _setInactivityTimeout(minutes);
+        setItem('inactivity-timeout', String(minutes));
+    };
+
     const value = { 
         showFullScreenButton, 
         setShowFullScreenButton,
@@ -153,6 +175,9 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setAgentSignupEnabled,
         customerSignupEnabled,
         setCustomerSignupEnabled,
+        inactivityTimeout,
+        setInactivityTimeout,
+        INACTIVITY_TIMEOUT_OPTIONS,
         loading
     };
 

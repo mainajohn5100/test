@@ -13,9 +13,16 @@ import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserPrivacyAction } from '@/app/(app)/users/actions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useSettings } from '@/contexts/settings-context';
 
 export function AccountForm() {
     const { user, loading, refreshUser } = useAuth();
+    const { 
+        inactivityTimeout, 
+        setInactivityTimeout, 
+        INACTIVITY_TIMEOUT_OPTIONS 
+    } = useSettings();
     const { toast } = useToast();
     const [isEditDialogOpen, setEditDialogOpen] = React.useState(false);
     const [isUpdatingPrivacy, startPrivacyTransition] = React.useTransition();
@@ -97,13 +104,13 @@ export function AccountForm() {
                     </CardContent>
                 </Card>
             </div>
-             <div className="lg:col-span-2">
+             <div className="lg:col-span-2 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Privacy Settings</CardTitle>
-                        <CardDescription>Manage your public profile visibility.</CardDescription>
+                        <CardTitle>Privacy & Session Settings</CardTitle>
+                        <CardDescription>Manage your public profile and session timeout.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-6">
                         <div className="flex items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
                                 <Label htmlFor="public-activity" className="text-base">
@@ -120,6 +127,31 @@ export function AccountForm() {
                                 disabled={isUpdatingPrivacy}
                                 aria-label="Toggle public activity"
                             />
+                        </div>
+                         <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <Label htmlFor="inactivity-timeout" className="text-base">
+                                Inactivity Timeout
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                Automatically log out after a period of inactivity.
+                                </p>
+                            </div>
+                             <Select 
+                                value={String(inactivityTimeout)} 
+                                onValueChange={(value) => setInactivityTimeout(Number(value))}
+                            >
+                                <SelectTrigger className="w-48">
+                                    <SelectValue placeholder="Select timeout" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {INACTIVITY_TIMEOUT_OPTIONS.map(option => (
+                                        <SelectItem key={option.value} value={String(option.value)}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </CardContent>
                 </Card>
