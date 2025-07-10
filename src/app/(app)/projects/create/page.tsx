@@ -32,11 +32,13 @@ import { getUsers } from "@/lib/firestore";
 import type { User } from "@/lib/data";
 import { projectSchema } from "./schema";
 import { createProjectAction } from "./actions";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function CreateProjectPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [users, setUsers] = React.useState<User[]>([]);
+  const { user } = useAuth();
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -62,8 +64,15 @@ export default function CreateProjectPage() {
       name: "",
       description: "",
       team: [],
+      creatorId: user?.id || "",
     },
   });
+
+  React.useEffect(() => {
+    if (user && !form.getValues('creatorId')) {
+      form.setValue('creatorId', user.id);
+    }
+  }, [user, form]);
 
   const onSubmit = (values: z.infer<typeof projectSchema>) => {
     startTransition(async () => {

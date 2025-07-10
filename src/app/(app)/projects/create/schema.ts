@@ -9,4 +9,5 @@ export const projectSchema = z.object({
   deadline: z.date({
     required_error: "A deadline is required.",
   }),
+  creatorId: z.string().min(1, "Creator ID is missing."),
 });

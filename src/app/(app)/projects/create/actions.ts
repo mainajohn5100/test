@@ -14,6 +14,7 @@ export async function createProjectAction(values: z.infer<typeof projectSchema>)
     manager: values.manager,
     team: values.team || [],
     deadline: values.deadline,
+    creatorId: values.creatorId,
   };
 
   let newProjectId: string;

@@ -44,6 +44,7 @@ export type Project = {
   team: string[];
   deadline: string;
   createdAt: string;
+  creatorId: string;
 }
 
 export type Notification = {
@@ -187,9 +188,9 @@ export const tickets: Ticket[] = [
 ];
 
 export const projects: Project[] = [
-  { id: 'proj_1', name: 'Website Redesign', description: 'A complete overhaul of the public-facing website with a new design system and CMS.', status: 'Active', manager: 'usr_1', team: ['usr_2', 'usr_3'], deadline: '2024-07-30', createdAt: '2024-01-15' },
-  { id: 'proj_2', name: 'API V2', description: 'Development of the next version of our public API with new endpoints and improved performance.', status: 'Active', manager: 'usr_1', team: ['usr_1', 'usr_2'], deadline: '2024-06-15', createdAt: '2024-02-01' },
-  { id: 'proj_3', name: 'Reporting Module', description: 'A new module for generating and exporting custom reports for our enterprise customers.', status: 'On Hold', manager: 'usr_3', team: ['usr_3'], deadline: '2024-08-20', createdAt: '2024-03-10' },
-  { id: 'proj_4', name: 'Mobile App Q3', description: 'Adding new features to the mobile app for the third quarter, including offline support.', status: 'Completed', manager: 'usr_2', team: ['usr_2'], deadline: '2024-03-31', createdAt: '2023-12-01' },
-  { id: 'proj_5', name: 'New Project', description: 'A placeholder for a new and exciting upcoming project.', status: 'New', manager: 'usr_2', team: ['usr_1', 'usr_3'], deadline: '2025-07-08', createdAt: '2024-05-20' },
+  { id: 'proj_1', name: 'Website Redesign', description: 'A complete overhaul of the public-facing website with a new design system and CMS.', status: 'Active', manager: 'usr_1', team: ['usr_2', 'usr_3'], deadline: '2024-07-30', createdAt: '2024-01-15', creatorId: 'usr_1' },
+  { id: 'proj_2', name: 'API V2', description: 'Development of the next version of our public API with new endpoints and improved performance.', status: 'Active', manager: 'usr_1', team: ['usr_1', 'usr_2'], deadline: '2024-06-15', createdAt: '2024-02-01', creatorId: 'usr_1' },
+  { id: 'proj_3', name: 'Reporting Module', description: 'A new module for generating and exporting custom reports for our enterprise customers.', status: 'On Hold', manager: 'usr_3', team: ['usr_3'], deadline: '2024-08-20', createdAt: '2024-03-10', creatorId: 'usr_1' },
+  { id: 'proj_4', name: 'Mobile App Q3', description: 'Adding new features to the mobile app for the third quarter, including offline support.', status: 'Completed', manager: 'usr_2', team: ['usr_2'], deadline: '2024-03-31', createdAt: '2023-12-01', creatorId: 'usr_1' },
+  { id: 'proj_5', name: 'New Project', description: 'A placeholder for a new and exciting upcoming project.', status: 'New', manager: 'usr_2', team: ['usr_1', 'usr_3'], deadline: '2025-07-08', createdAt: '2024-05-20', creatorId: 'usr_1' },
 ];

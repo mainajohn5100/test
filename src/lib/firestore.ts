@@ -135,32 +135,32 @@ export const getTicketsByReporter = cache(async (reporterName: string): Promise<
 
 
 export const getProjects = cache(async (user: User): Promise<Project[]> => {
-  if (user.role === 'Customer') return [];
+  if (!user || user.role === 'Customer') return [];
   try {
     const projectsCol = collection(db, 'projects');
     
-    if (user.role === 'Admin') {
-        const projectSnapshot = await getDocs(projectsCol);
-        return snapshotToData<Project>(projectSnapshot);
-    }
+    const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
+
+    // All roles can see projects they manage or are on the team for.
+    const managerQuery = query(projectsCol, where("manager", "==", user.id));
+    const teamMemberQuery = query(projectsCol, where("team", "array-contains", user.id));
+    queries.push(getDocs(managerQuery), getDocs(teamMemberQuery));
     
-    if (user.role === 'Agent') {
-        const managerQuery = query(projectsCol, where("manager", "==", user.id));
-        const teamMemberQuery = query(projectsCol, where("team", "array-contains", user.id));
-        
-        const [managerSnapshot, teamMemberSnapshot] = await Promise.all([
-            getDocs(managerQuery),
-            getDocs(teamMemberQuery)
-        ]);
-
-        const projectsMap = new Map<string, Project>();
-        snapshotToData<Project>(managerSnapshot).forEach(p => projectsMap.set(p.id, p));
-        snapshotToData<Project>(teamMemberSnapshot).forEach(p => projectsMap.set(p.id, p));
-        
-        return Array.from(projectsMap.values());
+    // Admins can also see projects they created.
+    if (user.role === 'Admin') {
+        const creatorQuery = query(projectsCol, where("creatorId", "==", user.id));
+        queries.push(getDocs(creatorQuery));
     }
 
-    return [];
+    const snapshots = await Promise.all(queries);
+
+    const projectsMap = new Map<string, Project>();
+    snapshots.forEach(snapshot => {
+        snapshotToData<Project>(snapshot).forEach(p => projectsMap.set(p.id, p));
+    });
+    
+    return Array.from(projectsMap.values());
+
   } catch (error) {
     console.error("Error fetching projects:", error);
     return [];
@@ -168,41 +168,33 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
 });
 
 export const getProjectsByStatus = cache(async (status: string, user: User): Promise<Project[]> => {
-    if (user.role === 'Customer') return [];
+    if (!user || user.role === 'Customer') return [];
 
     try {
         const projectsCol = collection(db, 'projects');
-        const statusFilter = status !== 'all' ? where("status", "==", status) : null;
+        const statusFilter = status !== 'all' ? [where("status", "==", status)] : [];
 
+        const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
+
+        // Base queries for all roles
+        const managerQuery = query(projectsCol, where("manager", "==", user.id), ...statusFilter);
+        const teamMemberQuery = query(projectsCol, where("team", "array-contains", user.id), ...statusFilter);
+        queries.push(getDocs(managerQuery), getDocs(teamMemberQuery));
+
+        // Additional query for Admins
         if (user.role === 'Admin') {
-            const q = statusFilter ? query(projectsCol, statusFilter) : query(projectsCol);
-            const projectSnapshot = await getDocs(q);
-            return snapshotToData<Project>(projectSnapshot);
+            const creatorQuery = query(projectsCol, where("creatorId", "==", user.id), ...statusFilter);
+            queries.push(getDocs(creatorQuery));
         }
 
-        if (user.role === 'Agent') {
-            const managerQueryConstraints = [where("manager", "==", user.id)];
-            if(statusFilter) managerQueryConstraints.push(statusFilter);
+        const snapshots = await Promise.all(queries);
 
-            const teamMemberQueryConstraints = [where("team", "array-contains", user.id)];
-            if(statusFilter) teamMemberQueryConstraints.push(statusFilter);
-
-            const managerQuery = query(projectsCol, ...managerQueryConstraints);
-            const teamMemberQuery = query(projectsCol, ...teamMemberQueryConstraints);
-            
-            const [managerSnapshot, teamMemberSnapshot] = await Promise.all([
-                getDocs(managerQuery),
-                getDocs(teamMemberQuery)
-            ]);
-
-            const projectsMap = new Map<string, Project>();
-            snapshotToData<Project>(managerSnapshot).forEach(p => projectsMap.set(p.id, p));
-            snapshotToData<Project>(teamMemberSnapshot).forEach(p => projectsMap.set(p.id, p));
-            
-            return Array.from(projectsMap.values());
-        }
-
-        return [];
+        const projectsMap = new Map<string, Project>();
+        snapshots.forEach(snapshot => {
+            snapshotToData<Project>(snapshot).forEach(p => projectsMap.set(p.id, p));
+        });
+        
+        return Array.from(projectsMap.values());
 
     } catch (error) {
         console.error(`Error fetching projects with status "${status}":`, error);
@@ -314,6 +306,7 @@ export async function addProject(projectData: {
     manager: string; // User ID
     team: string[]; // User IDs
     deadline: Date;
+    creatorId: string;
 }): Promise<string> {
     try {
         const docRef = await addDoc(collection(db, 'projects'), {
