@@ -11,23 +11,47 @@ export async function updateProjectAction(
   updates: Partial<Omit<Project, 'id' | 'createdAt'>>,
 ) {
   try {
+    const currentProject = await getProjectById(projectId);
+    if (!currentProject) {
+        throw new Error("Project not found.");
+    }
+    
     const dataToUpdate: { [key: string]: any } = {};
     if (updates.status) dataToUpdate.status = updates.status;
     if (updates.ticketsEnabled !== undefined) dataToUpdate.ticketsEnabled = updates.ticketsEnabled;
+    if (updates.team) dataToUpdate.team = updates.team;
     
     // Only proceed if there are actual changes
     if (Object.keys(dataToUpdate).length > 0) {
       await updateProject(projectId, dataToUpdate);
 
-      // After successful update, create notification
-      const project = await getProjectById(projectId);
-      if (project && project.manager && updates.status) {
+      // --- Notification Logic ---
+      // Status change notification for manager
+      if (currentProject.manager && updates.status) {
           await createNotification({
-            userId: project.manager, // manager is a userId
+            userId: currentProject.manager,
             title: `Project Status Updated`,
-            description: `Status for project "${project.name}" was changed to ${updates.status}.`,
+            description: `Status for project "${currentProject.name}" was changed to ${updates.status}.`,
             link: `/projects/view/${projectId}`,
         });
+      }
+
+      // New team member notification
+      if (updates.team) {
+          const oldTeam = new Set(currentProject.team);
+          const newTeamMembers = updates.team.filter(memberId => !oldTeam.has(memberId));
+          
+          if (newTeamMembers.length > 0) {
+            const teamNotifications = newTeamMembers.map(userId => 
+                createNotification({
+                    userId: userId,
+                    title: `You've been added to a project`,
+                    description: `You are now a team member on the project: "${currentProject.name}".`,
+                    link: `/projects/view/${projectId}`,
+                })
+            );
+            await Promise.all(teamNotifications);
+          }
       }
     }
 

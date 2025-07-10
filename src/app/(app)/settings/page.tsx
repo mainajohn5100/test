@@ -24,7 +24,9 @@ export default function SettingsPage() {
     customerPanelEnabled,
     setCustomerPanelEnabled,
     customerCanSelectProject,
-    setCustomerCanSelectProject
+    setCustomerCanSelectProject,
+    agentCanEditTeam,
+    setAgentCanEditTeam
   } = useSettings();
 
   return (
@@ -160,6 +162,22 @@ export default function SettingsPage() {
                               checked={customerCanSelectProject}
                               onCheckedChange={setCustomerCanSelectProject}
                               aria-label="Toggle customer project selection"
+                          />
+                      </div>
+                       <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                              <Label htmlFor="agent-can-edit-team" className="text-base">
+                                  Agent Can Add Team Members
+                              </Label>
+                              <p className="text-sm text-muted-foreground">
+                                  Allow agents to add or remove team members from projects.
+                              </p>
+                          </div>
+                          <Switch
+                              id="agent-can-edit-team"
+                              checked={agentCanEditTeam}
+                              onCheckedChange={setAgentCanEditTeam}
+                              aria-label="Toggle agent team editing"
                           />
                       </div>
                   </CardContent>

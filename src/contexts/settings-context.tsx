@@ -16,6 +16,8 @@ interface SettingsContextType {
   setCustomerPanelEnabled: (enabled: boolean) => void;
   customerCanSelectProject: boolean;
   setCustomerCanSelectProject: (enabled: boolean) => void;
+  agentCanEditTeam: boolean;
+  setAgentCanEditTeam: (enabled: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -27,6 +29,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [agentPanelEnabled, _setAgentPanelEnabled] = useState(true);
     const [customerPanelEnabled, _setCustomerPanelEnabled] = useState(true);
     const [customerCanSelectProject, _setCustomerCanSelectProject] = useState(true);
+    const [agentCanEditTeam, _setAgentCanEditTeam] = useState(true);
 
     useEffect(() => {
         const storedFullScreen = localStorage.getItem('show-fullscreen-button');
@@ -57,6 +60,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         const storedCustomerProject = localStorage.getItem('customer-can-select-project');
         if (storedCustomerProject !== null) {
             _setCustomerCanSelectProject(storedCustomerProject === 'true');
+        }
+
+        const storedAgentCanEditTeam = localStorage.getItem('agent-can-edit-team');
+        if (storedAgentCanEditTeam !== null) {
+            _setAgentCanEditTeam(storedAgentCanEditTeam === 'true');
         }
 
     }, []);
@@ -91,6 +99,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         localStorage.setItem('customer-can-select-project', String(enabled));
     };
 
+    const setAgentCanEditTeam = (enabled: boolean) => {
+        _setAgentCanEditTeam(enabled);
+        localStorage.setItem('agent-can-edit-team', String(enabled));
+    };
+
     const value = { 
         showFullScreenButton, 
         setShowFullScreenButton,
@@ -103,7 +116,9 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         customerPanelEnabled,
         setCustomerPanelEnabled,
         customerCanSelectProject,
-        setCustomerCanSelectProject
+        setCustomerCanSelectProject,
+        agentCanEditTeam,
+        setAgentCanEditTeam
     };
 
     return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

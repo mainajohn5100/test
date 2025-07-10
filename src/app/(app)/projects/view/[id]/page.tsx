@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader, MoreVertical, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader, MoreVertical, Trash2, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -29,6 +29,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
   Table,
@@ -51,6 +53,7 @@ import { updateProjectAction, deleteProjectAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useSettings } from "@/contexts/settings-context";
 
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -74,6 +77,7 @@ export default function ViewProjectPage() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { agentCanEditTeam } = useSettings();
   const [isUpdating, startTransition] = React.useTransition();
   const [isDeleting, startDeleteTransition] = React.useTransition();
 
@@ -86,6 +90,7 @@ export default function ViewProjectPage() {
   const [ticketsEnabled, setTicketsEnabled] = React.useState(false);
   
   const userMap = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
+  const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Admin' || u.role === 'Agent'), [users]);
 
   React.useEffect(() => {
     if (!params.id) return;
@@ -146,6 +151,25 @@ export default function ViewProjectPage() {
     });
   };
 
+  const handleTeamChange = (userId: string, isChecked: boolean) => {
+    if (!project) return;
+    
+    const currentTeam = project.team || [];
+    const newTeam = isChecked 
+        ? [...currentTeam, userId]
+        : currentTeam.filter(id => id !== userId);
+    
+    startTransition(async () => {
+        const result = await updateProjectAction(project.id, { team: newTeam });
+        if (result.success) {
+            toast({ title: "Team updated successfully!" });
+            setProject(prev => prev ? { ...prev, team: newTeam } : null);
+        } else {
+            toast({ title: "Error", description: result.error, variant: 'destructive' });
+        }
+    });
+  };
+
   const handleDeleteProject = async () => {
     if (!project) return;
     startDeleteTransition(async () => {
@@ -180,7 +204,8 @@ export default function ViewProjectPage() {
 
   const manager = userMap.get(project.manager);
   const teamMembers = project.team.map(userId => userMap.get(userId)).filter(Boolean) as User[];
-  const isManagerOrAdmin = project && currentUser && (currentUser.role === 'Admin' || project.manager === currentUser.id);
+  const isManagerOrAdmin = currentUser.role === 'Admin' || project.manager === currentUser.id;
+  const canEditTeam = currentUser.role === 'Admin' || (currentUser.role === 'Agent' && agentCanEditTeam);
   
   return (
     <AlertDialog>
@@ -318,7 +343,33 @@ export default function ViewProjectPage() {
                           )}
                       </div>
                       <div className="space-y-2">
-                          <span className="text-sm font-medium">Team Members</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Team Members</span>
+                            {canEditTeam && (
+                               <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
+                                        <PlusCircle className="h-4 w-4" />
+                                        <span className="sr-only">Add Team Members</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Assign Team Members</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {assignableUsers.map(u => (
+                                        <DropdownMenuCheckboxItem
+                                            key={u.id}
+                                            checked={project.team.includes(u.id)}
+                                            onCheckedChange={(checked) => handleTeamChange(u.id, checked)}
+                                            disabled={isUpdating || u.id === project.manager}
+                                        >
+                                            {u.name}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            )}
+                          </div>
                            <TooltipProvider>
                               <div className="flex flex-wrap gap-1 pt-1">
                                   {teamMembers.map(member => (
