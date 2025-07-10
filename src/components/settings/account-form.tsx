@@ -107,8 +107,8 @@ export function AccountForm() {
              <div className="lg:col-span-2 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Privacy & Session Settings</CardTitle>
-                        <CardDescription>Manage your public profile and session timeout.</CardDescription>
+                        <CardTitle>Personal Settings</CardTitle>
+                        <CardDescription>Manage your public profile visibility and session preferences.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="flex items-center justify-between rounded-lg border p-4">
