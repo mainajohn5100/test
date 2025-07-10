@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 
@@ -17,8 +17,8 @@ const passwordSchema = z.object({
 export async function changePasswordAction(values: z.infer<typeof passwordSchema>) {
   try {
     const user = auth.currentUser;
-    if (!user) {
-      return { success: false, error: 'No authenticated user found.' };
+    if (!user || !user.email) {
+      return { success: false, error: 'No authenticated user found or user is missing an email address.' };
     }
 
     const validated = passwordSchema.safeParse(values);
@@ -27,13 +27,13 @@ export async function changePasswordAction(values: z.infer<typeof passwordSchema
     }
 
     const { currentPassword, newPassword } = validated.data;
-    const credential = EmailAuthProvider.credential(user.email!, currentPassword);
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
 
     // Re-authenticate before changing the password
     await reauthenticateWithCredential(user, credential);
     
-    // The following is commented out as it is not yet supported in the client SDK.
-    // await updatePassword(user, newPassword);
+    // Actually update the password in Firebase Auth
+    await updatePassword(user, newPassword);
 
     return { success: true, message: "Password updated successfully." };
   } catch (error: any) {
@@ -57,9 +57,10 @@ export async function reauthenticateAction(password: string): Promise<{success: 
 
     return { success: true };
   } catch (error: any) {
-    if (error.code === 'auth/wrong-password') {
+    if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
       return { success: false, error: 'Incorrect password.' };
     }
+    console.error("Re-authentication error:", error);
     return { success: false, error: 'Re-authentication failed.' };
   }
 }
