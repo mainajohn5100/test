@@ -15,14 +15,16 @@ import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserPrivacyAction } from '@/app/(app)/users/actions';
+import { ChangePasswordForm } from './change-password-form';
 
 export function AccountForm() {
     const { user, loading, refreshUser } = useAuth();
     const { toast } = useToast();
     const [isEditDialogOpen, setEditDialogOpen] = React.useState(false);
+    const [isPasswordDialogOpen, setPasswordDialogOpen] = React.useState(false);
     const [isUpdatingPrivacy, startPrivacyTransition] = React.useTransition();
 
-    const handleOpenChange = (open: boolean) => {
+    const handleEditDialogChange = (open: boolean) => {
         setEditDialogOpen(open);
         if (!open) {
             refreshUser();
@@ -88,7 +90,7 @@ export function AccountForm() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                    <Dialog open={isEditDialogOpen} onOpenChange={handleOpenChange}>
+                    <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogChange}>
                         <DialogTrigger asChild>
                         <Button className="w-full" variant="outline">Edit Profile</Button>
                         </DialogTrigger>
@@ -104,10 +106,17 @@ export function AccountForm() {
                         <CardDescription>Manage account security.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button className="w-full" variant="outline" disabled>
-                            <KeyRound className="mr-2"/>
-                            Change Password
-                        </Button>
+                        <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="w-full" variant="outline">
+                                    <KeyRound className="mr-2"/>
+                                    Change Password
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                                <ChangePasswordForm setOpen={setPasswordDialogOpen} />
+                            </DialogContent>
+                        </Dialog>
                         <Button className="w-full" variant="outline" disabled>
                             <ShieldCheck className="mr-2"/>
                             Enable Two-Factor Auth
