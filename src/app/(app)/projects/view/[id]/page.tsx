@@ -175,7 +175,7 @@ export default function ViewProjectPage() {
                 <CardTitle>Project Summary</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground">A brief summary of the project goals and objectives. This provides a quick overview for anyone looking at the project list.</p>
+                <p className="text-muted-foreground whitespace-pre-wrap">{project.description || "No description was provided for this project."}</p>
             </CardContent>
           </Card>
           <Card>
