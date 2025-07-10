@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
 import Link from 'next/link';
-import { Loader } from 'lucide-react';
+import { Eye, EyeOff, Loader } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -44,6 +44,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -113,7 +114,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-2 mb-4">
-                <Logo className="w-8 h-8 text-sidebar-primary" />
+                <Logo className="w-8 h-8" />
                 <h1 className="font-headline font-semibold text-2xl">RequestFlow</h1>
             </div>
           <CardTitle>Welcome Back!</CardTitle>
@@ -144,8 +145,28 @@ export default function LoginPage() {
                 <Input id="email" name="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                        <Input 
+                            id="password" 
+                            name="password" 
+                            type={showPassword ? "text" : "password"} 
+                            required 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)} 
+                            disabled={loading} 
+                            className="pr-10"
+                        />
+                        <Button 
+                            type="button" 
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                    </div>
                 </div>
                 <Button className="w-full" type="submit" disabled={loading}>
                 {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}

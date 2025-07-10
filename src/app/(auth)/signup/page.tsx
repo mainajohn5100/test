@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
 import Link from 'next/link';
-import { CalendarIcon, Loader } from 'lucide-react';
+import { CalendarIcon, Loader, Eye, EyeOff } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -77,6 +77,7 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
@@ -226,7 +227,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-2 mb-4">
-                <Logo className="w-8 h-8 text-sidebar-primary" />
+                <Logo className="w-8 h-8" />
                 <h1 className="font-headline font-semibold text-2xl">RequestFlow</h1>
             </div>
           <CardTitle>Create an Account</CardTitle>
@@ -265,7 +266,28 @@ export default function SignupPage() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input id="password" name="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading || settingsLoading} />
+                        <div className="relative">
+                            <Input 
+                                id="password" 
+                                name="password" 
+                                type={showPassword ? "text" : "password"} 
+                                required 
+                                minLength={6} 
+                                value={password} 
+                                onChange={(e) => setPassword(e.target.value)} 
+                                disabled={loading || settingsLoading} 
+                                className="pr-10"
+                            />
+                            <Button 
+                                type="button" 
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                onClick={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                        </div>
                         <p className="text-xs text-muted-foreground">Password must be at least 6 characters long.</p>
                     </div>
                     

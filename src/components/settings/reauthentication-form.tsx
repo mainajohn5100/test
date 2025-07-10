@@ -23,7 +23,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { Loader } from 'lucide-react';
+import { Eye, EyeOff, Loader } from 'lucide-react';
 import { reauthenticateAction } from '@/app/(app)/settings/actions';
 
 const reauthSchema = z.object({
@@ -41,6 +41,7 @@ interface ReauthenticationFormProps {
 export function ReauthenticationForm({ onSuccess, onCancel, description }: ReauthenticationFormProps) {
   const [isPending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const form = useForm<ReauthFormValues>({
     resolver: zodResolver(reauthSchema),
@@ -78,7 +79,18 @@ export function ReauthenticationForm({ onSuccess, onCancel, description }: Reaut
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" {...field} />
+                  <div className="relative">
+                      <Input type={showPassword ? "text" : "password"} {...field} className="pr-10" />
+                      <Button 
+                          type="button" 
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                          onClick={() => setShowPassword(!showPassword)}
+                      >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

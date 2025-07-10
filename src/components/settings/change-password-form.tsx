@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { Loader } from 'lucide-react';
+import { Eye, EyeOff, Loader } from 'lucide-react';
 import { changePasswordAction } from '@/app/(app)/settings/actions';
 
 const passwordSchema = z.object({
@@ -45,6 +45,9 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 export function ChangePasswordForm({ setOpen }: { setOpen: (open: boolean) => void }) {
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
+  const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
+  const [showNewPassword, setShowNewPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
@@ -92,7 +95,18 @@ export function ChangePasswordForm({ setOpen }: { setOpen: (open: boolean) => vo
                 <FormItem>
                     <FormLabel>Current Password</FormLabel>
                     <FormControl>
-                        <Input type="password" {...field} />
+                        <div className="relative">
+                            <Input type={showCurrentPassword ? "text" : "password"} {...field} className="pr-10" />
+                            <Button 
+                                type="button" 
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            >
+                                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                        </div>
                     </FormControl>
                     <FormMessage />
                 </FormItem>
@@ -105,7 +119,18 @@ export function ChangePasswordForm({ setOpen }: { setOpen: (open: boolean) => vo
                 <FormItem>
                     <FormLabel>New Password</FormLabel>
                     <FormControl>
-                        <Input type="password" {...field} />
+                        <div className="relative">
+                            <Input type={showNewPassword ? "text" : "password"} {...field} className="pr-10" />
+                             <Button 
+                                type="button" 
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                            >
+                                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                        </div>
                     </FormControl>
                     <FormMessage />
                 </FormItem>
@@ -118,7 +143,18 @@ export function ChangePasswordForm({ setOpen }: { setOpen: (open: boolean) => vo
                 <FormItem>
                     <FormLabel>Confirm New Password</FormLabel>
                     <FormControl>
-                        <Input type="password" {...field} />
+                         <div className="relative">
+                            <Input type={showConfirmPassword ? "text" : "password"} {...field} className="pr-10" />
+                             <Button 
+                                type="button" 
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                        </div>
                     </FormControl>
                     <FormMessage />
                 </FormItem>
