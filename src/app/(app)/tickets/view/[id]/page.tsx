@@ -203,6 +203,30 @@ export default function ViewTicketPage() {
         }
     });
   };
+  
+  const handleUnassign = () => {
+    if (!ticket) return;
+    startTransition(async () => {
+        const oldAssignee = currentAssignee;
+        setCurrentAssignee('Unassigned');
+
+        const result = await updateTicketAction(
+            ticket.id,
+            { assignee: 'Unassigned' },
+            { 
+              oldAssigneeId: assignee?.id ?? null,
+              newAssignee: null
+            }
+        );
+
+        if (result.success) {
+            toast({ title: "Ticket unassigned successfully!" });
+        } else {
+            toast({ title: "Error", description: result.error, variant: 'destructive' });
+            setCurrentAssignee(oldAssignee);
+        }
+    });
+};
 
   const updateTags = (newTags: string[]) => {
     startTransition(async () => {
@@ -436,14 +460,24 @@ export default function ViewTicketPage() {
                     <Separator />
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Assignee</span>
-                        {currentUser?.role === 'Admin' && currentAssignee === 'Unassigned' ? (
+                        {currentUser?.role === 'Admin' ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isPending}>
-                                        <Badge variant="outline" className="cursor-pointer font-medium">
-                                            {isPending && currentAssignee !== 'Unassigned' ? <Loader className="h-3 w-3 animate-spin mr-1.5"/> : null}
-                                            {currentAssignee}
-                                        </Badge>
+                                    <Button variant="ghost" className="p-1 -m-1 h-auto justify-end gap-2" disabled={isPending}>
+                                        {isPending && <Loader className="h-4 w-4 animate-spin" />}
+                                        {assignee ? (
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                                    <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <span>{assignee.name}</span>
+                                            </div>
+                                        ) : (
+                                            <Badge variant="outline" className="cursor-pointer font-medium">
+                                                {currentAssignee}
+                                            </Badge>
+                                        )}
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -460,6 +494,14 @@ export default function ViewTicketPage() {
                                             </div>
                                         </DropdownMenuItem>
                                     ))}
+                                    {currentAssignee !== 'Unassigned' && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onSelect={handleUnassign} disabled={isPending}>
+                                                Unassign
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         ) : assignee ? (
