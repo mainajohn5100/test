@@ -1,10 +1,8 @@
 
 'use client';
-
 import React from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from 'firebase/auth';
-
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -71,7 +69,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   // Show loading while auth is loading or settings are loading
-  if (authLoading || settingsLoading) {
+  if (authLoading || settingsLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin" />
@@ -94,15 +92,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             Return to Login
           </Button>
         </div>
-      </div>
-    );
-  }
-
-  // Redirect to login if no user
-  if (!user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader className="h-8 w-8 animate-spin" />
       </div>
     );
   }
