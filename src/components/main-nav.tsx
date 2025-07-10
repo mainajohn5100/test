@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import type { User } from "@/lib/data";
+import { useSidebar } from "./ui/sidebar";
 
 type NavItem = {
     label: string;
@@ -102,6 +103,13 @@ const customerProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
 export function MainNav() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   if (!user) {
     return null;
@@ -139,15 +147,15 @@ export function MainNav() {
         {accessibleMenuItems.map((item, index) =>
           item.subItems && item.subItems.length > 0 ? (
             <AccordionItem value={`item-${index}`} key={index} className="border-b-0">
-              <AccordionTrigger className="py-2 px-3 rounded-md hover:bg-sidebar-accent hover:no-underline text-sm font-medium">
+              <AccordionTrigger className="py-2 px-3 rounded-md hover:bg-sidebar-accent hover:no-underline text-sm font-medium group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3">
                 <div className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
-                  {item.label}
+                  <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="pl-8 pt-2 flex flex-col space-y-1">
+              <AccordionContent className="pl-8 pt-2 flex flex-col space-y-1 group-data-[collapsible=icon]:hidden">
                 {item.subItems.map((subItem, subIndex) => (
-                  <Link href={subItem.href!} key={subIndex} passHref>
+                  <Link href={subItem.href!} key={subIndex} passHref onClick={handleLinkClick}>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -165,16 +173,16 @@ export function MainNav() {
               </AccordionContent>
             </AccordionItem>
           ) : (
-            <Link href={item.href!} key={index} passHref>
+            <Link href={item.href!} key={index} passHref onClick={handleLinkClick}>
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 text-sm font-medium py-2 px-3 h-auto",
+                  "w-full justify-start gap-3 text-sm font-medium py-2 px-3 h-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3",
                   pathname === item.href && "bg-sidebar-accent"
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                {item.label}
+                <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
               </Button>
             </Link>
           )
