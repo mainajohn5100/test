@@ -45,7 +45,7 @@ export default function SettingsPage() {
         description="Configure application settings and integrations."
       />
       <Tabs defaultValue="appearance" className="space-y-6">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           {user?.role === 'Admin' && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
