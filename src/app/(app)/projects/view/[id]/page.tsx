@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader, MoreVertical, Trash2 } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -182,208 +183,196 @@ export default function ViewProjectPage() {
   const isManagerOrAdmin = project && currentUser && (currentUser.role === 'Admin' || project.manager === currentUser.id);
   
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title={project.name} description={manager ? `Managed by ${manager.name}. Due on ${format(new Date(project.deadline), "PP")}.` : `Due on ${format(new Date(project.deadline), "PP")}`}>
-        <Button variant="outline" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Projects
-        </Button>
-      </PageHeader>
+    <AlertDialog>
+      <div className="flex flex-col gap-6">
+        <PageHeader title={project.name} description={manager ? `Managed by ${manager.name}. Due on ${format(new Date(project.deadline), "PP")}.` : `Due on ${format(new Date(project.deadline), "PP")}`}>
+          <Button variant="outline" onClick={() => router.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Projects
+          </Button>
+        </PageHeader>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-                <CardTitle>Project Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground whitespace-pre-wrap">{project.description || "No description was provided for this project."}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Associated Tickets</CardTitle>
-              <CardDescription>
-                {associatedTickets.length > 0
-                  ? `Showing ${associatedTickets.length} ticket(s) related to this project.`
-                  : 'No tickets are currently associated with this project.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {associatedTickets.length > 0 ? (
-                    <div className="border rounded-md">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Priority</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {associatedTickets.map((ticket) => (
-                                    <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
-                                        <TableCell className="font-medium">{ticket.title}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={ticketStatusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
-                                        </TableCell>
-                                        <TableCell>{ticket.priority}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                ) : null}
-            </CardContent>
-          </Card>
-        </div>
-        <div className="lg:col-span-1 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Project Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">ID</span>
-                        <code>{project.id}</code>
-                    </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Status</span>
+              <CardHeader>
+                  <CardTitle>Project Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{project.description || "No description was provided for this project."}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Associated Tickets</CardTitle>
+                <CardDescription>
+                  {associatedTickets.length > 0
+                    ? `Showing ${associatedTickets.length} ticket(s) related to this project.`
+                    : 'No tickets are currently associated with this project.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {associatedTickets.length > 0 ? (
+                      <div className="border rounded-md">
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Title</TableHead>
+                                      <TableHead>Status</TableHead>
+                                      <TableHead>Priority</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {associatedTickets.map((ticket) => (
+                                      <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
+                                          <TableCell className="font-medium">{ticket.title}</TableCell>
+                                          <TableCell>
+                                              <Badge variant={ticketStatusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
+                                          </TableCell>
+                                          <TableCell>{ticket.priority}</TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                      </div>
+                  ) : null}
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-1 space-y-6">
+              <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-4">
+                      <CardTitle>Project Details</CardTitle>
+                      {isManagerOrAdmin && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isUpdating || !isManagerOrAdmin}>
-                                    <Badge className={`${projectStatusVariantMap[currentStatus]} cursor-pointer`}>
-                                      {isUpdating ? <Loader className="h-3 w-3 animate-spin mr-1.5"/> : null}
-                                      {currentStatus}
-                                    </Badge>
+                                <Button variant="ghost" size="icon" className="-mr-2 h-8 w-8">
+                                    <span className="sr-only">Open Menu</span>
+                                    <MoreVertical className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            {isManagerOrAdmin && (
-                                <DropdownMenuContent align="end">
-                                    {Object.keys(projectStatusVariantMap).map(status => (
-                                        <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as any)} disabled={isUpdating}>
-                                            {status}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            )}
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
+                                    <label htmlFor="tickets-enabled" className="flex w-full cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent focus:bg-accent">
+                                        <span>Enable Tickets</span>
+                                        <Switch
+                                            id="tickets-enabled"
+                                            checked={ticketsEnabled}
+                                            onCheckedChange={handleTicketsEnabledChange}
+                                            disabled={isUpdating}
+                                            aria-label="Toggle ticket creation"
+                                        />
+                                    </label>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Project
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
                         </DropdownMenu>
-                    </div>
-                     <Separator />
-                     <div className="space-y-2">
-                        <span className="text-sm font-medium">Project Manager</span>
-                        {manager && (
-                          <Link href={`/users/${manager.id}`} className="block">
-                            <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md">
-                                <Avatar className="h-6 w-6">
-                                    <AvatarImage src={manager.avatar} alt={manager.name} />
-                                    <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <span>{manager.name}</span>
-                            </div>
-                          </Link>
-                        )}
-                    </div>
-                    <div className="space-y-2">
-                        <span className="text-sm font-medium">Team Members</span>
-                         <TooltipProvider>
-                            <div className="flex flex-wrap gap-1 pt-1">
-                                {teamMembers.map(member => (
-                                    <Tooltip key={member.id}>
-                                        <TooltipTrigger asChild>
-                                          <Link href={`/users/${member.id}`}>
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={member.avatar} alt={member.name} />
-                                                <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                          </Link>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{member.name}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                ))}
-                            </div>
-                        </TooltipProvider>
-                    </div>
-                    <Separator />
-                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Created</span>
-                        <span>{format(new Date(project.createdAt), "MMM d, yyyy")}</span>
-                    </div>
-                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Deadline</span>
-                        <span>{format(new Date(project.deadline), "MMM d, yyyy")}</span>
-                    </div>
-                </CardContent>
-            </Card>
-            {isManagerOrAdmin && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Project Settings</CardTitle>
-                        <CardDescription>Control settings for this project.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <Label htmlFor="tickets-enabled" className="text-base">
-                                    Enable Tickets
-                                </Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Allow new tickets to be created for this project.
-                                </p>
-                            </div>
-                            <Switch
-                                id="tickets-enabled"
-                                checked={ticketsEnabled}
-                                onCheckedChange={handleTicketsEnabledChange}
-                                disabled={isUpdating}
-                                aria-label="Toggle ticket creation"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-            {isManagerOrAdmin && (
-                <Card className="border-destructive/50">
-                    <CardHeader>
-                        <CardTitle className="text-lg text-destructive">Danger Zone</CardTitle>
-                        <CardDescription>This action is irreversible.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="w-full">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Project
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this
-                                project and remove its data from our servers.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={handleDeleteProject}
-                                disabled={isDeleting}
-                            >
-                                {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Continue
-                            </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                        </AlertDialog>
-                    </CardContent>
-                </Card>
-            )}
+                      )}
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-2">
+                      <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">ID</span>
+                          <code>{project.id}</code>
+                      </div>
+                      <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Status</span>
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isUpdating || !isManagerOrAdmin}>
+                                      <Badge className={`${projectStatusVariantMap[currentStatus]} cursor-pointer`}>
+                                        {isUpdating ? <Loader className="h-3 w-3 animate-spin mr-1.5"/> : null}
+                                        {currentStatus}
+                                      </Badge>
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              {isManagerOrAdmin && (
+                                  <DropdownMenuContent align="end">
+                                      {Object.keys(projectStatusVariantMap).map(status => (
+                                          <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as any)} disabled={isUpdating}>
+                                              {status}
+                                          </DropdownMenuItem>
+                                      ))}
+                                  </DropdownMenuContent>
+                              )}
+                          </DropdownMenu>
+                      </div>
+                       <Separator />
+                       <div className="space-y-2">
+                          <span className="text-sm font-medium">Project Manager</span>
+                          {manager && (
+                            <Link href={`/users/${manager.id}`} className="block">
+                              <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md">
+                                  <Avatar className="h-6 w-6">
+                                      <AvatarImage src={manager.avatar} alt={manager.name} />
+                                      <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <span>{manager.name}</span>
+                              </div>
+                            </Link>
+                          )}
+                      </div>
+                      <div className="space-y-2">
+                          <span className="text-sm font-medium">Team Members</span>
+                           <TooltipProvider>
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                  {teamMembers.map(member => (
+                                      <Tooltip key={member.id}>
+                                          <TooltipTrigger asChild>
+                                            <Link href={`/users/${member.id}`}>
+                                              <Avatar className="h-8 w-8">
+                                                  <AvatarImage src={member.avatar} alt={member.name} />
+                                                  <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                              </Avatar>
+                                            </Link>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                              <p>{member.name}</p>
+                                          </TooltipContent>
+                                      </Tooltip>
+                                  ))}
+                              </div>
+                          </TooltipProvider>
+                      </div>
+                      <Separator />
+                       <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Created</span>
+                          <span>{format(new Date(project.createdAt), "MMM d, yyyy")}</span>
+                      </div>
+                       <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Deadline</span>
+                          <span>{format(new Date(project.deadline), "MMM d, yyyy")}</span>
+                      </div>
+                  </CardContent>
+              </Card>
+          </div>
         </div>
       </div>
-    </div>
+      <AlertDialogContent>
+          <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this
+              project and remove its data from our servers.
+          </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteProject}
+              disabled={isDeleting}
+          >
+              {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Continue
+          </AlertDialogAction>
+          </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
