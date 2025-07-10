@@ -22,7 +22,11 @@ interface SettingsContextType {
   setAdminEmailPattern: (pattern: string) => void;
   agentEmailPattern: string;
   setAgentEmailPattern: (pattern: string) => void;
-  loading: boolean; // Add loading state
+  agentSignupEnabled: boolean;
+  setAgentSignupEnabled: (enabled: boolean) => void;
+  customerSignupEnabled: boolean;
+  setCustomerSignupEnabled: (enabled: boolean) => void;
+  loading: boolean;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -38,9 +42,10 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [agentCanEditTeam, _setAgentCanEditTeam] = useState(true);
     const [adminEmailPattern, _setAdminEmailPattern] = useState('');
     const [agentEmailPattern, _setAgentEmailPattern] = useState('');
+    const [agentSignupEnabled, _setAgentSignupEnabled] = useState(true);
+    const [customerSignupEnabled, _setCustomerSignupEnabled] = useState(true);
 
     useEffect(() => {
-        // Load all settings from localStorage
         const loadSettings = () => {
             _setShowFullScreenButton(localStorage.getItem('show-fullscreen-button') !== 'false');
             _setInAppNotifications(localStorage.getItem('in-app-notifications') !== 'false');
@@ -51,16 +56,15 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             _setAgentCanEditTeam(localStorage.getItem('agent-can-edit-team') !== 'false');
             _setAdminEmailPattern(localStorage.getItem('admin-email-pattern') || '*.admin.requestflow.app');
             _setAgentEmailPattern(localStorage.getItem('agent-email-pattern') || '*.agent.requestflow.app');
+            _setAgentSignupEnabled(localStorage.getItem('agent-signup-enabled') !== 'false');
+            _setCustomerSignupEnabled(localStorage.getItem('customer-signup-enabled') !== 'false');
             
-            // Mark as loaded
             setLoading(false);
         };
 
-        // Load settings immediately if we're in the browser
         if (typeof window !== 'undefined') {
             loadSettings();
         } else {
-            // If we're on the server, just mark as loaded with defaults
             setLoading(false);
         }
     }, []);
@@ -115,6 +119,16 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setAgentEmailPattern(pattern);
         setItem('agent-email-pattern', pattern);
     };
+    
+    const setAgentSignupEnabled = (enabled: boolean) => {
+        _setAgentSignupEnabled(enabled);
+        setItem('agent-signup-enabled', String(enabled));
+    };
+
+    const setCustomerSignupEnabled = (enabled: boolean) => {
+        _setCustomerSignupEnabled(enabled);
+        setItem('customer-signup-enabled', String(enabled));
+    };
 
     const value = { 
         showFullScreenButton, 
@@ -135,6 +149,10 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setAdminEmailPattern,
         agentEmailPattern,
         setAgentEmailPattern,
+        agentSignupEnabled,
+        setAgentSignupEnabled,
+        customerSignupEnabled,
+        setCustomerSignupEnabled,
         loading
     };
 

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -31,7 +31,6 @@ function GitHubIcon(props: React.SVGProps<SVGSVGElement>) {
     return <svg role="img" viewBox="0 0 24 24" {...props}><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
 }
 
-// Helper to handle Firebase errors and provide user-friendly messages
 const getFirebaseAuthErrorMessage = (error: any) => {
     if (error.code === 'auth/api-key-not-valid') {
         return "The provided Firebase API Key is invalid. Please double-check the value in your .env file and restart your development server.";
@@ -46,15 +45,17 @@ const getFirebaseAuthErrorMessage = (error: any) => {
         return 'Sign-up process was cancelled.';
     }
     return error.message || 'An unexpected error occurred. Please try again.';
-}
+};
 
 const matchPattern = (email: string, pattern: string) => {
     if (!pattern) return false;
     const patterns = pattern.split(',').map(p => p.trim());
     for (const p of patterns) {
-        const regex = new RegExp('^' + p.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$');
-        if (regex.test(email)) {
-            return true;
+        if (p) {
+            const regex = new RegExp('^' + p.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$');
+            if (regex.test(email)) {
+                return true;
+            }
         }
     }
     return false;
@@ -63,10 +64,16 @@ const matchPattern = (email: string, pattern: string) => {
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { adminEmailPattern, agentEmailPattern } = useSettings();
+  const { 
+    adminEmailPattern, 
+    agentEmailPattern, 
+    agentSignupEnabled, 
+    customerSignupEnabled,
+    loading: settingsLoading 
+  } = useSettings();
+  
   const [loading, setLoading] = useState(false);
   
-  // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,7 +84,7 @@ export default function SignupPage() {
   const [dob, setDob] = useState<Date | undefined>();
   const [gender, setGender] = useState('');
 
-  const determineRole = (userEmail: string): User['role'] => {
+  const determineRole = useCallback((userEmail: string): User['role'] => {
     if (matchPattern(userEmail, adminEmailPattern)) {
         return 'Admin';
     }
@@ -85,12 +92,26 @@ export default function SignupPage() {
         return 'Agent';
     }
     return 'Customer';
-  };
+  }, [adminEmailPattern, agentEmailPattern]);
 
 
   const handleEmailSignup = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+
+    const role = determineRole(email);
+
+    if (role === 'Agent' && !agentSignupEnabled) {
+        toast({ title: 'Signup Disabled', description: 'Agent account creation is currently disabled by the administrator.', variant: 'destructive' });
+        setLoading(false);
+        return;
+    }
+    if (role === 'Customer' && !customerSignupEnabled) {
+        toast({ title: 'Signup Disabled', description: 'Customer account creation is currently disabled by the administrator.', variant: 'destructive' });
+        setLoading(false);
+        return;
+    }
+
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -100,7 +121,6 @@ export default function SignupPage() {
 
       const initials = name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
       const avatar = `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;
-      const role = determineRole(email);
 
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
@@ -114,6 +134,7 @@ export default function SignupPage() {
         zipCode: zipCode || null,
         dob: dob ? dob.toISOString() : null,
         gender: gender || null,
+        activityIsPublic: false,
       });
 
       router.push('/dashboard');
@@ -139,6 +160,24 @@ export default function SignupPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      
+      if (!user.email) {
+          toast({ title: "Email required", description: "Your social account must have an email to sign up.", variant: "destructive"});
+          setLoading(false);
+          return;
+      }
+
+      const role = determineRole(user.email);
+      if (role === 'Agent' && !agentSignupEnabled) {
+          toast({ title: 'Signup Disabled', description: 'Agent account creation is currently disabled by the administrator.', variant: 'destructive' });
+          setLoading(false);
+          return;
+      }
+      if (role === 'Customer' && !customerSignupEnabled) {
+          toast({ title: 'Signup Disabled', description: 'Customer account creation is currently disabled by the administrator.', variant: 'destructive' });
+          setLoading(false);
+          return;
+      }
 
       const userDocRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(userDocRef);
@@ -151,8 +190,9 @@ export default function SignupPage() {
           id: user.uid,
           name: user.displayName,
           email: user.email,
-          role: user.email ? determineRole(user.email) : 'Customer',
+          role: role,
           avatar,
+          activityIsPublic: false,
         });
       }
       
@@ -172,6 +212,14 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+  
+  if (settingsLoading) {
+      return (
+         <div className="flex h-screen items-center justify-center bg-muted/40">
+            <Loader className="h-8 w-8 animate-spin" />
+        </div>
+      )
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen py-12">
@@ -187,10 +235,10 @@ export default function SignupPage() {
         <CardContent>
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" onClick={() => handleSocialSignIn('google')} disabled={loading}>
+                    <Button variant="outline" onClick={() => handleSocialSignIn('google')} disabled={loading || settingsLoading}>
                         <GoogleIcon className="mr-2 h-4 w-4" /> Google
                     </Button>
-                    <Button variant="outline" onClick={() => handleSocialSignIn('github')} disabled={loading}>
+                    <Button variant="outline" onClick={() => handleSocialSignIn('github')} disabled={loading || settingsLoading}>
                         <GitHubIcon className="mr-2 h-4 w-4" /> GitHub
                     </Button>
                 </div>
@@ -208,16 +256,16 @@ export default function SignupPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="name">Full Name</Label>
-                            <Input id="name" name="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={loading}/>
+                            <Input id="name" name="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={loading || settingsLoading}/>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" name="email" type="email" placeholder="john.doe@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
+                            <Input id="email" name="email" type="email" placeholder="john.doe@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading || settingsLoading} />
                         </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input id="password" name="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
+                        <Input id="password" name="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading || settingsLoading} />
                         <p className="text-xs text-muted-foreground">Password must be at least 6 characters long.</p>
                     </div>
                     
@@ -227,11 +275,11 @@ export default function SignupPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="phone">Phone Number</Label>
-                            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={loading} />
+                            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={loading || settingsLoading} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="gender">Gender</Label>
-                            <Select onValueChange={setGender} value={gender} disabled={loading}>
+                            <Select onValueChange={setGender} value={gender} disabled={loading || settingsLoading}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select gender" />
                                 </SelectTrigger>
@@ -255,7 +303,7 @@ export default function SignupPage() {
                                         "w-full pl-3 text-left font-normal",
                                         !dob && "text-muted-foreground"
                                     )}
-                                    disabled={loading}
+                                    disabled={loading || settingsLoading}
                                     >
                                     {dob ? format(dob, "PPP") : ( <span>Pick a date</span> )}
                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -268,27 +316,30 @@ export default function SignupPage() {
                                         onSelect={setDob}
                                         disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                         initialFocus
+                                        captionLayout="dropdown-buttons"
+                                        fromYear={1900}
+                                        toYear={new Date().getFullYear()}
                                     />
                                 </PopoverContent>
                             </Popover>
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="country">Country</Label>
-                            <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} disabled={loading} />
+                            <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} disabled={loading || settingsLoading} />
                         </div>
                     </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="city">City</Label>
-                            <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} disabled={loading} />
+                            <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} disabled={loading || settingsLoading} />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="zipCode">Zip/Postal Code</Label>
-                            <Input id="zipCode" value={zipCode} onChange={(e) => setZipCode(e.target.value)} disabled={loading} />
+                            <Input id="zipCode" value={zipCode} onChange={(e) => setZipCode(e.target.value)} disabled={loading || settingsLoading} />
                         </div>
                     </div>
 
-                    <Button className="w-full" type="submit" disabled={loading}>
+                    <Button className="w-full" type="submit" disabled={loading || settingsLoading}>
                         {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                         Create Account
                     </Button>

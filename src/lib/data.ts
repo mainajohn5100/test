@@ -33,7 +33,7 @@ export type User = {
   zipCode?: string;
   dob?: string; // ISO Date string
   gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
-  activityIsPublic?: boolean;
+  activityIsPublic: boolean;
 };
 
 export type Project = {

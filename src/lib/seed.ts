@@ -58,15 +58,11 @@ async function seedDatabase() {
   const projectsCollection = collection(db, 'projects');
   projects.forEach(project => {
     const projectRef = doc(projectsCollection, project.id);
+    const { id, ...projectData } = project;
     batch.set(projectRef, {
-        name: project.name,
-        description: project.description,
-        status: project.status,
-        manager: project.manager,
-        team: project.team,
+        ...projectData,
         createdAt: Timestamp.fromDate(new Date(project.createdAt)),
         deadline: Timestamp.fromDate(new Date(project.deadline)),
-        creatorId: project.creatorId,
         ticketsEnabled: project.ticketsEnabled ?? true,
     });
   });
@@ -77,18 +73,11 @@ async function seedDatabase() {
   const ticketsCollection = collection(db, 'tickets');
   tickets.forEach(ticket => {
     const ticketRef = doc(ticketsCollection, ticket.id);
+    const { id, ...ticketData } = ticket;
     batch.set(ticketRef, {
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
-        priority: ticket.priority,
-        assignee: ticket.assignee,
-        reporter: ticket.reporter,
-        reporterEmail: ticket.reporterEmail || null,
+        ...ticketData,
         createdAt: Timestamp.fromDate(new Date(ticket.createdAt)),
         updatedAt: Timestamp.fromDate(new Date(ticket.updatedAt)),
-        tags: ticket.tags,
-        project: ticket.project,
     });
   });
   console.log(`- ${tickets.length} tickets queued for creation.`);

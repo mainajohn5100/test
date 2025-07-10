@@ -32,6 +32,10 @@ export default function SettingsPage() {
     setAdminEmailPattern,
     agentEmailPattern,
     setAgentEmailPattern,
+    agentSignupEnabled,
+    setAgentSignupEnabled,
+    customerSignupEnabled,
+    setCustomerSignupEnabled,
   } = useSettings();
 
   return (
@@ -184,6 +188,48 @@ export default function SettingsPage() {
                               checked={agentCanEditTeam}
                               onCheckedChange={setAgentCanEditTeam}
                               aria-label="Toggle agent team editing"
+                          />
+                      </div>
+                  </CardContent>
+              </Card>
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Signup Control</CardTitle>
+                      <CardDescription>
+                          Enable or disable public account creation for different roles. Admins can always be created from the user management page.
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                              <Label htmlFor="agent-signup-enabled" className="text-base">
+                                  Enable Agent Signup
+                              </Label>
+                              <p className="text-sm text-muted-foreground">
+                                  Allow users to sign up as Agents if their email matches the agent pattern.
+                              </p>
+                          </div>
+                          <Switch
+                              id="agent-signup-enabled"
+                              checked={agentSignupEnabled}
+                              onCheckedChange={setAgentSignupEnabled}
+                              aria-label="Toggle Agent Signup"
+                          />
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                              <Label htmlFor="customer-signup-enabled" className="text-base">
+                                  Enable Customer Signup
+                              </Label>
+                              <p className="text-sm text-muted-foreground">
+                                  Allow users to sign up as Customers if their email does not match other patterns.
+                              </p>
+                          </div>
+                          <Switch
+                              id="customer-signup-enabled"
+                              checked={customerSignupEnabled}
+                              onCheckedChange={setCustomerSignupEnabled}
+                              aria-label="Toggle Customer Signup"
                           />
                       </div>
                   </CardContent>
