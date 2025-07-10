@@ -11,6 +11,7 @@ import { useSettings } from "@/contexts/settings-context";
 import { EmailIntegrationForm } from "@/components/settings/email-integration-form";
 import { AccountForm } from "@/components/settings/account-form";
 import { useAuth } from "@/contexts/auth-context";
+import { Input } from "@/components/ui/input";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -26,7 +27,11 @@ export default function SettingsPage() {
     customerCanSelectProject,
     setCustomerCanSelectProject,
     agentCanEditTeam,
-    setAgentCanEditTeam
+    setAgentCanEditTeam,
+    adminEmailPattern,
+    setAdminEmailPattern,
+    agentEmailPattern,
+    setAgentEmailPattern,
   } = useSettings();
 
   return (
@@ -108,9 +113,10 @@ export default function SettingsPage() {
         )}
          {user?.role === 'Admin' && (
           <TabsContent value="access">
+            <div className="space-y-6">
               <Card>
                   <CardHeader>
-                      <CardTitle>Access Control</CardTitle>
+                      <CardTitle>Panel Access</CardTitle>
                       <CardDescription>
                           Globally enable or disable access for different user roles.
                       </CardDescription>
@@ -182,6 +188,40 @@ export default function SettingsPage() {
                       </div>
                   </CardContent>
               </Card>
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Role Assignment by Email</CardTitle>
+                      <CardDescription>
+                          Automatically assign roles to new users based on their email address. 
+                          Use `*` as a wildcard (e.g., `*@company.com`).
+                          Any email that doesn't match a pattern will be assigned the 'Customer' role.
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                          <Label htmlFor="admin-pattern">Admin Email Pattern</Label>
+                          <Input 
+                            id="admin-pattern"
+                            value={adminEmailPattern}
+                            onChange={(e) => setAdminEmailPattern(e.target.value)}
+                            placeholder="e.g., *.admin@requestflow.app, admin@company.com"
+                          />
+                           <p className="text-xs text-muted-foreground">
+                            The primary billing email is always a super-admin.
+                          </p>
+                      </div>
+                       <div className="space-y-2">
+                          <Label htmlFor="agent-pattern">Agent Email Pattern</Label>
+                          <Input 
+                            id="agent-pattern"
+                            value={agentEmailPattern}
+                            onChange={(e) => setAgentEmailPattern(e.target.value)}
+                            placeholder="e.g., *.agent@requestflow.app, support@company.com"
+                          />
+                      </div>
+                  </CardContent>
+              </Card>
+            </div>
           </TabsContent>
          )}
         <TabsContent value="account">

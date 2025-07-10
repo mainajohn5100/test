@@ -20,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useSettings } from '@/contexts/settings-context';
+import type { User } from '@/lib/data';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return <svg role="img" viewBox="0 0 24 24" {...props}><title>Google</title><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-4.73 1.9-4.27 0-7.75-3.5-7.75-7.75s3.48-7.75 7.75-7.75c2.43 0 3.86.95 4.73 1.82l2.73-2.73C18.74 1.04 15.97 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c7.04 0 12.02-4.92 12.02-12.02 0-.8-.08-1.58-.2-2.32H12.48z"/></svg>
@@ -46,9 +48,22 @@ const getFirebaseAuthErrorMessage = (error: any) => {
     return error.message || 'An unexpected error occurred. Please try again.';
 }
 
+const matchPattern = (email: string, pattern: string) => {
+    if (!pattern) return false;
+    const patterns = pattern.split(',').map(p => p.trim());
+    for (const p of patterns) {
+        const regex = new RegExp('^' + p.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$');
+        if (regex.test(email)) {
+            return true;
+        }
+    }
+    return false;
+};
+
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { adminEmailPattern, agentEmailPattern } = useSettings();
   const [loading, setLoading] = useState(false);
   
   // Form state
@@ -61,6 +76,16 @@ export default function SignupPage() {
   const [zipCode, setZipCode] = useState('');
   const [dob, setDob] = useState<Date | undefined>();
   const [gender, setGender] = useState('');
+
+  const determineRole = (userEmail: string): User['role'] => {
+    if (matchPattern(userEmail, adminEmailPattern)) {
+        return 'Admin';
+    }
+    if (matchPattern(userEmail, agentEmailPattern)) {
+        return 'Agent';
+    }
+    return 'Customer';
+  };
 
 
   const handleEmailSignup = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -75,7 +100,7 @@ export default function SignupPage() {
 
       const initials = name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
       const avatar = `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;
-      const role = email === 'admin@example.com' ? 'Admin' : 'Customer';
+      const role = determineRole(email);
 
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
@@ -126,7 +151,7 @@ export default function SignupPage() {
           id: user.uid,
           name: user.displayName,
           email: user.email,
-          role: 'Customer',
+          role: user.email ? determineRole(user.email) : 'Customer',
           avatar,
         });
       }
