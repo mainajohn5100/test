@@ -14,6 +14,8 @@ interface SettingsContextType {
   setAgentPanelEnabled: (enabled: boolean) => void;
   customerPanelEnabled: boolean;
   setCustomerPanelEnabled: (enabled: boolean) => void;
+  customerCanSelectProject: boolean;
+  setCustomerCanSelectProject: (enabled: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -24,6 +26,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [emailNotifications, _setEmailNotifications] = useState(false);
     const [agentPanelEnabled, _setAgentPanelEnabled] = useState(true);
     const [customerPanelEnabled, _setCustomerPanelEnabled] = useState(true);
+    const [customerCanSelectProject, _setCustomerCanSelectProject] = useState(true);
 
     useEffect(() => {
         const storedFullScreen = localStorage.getItem('show-fullscreen-button');
@@ -49,6 +52,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         const storedCustomerPanel = localStorage.getItem('customer-panel-enabled');
         if (storedCustomerPanel !== null) {
             _setCustomerPanelEnabled(storedCustomerPanel === 'true');
+        }
+
+        const storedCustomerProject = localStorage.getItem('customer-can-select-project');
+        if (storedCustomerProject !== null) {
+            _setCustomerCanSelectProject(storedCustomerProject === 'true');
         }
 
     }, []);
@@ -78,6 +86,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         localStorage.setItem('customer-panel-enabled', String(enabled));
     };
 
+    const setCustomerCanSelectProject = (enabled: boolean) => {
+        _setCustomerCanSelectProject(enabled);
+        localStorage.setItem('customer-can-select-project', String(enabled));
+    };
+
     const value = { 
         showFullScreenButton, 
         setShowFullScreenButton,
@@ -88,7 +101,9 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         agentPanelEnabled,
         setAgentPanelEnabled,
         customerPanelEnabled,
-        setCustomerPanelEnabled
+        setCustomerPanelEnabled,
+        customerCanSelectProject,
+        setCustomerCanSelectProject
     };
 
     return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

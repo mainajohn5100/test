@@ -22,7 +22,9 @@ export default function SettingsPage() {
     agentPanelEnabled,
     setAgentPanelEnabled,
     customerPanelEnabled,
-    setCustomerPanelEnabled
+    setCustomerPanelEnabled,
+    customerCanSelectProject,
+    setCustomerCanSelectProject
   } = useSettings();
 
   return (
@@ -142,6 +144,22 @@ export default function SettingsPage() {
                               checked={customerPanelEnabled}
                               onCheckedChange={setCustomerPanelEnabled}
                               aria-label="Toggle customer panel access"
+                          />
+                      </div>
+                       <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                              <Label htmlFor="customer-project" className="text-base">
+                                  Customer Can Select Project
+                              </Label>
+                              <p className="text-sm text-muted-foreground">
+                                  Allow customers to assign tickets to projects during creation.
+                              </p>
+                          </div>
+                          <Switch
+                              id="customer-project"
+                              checked={customerCanSelectProject}
+                              onCheckedChange={setCustomerCanSelectProject}
+                              aria-label="Toggle customer project selection"
                           />
                       </div>
                   </CardContent>
