@@ -7,21 +7,17 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
-import { KeyRound, ShieldCheck, Loader } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { EditProfileForm } from './edit-profile-form';
-import { format } from 'date-fns';
-import { Separator } from '../ui/separator';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserPrivacyAction } from '@/app/(app)/users/actions';
-import { ChangePasswordForm } from './change-password-form';
 
 export function AccountForm() {
     const { user, loading, refreshUser } = useAuth();
     const { toast } = useToast();
     const [isEditDialogOpen, setEditDialogOpen] = React.useState(false);
-    const [isPasswordDialogOpen, setPasswordDialogOpen] = React.useState(false);
     const [isUpdatingPrivacy, startPrivacyTransition] = React.useTransition();
 
     const handleEditDialogChange = (open: boolean) => {
@@ -92,7 +88,7 @@ export function AccountForm() {
                     <CardContent>
                     <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogChange}>
                         <DialogTrigger asChild>
-                        <Button className="w-full" variant="outline">Edit Profile</Button>
+                        <Button className="w-full" variant="outline">Edit Profile & Security</Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-2xl">
                           <EditProfileForm user={user} setOpen={setEditDialogOpen} />
@@ -100,72 +96,8 @@ export function AccountForm() {
                     </Dialog>
                     </CardContent>
                 </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Security Settings</CardTitle>
-                        <CardDescription>Manage account security.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="w-full" variant="outline">
-                                    <KeyRound className="mr-2"/>
-                                    Change Password
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-md">
-                                <ChangePasswordForm setOpen={setPasswordDialogOpen} />
-                            </DialogContent>
-                        </Dialog>
-                        <Button className="w-full" variant="outline" disabled>
-                            <ShieldCheck className="mr-2"/>
-                            Enable Two-Factor Auth
-                        </Button>
-                        <p className="text-xs text-muted-foreground text-center pt-2">SSO/OAuth settings would appear here.</p>
-                    </CardContent>
-                </Card>
             </div>
              <div className="lg:col-span-2">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Personal Information</CardTitle>
-                        <CardDescription>Additional details about your account.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 text-sm">
-                        <div className="space-y-2">
-                            <div className="flex justify-between"><span className="text-muted-foreground">User ID</span><code>{user.id}</code></div>
-                        </div>
-
-                        {(user.phone || user.gender || user.dob) && (
-                            <>
-                                <Separator />
-                                <div className="space-y-2">
-                                    {user.phone && (<div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{user.phone}</span></div>)}
-                                    {user.gender && (<div className="flex justify-between"><span className="text-muted-foreground">Gender</span><span>{user.gender}</span></div>)}
-                                    {user.dob && (<div className="flex justify-between"><span className="text-muted-foreground">Birthday</span><span>{format(new Date(user.dob), "PPP")}</span></div>)}
-                                </div>
-                            </>
-                        )}
-                        
-                        {(user.city || user.country || user.zipCode) && (
-                            <>
-                                <Separator />
-                                <div className="space-y-2">
-                                    {user.city && (<div className="flex justify-between"><span className="text-muted-foreground">City</span><span>{user.city}</span></div>)}
-                                    {user.country && (<div className="flex justify-between"><span className="text-muted-foreground">Country</span><span>{user.country}</span></div>)}
-                                    {user.zipCode && (<div className="flex justify-between"><span className="text-muted-foreground">Zip Code</span><span>{user.zipCode}</span></div>)}
-                                </div>
-                            </>
-                        )}
-
-                        {!user.phone && !user.country && !user.city && !user.zipCode && !user.dob && !user.gender && (
-                            <>
-                                <Separator />
-                                <p className="text-muted-foreground text-center py-8">No additional information provided. Edit your profile to add more details.</p>
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle>Privacy Settings</CardTitle>

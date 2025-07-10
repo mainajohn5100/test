@@ -4,13 +4,12 @@
 
 import { notFound, useParams, useRouter } from "next/navigation";
 import React from "react";
-import { format } from "date-fns";
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, KeyRound, Loader, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader, ShieldAlert } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -37,9 +36,7 @@ import { EditProfileForm } from "@/components/settings/edit-profile-form";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserRoleAction } from "../actions";
-import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-import { ChangePasswordForm } from "@/components/settings/change-password-form";
 
 
 const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -65,7 +62,6 @@ export default function UserProfilePage() {
   const [loading, setLoading] = React.useState(true);
   const [isEditDialogOpen, setEditDialogOpen] = React.useState(false);
   const [isUpdating, startTransition] = React.useTransition();
-  const [isPasswordDialogOpen, setPasswordDialogOpen] = React.useState(false);
 
   const [optimisticRole, setOptimisticRole] = React.useState<User['role'] | undefined>();
 
@@ -310,53 +306,12 @@ export default function UserProfilePage() {
                 <CardContent>
                   <Dialog open={isEditDialogOpen} onOpenChange={setEditDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="w-full" variant="outline">Edit Profile</Button>
+                      <Button className="w-full" variant="outline">Edit Profile & Security</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                       <EditProfileForm user={user} setOpen={setEditDialogOpen} />
                     </DialogContent>
                   </Dialog>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>Additional details about the user.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                    <div className="space-y-2">
-                        <div className="flex justify-between"><span className="text-muted-foreground">User ID</span><code>{user.id}</code></div>
-                    </div>
-                    
-                    {(user.phone || user.gender || user.dob) && (
-                        <>
-                            <Separator />
-                            <div className="space-y-2">
-                                {user.phone && (<div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{user.phone}</span></div>)}
-                                {user.gender && (<div className="flex justify-between"><span className="text-muted-foreground">Gender</span><span>{user.gender}</span></div>)}
-                                {user.dob && (<div className="flex justify-between"><span className="text-muted-foreground">Birthday</span><span>{format(new Date(user.dob), "PPP")}</span></div>)}
-                            </div>
-                        </>
-                    )}
-
-                    {(user.city || user.country || user.zipCode) && (
-                        <>
-                            <Separator />
-                            <div className="space-y-2">
-                                {user.city && (<div className="flex justify-between"><span className="text-muted-foreground">City</span><span>{user.city}</span></div>)}
-                                {user.country && (<div className="flex justify-between"><span className="text-muted-foreground">Country</span><span>{user.country}</span></div>)}
-                                {user.zipCode && (<div className="flex justify-between"><span className="text-muted-foreground">Zip Code</span><span>{user.zipCode}</span></div>)}
-                            </div>
-                        </>
-                    )}
-                    
-                    {!user.phone && !user.country && !user.city && !user.zipCode && !user.dob && !user.gender && (
-                        <>
-                            <Separator />
-                            <p className="text-muted-foreground text-center pt-4">No additional information provided.</p>
-                        </>
-                    )}
                 </CardContent>
             </Card>
 
@@ -389,30 +344,6 @@ export default function UserProfilePage() {
                   </CardContent>
               </Card>
             )}
-             <Card>
-                <CardHeader>
-                    <CardTitle>Security Settings</CardTitle>
-                    <CardDescription>Manage account security.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="w-full" variant="outline" disabled={!isOwner}>
-                            <KeyRound className="mr-2"/>
-                            Change Password
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                        <ChangePasswordForm setOpen={setPasswordDialogOpen} />
-                    </DialogContent>
-                  </Dialog>
-                    <Button className="w-full" variant="outline" disabled>
-                        <ShieldCheck className="mr-2"/>
-                        Enable Two-Factor Auth
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center pt-2">SSO/OAuth settings would appear here.</p>
-                </CardContent>
-            </Card>
         </div>
         <div className="lg:col-span-2 space-y-6">
           <Card>

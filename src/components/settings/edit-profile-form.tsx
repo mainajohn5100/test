@@ -5,24 +5,21 @@ import React from "react";
 import type { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader } from "lucide-react";
+import { KeyRound, Loader } from "lucide-react";
 import type { User } from "@/lib/data";
 import { updateUserSchema } from "@/app/(app)/users/schema";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserAction } from "@/app/(app)/users/actions";
 import { ReauthenticationForm } from "./reauthentication-form";
 import { useAuth } from "@/contexts/auth-context";
+import { ChangePasswordForm } from "./change-password-form";
 
 export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open: boolean) => void }) {
   const { toast } = useToast();
@@ -30,6 +27,7 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
   const [isPending, startTransition] = React.useTransition();
   const [needsReauth, setNeedsReauth] = React.useState(false);
   const [formData, setFormData] = React.useState<FormData | null>(null);
+  const [isPasswordDialogOpen, setPasswordDialogOpen] = React.useState(false);
 
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -39,12 +37,6 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
     defaultValues: {
       name: user.name,
       email: user.email,
-      phone: user.phone || '',
-      country: user.country || '',
-      city: user.city || '',
-      zipCode: user.zipCode || '',
-      dob: user.dob ? new Date(user.dob) : undefined,
-      gender: user.gender || '',
     },
   });
 
@@ -167,131 +159,17 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                   )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                      <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-              <FormField
-                  control={form.control}
-                  name="country"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                      <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                      <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-              <FormField
-                  control={form.control}
-                  name="zipCode"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>Zip/Postal Code</FormLabel>
-                      <FormControl>
-                      <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                  control={form.control}
-                  name="dob"
-                  render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                      <FormLabel>Date of birth</FormLabel>
-                      <Popover>
-                          <PopoverTrigger asChild>
-                          <FormControl>
-                              <Button
-                              variant={"outline"}
-                              className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                              )}
-                              >
-                              {field.value ? (
-                                  format(field.value, "PPP")
-                              ) : (
-                                  <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                          </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) =>
-                                  date > new Date() || date < new Date("1900-01-01")
-                              }
-                              initialFocus
-                              captionLayout="dropdown-buttons"
-                              fromYear={1900}
-                              toYear={new Date().getFullYear()}
-                          />
-                          </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-              />
-              <FormField
-                control={form.control}
-                name="gender"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                        <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+             <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+              <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                      <KeyRound className="mr-2"/>
+                      Change Password
+                  </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                  <ChangePasswordForm setOpen={setPasswordDialogOpen} />
+              </DialogContent>
+            </Dialog>
           </div>
           <DialogFooter>
             <DialogClose asChild>

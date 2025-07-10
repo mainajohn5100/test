@@ -37,14 +37,6 @@ export async function updateUserAction(userId: string, formData: FormData) {
         updateData.name = name;
     }
 
-    // Process other fields
-    const otherFields: (keyof Omit<User, 'id'| 'role'| 'name' | 'email'| 'avatar'>)[] = ['phone', 'country', 'city', 'zipCode', 'dob', 'gender'];
-    otherFields.forEach(field => {
-        if (formData.has(field)) {
-            updateData[field] = formData.get(field) as string || null;
-        }
-    });
-
     const avatarFile = formData.get('avatar') as File | null;
     if (avatarFile && avatarFile.size > 0) {
       const filePath = `avatars/${userId}/${Date.now()}_${avatarFile.name}`;
