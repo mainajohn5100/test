@@ -5,7 +5,6 @@ import React from "react";
 import type { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -48,14 +47,17 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
     }
   };
 
-  const handleFormSubmit = async () => {
-    const currentFormData = new FormData(form.control._formRef.current);
+  const handleFormSubmit = async (values: z.infer<typeof updateUserSchema>) => {
+    const currentFormData = new FormData();
+    currentFormData.append('name', values.name || '');
+    currentFormData.append('email', values.email || '');
+
     if (selectedFile) {
         currentFormData.append('avatar', selectedFile);
     }
     setFormData(currentFormData);
 
-    const emailChanged = form.getValues('email') !== user.email;
+    const emailChanged = values.email !== user.email;
 
     if (emailChanged) {
         setNeedsReauth(true);
@@ -161,7 +163,7 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
             </div>
              <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
               <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">
+                  <Button type="button" variant="outline" className="w-full">
                       <KeyRound className="mr-2"/>
                       Change Password
                   </Button>
