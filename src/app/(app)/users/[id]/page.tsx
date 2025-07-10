@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updateUserRoleAction } from "../actions";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import { ChangePasswordForm } from "@/components/settings/change-password-form";
 
 
 const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -64,6 +65,7 @@ export default function UserProfilePage() {
   const [loading, setLoading] = React.useState(true);
   const [isEditDialogOpen, setEditDialogOpen] = React.useState(false);
   const [isUpdating, startTransition] = React.useTransition();
+  const [isPasswordDialogOpen, setPasswordDialogOpen] = React.useState(false);
 
   const [optimisticRole, setOptimisticRole] = React.useState<User['role'] | undefined>();
 
@@ -393,10 +395,17 @@ export default function UserProfilePage() {
                     <CardDescription>Manage account security.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Button className="w-full" variant="outline" disabled>
-                        <KeyRound className="mr-2"/>
-                        Change Password
-                    </Button>
+                  <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="w-full" variant="outline" disabled={!isOwner}>
+                            <KeyRound className="mr-2"/>
+                            Change Password
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                        <ChangePasswordForm setOpen={setPasswordDialogOpen} />
+                    </DialogContent>
+                  </Dialog>
                     <Button className="w-full" variant="outline" disabled>
                         <ShieldCheck className="mr-2"/>
                         Enable Two-Factor Auth
