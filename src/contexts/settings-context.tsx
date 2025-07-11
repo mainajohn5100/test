@@ -48,15 +48,29 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-// Helper function to safely get boolean from localStorage
-const getBooleanFromStorage = (key: string, defaultValue: boolean = true): boolean => {
+// Helper function to safely get item from localStorage, only on client-side
+const getItemFromStorage = (key: string, defaultValue: any) => {
+    if (typeof window === 'undefined') {
+        return defaultValue;
+    }
     const item = localStorage.getItem(key);
     if (item === null) return defaultValue;
-    return item === 'true';
+    try {
+        if (item === 'true' || item === 'false') {
+            return item === 'true';
+        }
+        if (!isNaN(Number(item))) {
+            return Number(item);
+        }
+        return item;
+    } catch {
+        return defaultValue;
+    }
 };
 
 export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
+    // Initialize state with default values, which will be used for server-side rendering
     const [showFullScreenButton, _setShowFullScreenButton] = useState(true);
     const [inAppNotifications, _setInAppNotifications] = useState(true);
     const [emailNotifications, _setEmailNotifications] = useState(false);
@@ -65,37 +79,29 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [customerCanSelectProject, _setCustomerCanSelectProject] = useState(true);
     const [agentCanEditTeam, _setAgentCanEditTeam] = useState(true);
     const [excludeClosedTickets, _setExcludeClosedTickets] = useState(false);
-    const [adminEmailPattern, _setAdminEmailPattern] = useState('');
-    const [agentEmailPattern, _setAgentEmailPattern] = useState('');
+    const [adminEmailPattern, _setAdminEmailPattern] = useState('*.admin.requestflow.app');
+    const [agentEmailPattern, _setAgentEmailPattern] = useState('*.agent.requestflow.app');
     const [agentSignupEnabled, _setAgentSignupEnabled] = useState(true);
     const [customerSignupEnabled, _setCustomerSignupEnabled] = useState(true);
     const [inactivityTimeout, _setInactivityTimeout] = useState(2); // Default to 2 minutes
 
+    // Use useEffect to load settings from localStorage on the client-side
     useEffect(() => {
-        const loadSettings = () => {
-            _setShowFullScreenButton(getBooleanFromStorage('show-fullscreen-button', true));
-            _setInAppNotifications(getBooleanFromStorage('in-app-notifications', true));
-            _setEmailNotifications(getBooleanFromStorage('email-notifications', false));
-            _setAgentPanelEnabled(getBooleanFromStorage('agent-panel-enabled', true));
-            _setCustomerPanelEnabled(getBooleanFromStorage('customer-panel-enabled', true));
-            _setCustomerCanSelectProject(getBooleanFromStorage('customer-can-select-project', true));
-            _setAgentCanEditTeam(getBooleanFromStorage('agent-can-edit-team', true));
-            _setExcludeClosedTickets(getBooleanFromStorage('exclude-closed-tickets', false));
-            _setAdminEmailPattern(localStorage.getItem('admin-email-pattern') || '*.admin.requestflow.app');
-            _setAgentEmailPattern(localStorage.getItem('agent-email-pattern') || '*.agent.requestflow.app');
-            _setAgentSignupEnabled(getBooleanFromStorage('agent-signup-enabled', true));
-            _setCustomerSignupEnabled(getBooleanFromStorage('customer-signup-enabled', true));
-            const savedTimeout = localStorage.getItem('inactivity-timeout');
-            _setInactivityTimeout(savedTimeout ? Number(savedTimeout) : 2);
-            
-            setLoading(false);
-        };
+        _setShowFullScreenButton(getItemFromStorage('show-fullscreen-button', true));
+        _setInAppNotifications(getItemFromStorage('in-app-notifications', true));
+        _setEmailNotifications(getItemFromStorage('email-notifications', false));
+        _setAgentPanelEnabled(getItemFromStorage('agent-panel-enabled', true));
+        _setCustomerPanelEnabled(getItemFromStorage('customer-panel-enabled', true));
+        _setCustomerCanSelectProject(getItemFromStorage('customer-can-select-project', true));
+        _setAgentCanEditTeam(getItemFromStorage('agent-can-edit-team', true));
+        _setExcludeClosedTickets(getItemFromStorage('exclude-closed-tickets', false));
+        _setAdminEmailPattern(getItemFromStorage('admin-email-pattern', '*.admin.requestflow.app'));
+        _setAgentEmailPattern(getItemFromStorage('agent-email-pattern', '*.agent.requestflow.app'));
+        _setAgentSignupEnabled(getItemFromStorage('agent-signup-enabled', true));
+        _setCustomerSignupEnabled(getItemFromStorage('customer-signup-enabled', true));
+        _setInactivityTimeout(getItemFromStorage('inactivity-timeout', 2));
 
-        if (typeof window !== 'undefined') {
-            loadSettings();
-        } else {
-            setLoading(false);
-        }
+        setLoading(false);
     }, []);
 
     const setItem = (key: string, value: string) => {

@@ -19,22 +19,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [accessDenied, setAccessDenied] = React.useState(false);
 
-  const handleLogout = async (message?: string) => {
-    try {
-      await signOut(auth);
-      toast({ 
-        title: "Signed Out", 
-        description: message || "You have been signed out." 
+  const handleLogout = (message?: string) => {
+    // Redirect immediately for better UX
+    router.replace('/login');
+    signOut(auth).then(() => {
+      toast({
+        title: "Signed Out",
+        description: message || "You have been signed out."
       });
-      router.replace('/login');
-    } catch (error) {
+    }).catch((error) => {
       console.error('Error signing out:', error);
-      toast({ 
-        title: "Error", 
-        description: "There was an error signing out. Please try again.",
+      toast({
+        title: "Error",
+        description: "There was an error signing out.",
         variant: "destructive"
       });
-    }
+    });
   };
   
   useInactivity(() => {
