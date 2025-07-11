@@ -1,6 +1,7 @@
 
 'use client';
 
+import 'react-quill/dist/quill.snow.css';
 import { notFound, useRouter, useParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Bold, Italic, List, Link as LinkIcon, ListOrdered } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -30,15 +31,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
 import React from "react";
 import { generateSmartReply } from "@/ai/flows/smart-replies";
 import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
-import { getTicketById, getUsers } from "@/lib/firestore";
-import type { Ticket, User } from "@/lib/data";
-import { updateTicketAction, deleteTicketAction } from "./actions";
+import { getTicketById, getUsers, getTicketConversations } from "@/lib/firestore";
+import type { Ticket, User, TicketConversation } from "@/lib/data";
+import { updateTicketAction, deleteTicketAction, addReplyAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
+import ReactQuill from 'react-quill';
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -56,6 +57,19 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
   'Terminated': 'destructive',
 };
 
+const QuillModules = {
+  toolbar: [
+    ['bold', 'italic', 'underline', 'link'],
+    [{'list': 'ordered'}, {'list': 'bullet'}],
+    ['clean']
+  ],
+};
+
+const QuillFormats = [
+  'bold', 'italic', 'underline', 'link',
+  'list', 'bullet'
+];
+
 export default function ViewTicketPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -67,6 +81,7 @@ export default function ViewTicketPage() {
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [conversations, setConversations] = React.useState<TicketConversation[]>([]);
 
   const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
   const [currentStatus, setCurrentStatus] = React.useState<string | undefined>(undefined);
@@ -83,40 +98,43 @@ export default function ViewTicketPage() {
   const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Agent' || u.role === 'Admin'), [users]);
 
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      if (!params.id) return;
-      setLoading(true);
-      try {
-        const [ticketData, usersData] = await Promise.all([
-          getTicketById(params.id as string),
-          getUsers()
-        ]);
+  const fetchTicketData = React.useCallback(async () => {
+    if (!params.id) return;
+    setLoading(true);
+    try {
+      const [ticketData, usersData, conversationsData] = await Promise.all([
+        getTicketById(params.id as string),
+        getUsers(),
+        getTicketConversations(params.id as string)
+      ]);
 
-        if (ticketData) {
-          setTicket(ticketData);
-          setCurrentStatus(ticketData.status);
-          setCurrentPriority(ticketData.priority);
-          setCurrentAssignee(ticketData.assignee);
-          setCurrentTags(ticketData.tags || []);
-        } else {
-          notFound();
-        }
-        setUsers(usersData);
-
-      } catch (error) {
-        console.error("Failed to fetch ticket or users", error);
-        toast({
-          title: "Error",
-          description: "Could not load ticket data.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (ticketData) {
+        setTicket(ticketData);
+        setCurrentStatus(ticketData.status);
+        setCurrentPriority(ticketData.priority);
+        setCurrentAssignee(ticketData.assignee);
+        setCurrentTags(ticketData.tags || []);
+        setConversations(conversationsData);
+      } else {
+        notFound();
       }
-    };
-    fetchData();
+      setUsers(usersData);
+
+    } catch (error) {
+      console.error("Failed to fetch ticket or users", error);
+      toast({
+        title: "Error",
+        description: "Could not load ticket data.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [params.id, toast]);
+
+  React.useEffect(() => {
+    fetchTicketData();
+  }, [fetchTicketData]);
   
 
   React.useEffect(() => {
@@ -137,7 +155,7 @@ export default function ViewTicketPage() {
     }
   }, [ticket, userMap]);
   
-  if (loading) {
+  if (loading || !currentUser) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader className="h-8 w-8 animate-spin" />
@@ -329,6 +347,27 @@ export default function ViewTicketPage() {
     });
   };
 
+  const handleAddReply = () => {
+    if (!reply || reply === '<p><br></p>') {
+      toast({ title: "Reply is empty", description: "Please enter a reply before sending.", variant: 'destructive' });
+      return;
+    }
+    startTransition(async () => {
+      const result = await addReplyAction({
+        ticketId: ticket.id,
+        content: reply,
+        authorId: currentUser.id
+      });
+      if(result.success) {
+        toast({ title: "Reply added successfully!" });
+        setReply("");
+        await fetchTicketData(); // Refetch conversations
+      } else {
+        toast({ title: "Error", description: result.error, variant: 'destructive' });
+      }
+    });
+  };
+
 
   return (
     <AlertDialog>
@@ -343,8 +382,47 @@ export default function ViewTicketPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
               <Card>
-                  <CardContent className="pt-6">
-                      <p className="text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
+                  <CardHeader>
+                      <CardTitle>Conversation History</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      {/* Original Post */}
+                       <div className="flex gap-4">
+                        <Avatar>
+                          <AvatarImage src={reporter?.avatar} />
+                          <AvatarFallback>{reporter?.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center">
+                              <span className="font-semibold">{ticket.reporter}</span>
+                              <span className="text-xs text-muted-foreground">{format(new Date(ticket.createdAt), "MMM d, yyyy 'at' p")}</span>
+                          </div>
+                          <div className="prose prose-sm dark:prose-invert max-w-none mt-2 p-3 rounded-md border bg-muted/50" dangerouslySetInnerHTML={{ __html: ticket.description.replace(/\n/g, '<br />') }} />
+                        </div>
+                      </div>
+                      <Separator />
+                      {/* Replies */}
+                      {conversations.map(convo => {
+                        const author = userMapById.get(convo.authorId);
+                        return (
+                          <div key={convo.id} className="flex gap-4">
+                            <Avatar>
+                              <AvatarImage src={author?.avatar} />
+                              <AvatarFallback>{author?.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-semibold">{author?.name}</span>
+                                    <span className="text-xs text-muted-foreground">{format(new Date(convo.createdAt), "MMM d, yyyy 'at' p")}</span>
+                                </div>
+                                <div className="prose prose-sm dark:prose-invert max-w-none mt-2 p-3 rounded-md border bg-muted/50" dangerouslySetInnerHTML={{ __html: convo.content }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                       {conversations.length === 0 && (
+                          <p className="text-sm text-muted-foreground text-center py-4">No replies yet.</p>
+                       )}
                   </CardContent>
               </Card>
               <Card>
@@ -374,23 +452,16 @@ export default function ViewTicketPage() {
               </Card>
               <Card>
                   <CardHeader>
-                      <CardTitle>Conversation History</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                      {/* Conversation history would be rendered here from DB */}
-                      <p className="text-sm text-muted-foreground text-center">No conversation history yet.</p>
-                  </CardContent>
-              </Card>
-              <Card>
-                  <CardHeader>
                       <CardTitle>Add Reply</CardTitle>
                   </CardHeader>
                   <CardContent>
-                      <Textarea 
-                        placeholder="Type your response..." 
-                        className="min-h-24"
-                        value={reply}
-                        onChange={(e) => setReply(e.target.value)}
+                      <ReactQuill 
+                        theme="snow" 
+                        value={reply} 
+                        onChange={setReply}
+                        modules={QuillModules}
+                        formats={QuillFormats}
+                        placeholder="Type your response..."
                       />
                   </CardContent>
                   <CardFooter className="justify-between">
@@ -398,8 +469,8 @@ export default function ViewTicketPage() {
                           {isSuggestingReply ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
                           Smart Reply
                       </Button>
-                      <Button disabled={isPending}>
-                          <Send className="mr-2 h-4 w-4" />
+                      <Button onClick={handleAddReply} disabled={isPending}>
+                          {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
                           Send Reply
                       </Button>
                   </CardFooter>

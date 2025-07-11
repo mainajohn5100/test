@@ -1,8 +1,8 @@
 
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Ticket, Project, User, Notification } from './data';
+import type { Ticket, Project, User, Notification, TicketConversation } from './data';
 import { cache } from 'react';
 
 // Helper to process raw document data, converting Timestamps
@@ -96,6 +96,19 @@ export const getTicketById = cache(async (id: string): Promise<Ticket | null> =>
     return null;
   }
 });
+
+export const getTicketConversations = cache(async (ticketId: string): Promise<TicketConversation[]> => {
+    try {
+        const conversationCol = collection(db, 'tickets', ticketId, 'conversations');
+        const q = query(conversationCol, orderBy('createdAt', 'asc'));
+        const conversationSnapshot = await getDocs(q);
+        return snapshotToData<TicketConversation>(conversationSnapshot);
+    } catch (error) {
+        console.error("Error fetching ticket conversations:", error);
+        return [];
+    }
+});
+
 
 export const getTicketsByProject = cache(async (projectName: string): Promise<Ticket[]> => {
     try {
@@ -343,6 +356,23 @@ export async function addTicket(ticketData: {
     console.error("Error adding ticket:", error);
     throw new Error("Failed to create ticket.");
   }
+}
+
+export async function addConversation(ticketId: string, conversationData: Omit<TicketConversation, 'id' | 'createdAt'>): Promise<string> {
+    try {
+        const conversationCol = collection(db, 'tickets', ticketId, 'conversations');
+        const docRef = await addDoc(conversationCol, {
+            ...conversationData,
+            createdAt: serverTimestamp(),
+        });
+        // Also update the parent ticket's updatedAt timestamp
+        const ticketRef = doc(db, 'tickets', ticketId);
+        await updateDoc(ticketRef, { updatedAt: serverTimestamp() });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding conversation:", error);
+        throw new Error("Failed to add conversation.");
+    }
 }
 
 export async function addProject(projectData: {

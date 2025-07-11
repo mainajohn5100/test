@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -45,6 +46,13 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
+// Helper function to safely get boolean from localStorage
+const getBooleanFromStorage = (key: string, defaultValue: boolean = true): boolean => {
+    const item = localStorage.getItem(key);
+    if (item === null) return defaultValue;
+    return item === 'true';
+};
+
 export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
     const [showFullScreenButton, _setShowFullScreenButton] = useState(true);
@@ -62,17 +70,17 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
     useEffect(() => {
         const loadSettings = () => {
-            _setShowFullScreenButton(localStorage.getItem('show-fullscreen-button') !== 'false');
-            _setInAppNotifications(localStorage.getItem('in-app-notifications') !== 'false');
-            _setEmailNotifications(localStorage.getItem('email-notifications') === 'true');
-            _setAgentPanelEnabled(localStorage.getItem('agent-panel-enabled') !== 'false');
-            _setCustomerPanelEnabled(localStorage.getItem('customer-panel-enabled') !== 'false');
-            _setCustomerCanSelectProject(localStorage.getItem('customer-can-select-project') !== 'false');
-            _setAgentCanEditTeam(localStorage.getItem('agent-can-edit-team') !== 'false');
+            _setShowFullScreenButton(getBooleanFromStorage('show-fullscreen-button', true));
+            _setInAppNotifications(getBooleanFromStorage('in-app-notifications', true));
+            _setEmailNotifications(getBooleanFromStorage('email-notifications', false));
+            _setAgentPanelEnabled(getBooleanFromStorage('agent-panel-enabled', true));
+            _setCustomerPanelEnabled(getBooleanFromStorage('customer-panel-enabled', true));
+            _setCustomerCanSelectProject(getBooleanFromStorage('customer-can-select-project', true));
+            _setAgentCanEditTeam(getBooleanFromStorage('agent-can-edit-team', true));
             _setAdminEmailPattern(localStorage.getItem('admin-email-pattern') || '*.admin.requestflow.app');
             _setAgentEmailPattern(localStorage.getItem('agent-email-pattern') || '*.agent.requestflow.app');
-            _setAgentSignupEnabled(localStorage.getItem('agent-signup-enabled') !== 'false');
-            _setCustomerSignupEnabled(localStorage.getItem('customer-signup-enabled') !== 'false');
+            _setAgentSignupEnabled(getBooleanFromStorage('agent-signup-enabled', true));
+            _setCustomerSignupEnabled(getBooleanFromStorage('customer-signup-enabled', true));
             const savedTimeout = localStorage.getItem('inactivity-timeout');
             _setInactivityTimeout(savedTimeout ? Number(savedTimeout) : 2);
             

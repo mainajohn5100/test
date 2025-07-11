@@ -21,6 +21,13 @@ export type Ticket = {
   attachments?: Attachment[];
 };
 
+export type TicketConversation = {
+    id: string;
+    authorId: string;
+    content: string;
+    createdAt: string;
+}
+
 export type User = {
   id: string;
   name: string;
