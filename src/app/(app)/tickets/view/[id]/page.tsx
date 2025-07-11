@@ -3,6 +3,7 @@
 
 import 'react-quill/dist/quill.snow.css';
 import { notFound, useRouter, useParams } from "next/navigation";
+import dynamic from 'next/dynamic';
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,8 @@ import { getTicketById, getUsers, getTicketConversations } from "@/lib/firestore
 import type { Ticket, User, TicketConversation } from "@/lib/data";
 import { updateTicketAction, deleteTicketAction, addReplyAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
-import ReactQuill from 'react-quill';
+
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
