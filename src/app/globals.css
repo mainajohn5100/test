@@ -201,6 +201,34 @@
   h1,h2,h3,h4,h5,h6 {
       @apply font-headline;
   }
+
+  .ProseMirror {
+    @apply min-h-[120px] max-h-[240px] overflow-y-auto w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
+  }
+
+  .ProseMirror:focus {
+    @apply outline-none ring-2 ring-ring;
+  }
+
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+    height: 0;
+  }
+
+  .ProseMirror > * + * {
+    margin-top: 0.75em;
+  }
+  .ProseMirror ul,
+  .ProseMirror ol {
+    padding: 0 1rem;
+  }
+  .ProseMirror blockquote {
+    padding-left: 1rem;
+    border-left: 3px solid hsl(var(--muted-foreground));
+  }
 }
 
 @layer utilities {

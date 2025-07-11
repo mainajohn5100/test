@@ -1,9 +1,7 @@
 
-'use client';
+'use client'; 
 
-import 'react-quill/dist/quill.snow.css';
 import { notFound, useRouter, useParams } from "next/navigation";
-import dynamic from 'next/dynamic';
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Bold, Italic, List, Link as LinkIcon, ListOrdered } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -40,8 +38,7 @@ import { getTicketById, getUsers, getTicketConversations } from "@/lib/firestore
 import type { Ticket, User, TicketConversation } from "@/lib/data";
 import { updateTicketAction, deleteTicketAction, addReplyAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
-
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+import { TiptapEditor } from "@/components/tiptap-editor";
 
 const priorityVariantMap: { [key: string]: string } = {
     'Low': 'bg-green-100 text-green-800 border-green-200',
@@ -58,19 +55,6 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
   'Closed': 'secondary',
   'Terminated': 'destructive',
 };
-
-const QuillModules = {
-  toolbar: [
-    ['bold', 'italic', 'underline', 'link'],
-    [{'list': 'ordered'}, {'list': 'bullet'}],
-    ['clean']
-  ],
-};
-
-const QuillFormats = [
-  'bold', 'italic', 'underline', 'link',
-  'list', 'bullet'
-];
 
 export default function ViewTicketPage() {
   const router = useRouter();
@@ -350,7 +334,8 @@ export default function ViewTicketPage() {
   };
 
   const handleAddReply = () => {
-    if (!reply || reply === '<p><br></p>') {
+    // TipTap returns '<p></p>' for an empty editor
+    if (!reply || reply === '<p></p>') {
       toast({ title: "Reply is empty", description: "Please enter a reply before sending.", variant: 'destructive' });
       return;
     }
@@ -457,12 +442,9 @@ export default function ViewTicketPage() {
                       <CardTitle>Add Reply</CardTitle>
                   </CardHeader>
                   <CardContent>
-                      <ReactQuill 
-                        theme="snow" 
-                        value={reply} 
+                      <TiptapEditor
+                        content={reply}
                         onChange={setReply}
-                        modules={QuillModules}
-                        formats={QuillFormats}
                         placeholder="Type your response..."
                       />
                   </CardContent>
