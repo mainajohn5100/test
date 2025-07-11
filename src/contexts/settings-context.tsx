@@ -30,6 +30,8 @@ interface SettingsContextType {
   setCustomerCanSelectProject: (enabled: boolean) => void;
   agentCanEditTeam: boolean;
   setAgentCanEditTeam: (enabled: boolean) => void;
+  excludeClosedTickets: boolean;
+  setExcludeClosedTickets: (enabled: boolean) => void;
   adminEmailPattern: string;
   setAdminEmailPattern: (pattern: string) => void;
   agentEmailPattern: string;
@@ -62,6 +64,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [customerPanelEnabled, _setCustomerPanelEnabled] = useState(true);
     const [customerCanSelectProject, _setCustomerCanSelectProject] = useState(true);
     const [agentCanEditTeam, _setAgentCanEditTeam] = useState(true);
+    const [excludeClosedTickets, _setExcludeClosedTickets] = useState(false);
     const [adminEmailPattern, _setAdminEmailPattern] = useState('');
     const [agentEmailPattern, _setAgentEmailPattern] = useState('');
     const [agentSignupEnabled, _setAgentSignupEnabled] = useState(true);
@@ -77,6 +80,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             _setCustomerPanelEnabled(getBooleanFromStorage('customer-panel-enabled', true));
             _setCustomerCanSelectProject(getBooleanFromStorage('customer-can-select-project', true));
             _setAgentCanEditTeam(getBooleanFromStorage('agent-can-edit-team', true));
+            _setExcludeClosedTickets(getBooleanFromStorage('exclude-closed-tickets', false));
             _setAdminEmailPattern(localStorage.getItem('admin-email-pattern') || '*.admin.requestflow.app');
             _setAgentEmailPattern(localStorage.getItem('agent-email-pattern') || '*.agent.requestflow.app');
             _setAgentSignupEnabled(getBooleanFromStorage('agent-signup-enabled', true));
@@ -135,6 +139,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setItem('agent-can-edit-team', String(enabled));
     };
     
+    const setExcludeClosedTickets = (enabled: boolean) => {
+        _setExcludeClosedTickets(enabled);
+        setItem('exclude-closed-tickets', String(enabled));
+    };
+
     const setAdminEmailPattern = (pattern: string) => {
         _setAdminEmailPattern(pattern);
         setItem('admin-email-pattern', pattern);
@@ -175,6 +184,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setCustomerCanSelectProject,
         agentCanEditTeam,
         setAgentCanEditTeam,
+        excludeClosedTickets,
+        setExcludeClosedTickets,
         adminEmailPattern,
         setAdminEmailPattern,
         agentEmailPattern,

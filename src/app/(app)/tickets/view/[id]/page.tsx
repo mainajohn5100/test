@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -155,6 +155,7 @@ export default function ViewTicketPage() {
   
   const assignee = userMap.get(currentAssignee);
   const reporter = userMap.get(ticket.reporter);
+  const reporterEmail = ticket.reporterEmail || reporter?.email;
 
   const handleStatusChange = (newStatus: Ticket['status']) => {
     startTransition(async () => {
@@ -592,20 +593,28 @@ export default function ViewTicketPage() {
                               <span>{currentAssignee}</span>
                           )}
                       </div>
-                      <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Reporter</span>
-                          {reporter ? (
-                              <Link href={`/users/${reporter.id}`} className="block">
-                                  <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
-                                      <Avatar className="h-6 w-6">
-                                          <AvatarImage src={reporter.avatar} alt={reporter.name} />
-                                          <AvatarFallback>{reporter.name.charAt(0)}</AvatarFallback>
-                                      </Avatar>
-                                      <span>{reporter.name}</span>
-                                  </div>
-                              </Link>
-                          ) : (
-                              <span>{ticket.reporter}</span>
+                      <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Reporter</span>
+                            {reporter ? (
+                                <Link href={`/users/${reporter.id}`} className="block">
+                                    <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarImage src={reporter.avatar} alt={reporter.name} />
+                                            <AvatarFallback>{reporter.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span>{reporter.name}</span>
+                                    </div>
+                                </Link>
+                            ) : (
+                                <span>{ticket.reporter}</span>
+                            )}
+                          </div>
+                          {reporterEmail && (
+                            <div className="flex justify-between items-center text-sm text-muted-foreground pl-1">
+                                <Mail className="w-4 h-4 mr-2"/>
+                                <span className="truncate">{reporterEmail}</span>
+                            </div>
                           )}
                       </div>
                       <Separator />

@@ -6,6 +6,7 @@ import { useState, useMemo } from "react";
 import { TicketTableToolbar } from "@/components/tickets/ticket-table-toolbar";
 import { TicketTable } from "@/components/tickets/ticket-table";
 import type { Ticket, User } from "@/lib/data";
+import { useSettings } from "@/contexts/settings-context";
 
 interface TicketClientProps {
   tickets: Ticket[];
@@ -15,9 +16,14 @@ interface TicketClientProps {
 export function TicketClient({ tickets, users }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('updatedAt_desc');
+  const { excludeClosedTickets } = useSettings();
 
   const filteredAndSortedTickets = useMemo(() => {
     let displayTickets = tickets ? [...tickets] : [];
+    
+    if (excludeClosedTickets) {
+      displayTickets = displayTickets.filter(t => t.status !== 'Closed' && t.status !== 'Terminated');
+    }
 
     if (searchTerm) {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
@@ -51,7 +57,7 @@ export function TicketClient({ tickets, users }: TicketClientProps) {
     });
 
     return displayTickets;
-  }, [tickets, searchTerm, sortBy]);
+  }, [tickets, searchTerm, sortBy, excludeClosedTickets]);
 
 
   return (

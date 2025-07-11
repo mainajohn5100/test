@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import type { Ticket, User } from "@/lib/data";
 import { useRouter } from "next/navigation"
 import Link from "next/link";
+import { TicketTableRowActions } from "../tickets/ticket-table-row-actions";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   'New': 'secondary',
@@ -50,6 +51,7 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Assignee</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -84,10 +86,13 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
                     </div>
                     ) : ticket.assignee }
                 </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TicketTableRowActions ticket={ticket} />
+                </TableCell>
               </TableRow>
             )}) : (
                 <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                     No recent tickets found.
                     </TableCell>
                 </TableRow>

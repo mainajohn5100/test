@@ -14,9 +14,11 @@ import { getTickets, getProjects, getUsers } from "@/lib/firestore";
 import { format, getMonth, differenceInDays } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
+import { useSettings } from '@/contexts/settings-context';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { excludeClosedTickets } = useSettings();
   const [loading, setLoading] = React.useState(true);
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
@@ -39,6 +41,13 @@ export default function DashboardPage() {
       fetchData();
     }
   }, [user]);
+  
+  const displayedTickets = React.useMemo(() => {
+    if (excludeClosedTickets) {
+      return tickets.filter(t => t.status !== 'Closed' && t.status !== 'Terminated');
+    }
+    return tickets;
+  }, [tickets, excludeClosedTickets]);
 
   if (loading || !user) {
     return (
@@ -52,7 +61,7 @@ export default function DashboardPage() {
   const userMap = new Map(users.map(u => [u.name, u]));
 
   // Process data for TicketsOverviewChart
-  const ticketsByStatus = tickets.reduce((acc, ticket) => {
+  const ticketsByStatus = displayedTickets.reduce((acc, ticket) => {
     acc[ticket.status] = (acc[ticket.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -96,11 +105,11 @@ export default function DashboardPage() {
         </Link>
       </PageHeader>
       
-      <StatsCards tickets={tickets} projects={projects} />
+      <StatsCards tickets={displayedTickets} projects={projects} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <RecentTickets tickets={tickets} userMap={userMap} />
+          <RecentTickets tickets={displayedTickets} userMap={userMap} />
         </div>
         <div className="flex flex-col gap-6">
           <TicketsOverviewChart data={ticketsOverviewData} />
