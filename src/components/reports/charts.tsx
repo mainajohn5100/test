@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon } from "lucide-react";
-import type { Ticket, Project } from "@/lib/data";
+import type { Ticket, Project, User } from "@/lib/data";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, getMonth, differenceInDays, startOfWeek } from "date-fns";
 
@@ -52,7 +52,7 @@ const StyledTooltip = () => (
 );
 
 
-function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
+export function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
   const [chartType, setChartType] = React.useState<ChartType>("line");
   const monthlyData = React.useMemo(() => {
     const data: { [key: string]: { opened: number, closed: number } } = {};
@@ -92,7 +92,7 @@ function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
 }, [tickets]);
 
   return (
-    <Card>
+    <Card className="md:col-span-2">
       <CardHeader className="flex-row items-center justify-between pb-2">
         <div>
           <CardTitle>Ticket Volume Trends</CardTitle>
@@ -129,7 +129,7 @@ function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
   );
 }
 
-function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
+export function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
     const [chartType, setChartType] = React.useState<ChartType>("pie");
     const data = React.useMemo(() => {
         const statusCounts = tickets.reduce((acc, ticket) => {
@@ -156,6 +156,7 @@ function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
                         {data.map((entry, index) => <Cell key={`cell-${index}`} fill={STACK_COLORS[index % STACK_COLORS.length]} />)}
                     </Pie>
                     <StyledTooltip />
+                    <Legend />
                 </PieChart>
             ) : (
                 <BarChart data={data} layout="vertical">
@@ -173,7 +174,7 @@ function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
   );
 }
 
-function ReportAvgResolutionTimeChart({ tickets }: { tickets: Ticket[] }) {
+export function ReportAvgResolutionTimeChart({ tickets }: { tickets: Ticket[] }) {
   const [chartType, setChartType] = React.useState<ChartType>("line");
   const data = React.useMemo(() => {
     const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status === 'Terminated');
@@ -236,7 +237,7 @@ function ReportAvgResolutionTimeChart({ tickets }: { tickets: Ticket[] }) {
   );
 }
 
-function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
+export function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
     const [chartType, setChartType] = React.useState<ChartType>("pie");
     const data = React.useMemo(() => {
         const statusCounts = projects.reduce((acc, project) => {
@@ -263,6 +264,7 @@ function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
                         {data.map((entry, index) => <Cell key={`cell-${index}`} fill={STACK_COLORS[index % STACK_COLORS.length]} />)}
                     </Pie>
                     <StyledTooltip />
+                    <Legend />
                 </PieChart>
             ) : (
                  <BarChart data={data}>
@@ -281,7 +283,7 @@ function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
   );
 }
 
-function TicketStatusTrendsChart({ tickets }: { tickets: Ticket[] }) {
+export function TicketStatusTrendsChart({ tickets }: { tickets: Ticket[] }) {
   const [chartType, setChartType] = React.useState<ChartType>("bar");
   const [timeframe, setTimeframe] = React.useState<"daily" | "weekly" | "monthly">("monthly");
   
@@ -372,6 +374,89 @@ function TicketStatusTrendsChart({ tickets }: { tickets: Ticket[] }) {
       </CardContent>
     </Card>
   )
+}
+
+export function AgentTicketStatusChart({ tickets, agents }: { tickets: Ticket[], agents: User[] }) {
+    const [chartType, setChartType] = React.useState<ChartType>("bar");
+    const data = React.useMemo(() => {
+        return agents.map(agent => {
+            const agentTickets = tickets.filter(ticket => ticket.assignee === agent.name);
+            const open = agentTickets.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length;
+            const closed = agentTickets.filter(t => t.status === 'Closed' || t.status === 'Terminated').length;
+            return { name: agent.name.split(' ')[0], open, closed };
+        });
+    }, [tickets, agents]);
+
+    return (
+        <Card>
+            <CardHeader className="flex-row items-center justify-between pb-2">
+                <div>
+                    <CardTitle>Agent Workload</CardTitle>
+                    <CardDescription>Open vs. Closed tickets per agent.</CardDescription>
+                </div>
+                <ChartToolbar supportedTypes={["bar"]} chartType={chartType} setChartType={setChartType} />
+            </CardHeader>
+            <CardContent className="pl-2">
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={data}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <StyledTooltip />
+                        <Legend />
+                        <Bar dataKey="open" name="Open" stackId="a" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="closed" name="Closed" stackId="a" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function AgentResolutionTimeChart({ tickets, agents }: { tickets: Ticket[], agents: User[] }) {
+    const [chartType, setChartType] = React.useState<ChartType>("bar");
+    const data = React.useMemo(() => {
+        return agents.map(agent => {
+            const agentClosedTickets = tickets.filter(ticket => 
+                (ticket.status === 'Closed' || ticket.status === 'Terminated') && ticket.assignee === agent.name
+            );
+
+            if (agentClosedTickets.length === 0) {
+                return { name: agent.name.split(' ')[0], "Avg Days": 0 };
+            }
+
+            const totalDays = agentClosedTickets.reduce((acc, ticket) => {
+                const resolution = differenceInDays(new Date(ticket.updatedAt), new Date(ticket.createdAt));
+                return acc + resolution;
+            }, 0);
+            
+            const avg = totalDays / agentClosedTickets.length;
+            return { name: agent.name.split(' ')[0], "Avg Days": parseFloat(avg.toFixed(1)) };
+        });
+    }, [tickets, agents]);
+
+    return (
+        <Card>
+            <CardHeader className="flex-row items-center justify-between pb-2">
+                <div>
+                    <CardTitle>Agent Avg. Resolution Time</CardTitle>
+                    <CardDescription>Average time to close tickets per agent.</CardDescription>
+                </div>
+                <ChartToolbar supportedTypes={["bar"]} chartType={chartType} setChartType={setChartType} />
+            </CardHeader>
+            <CardContent className="pl-2">
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={data}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="d" />
+                        <StyledTooltip />
+                        <Bar dataKey="Avg Days" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
+    );
 }
 
 export function ReportCharts({ tickets, projects }: { tickets: Ticket[]; projects: Project[] }) {

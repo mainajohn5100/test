@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -7,16 +6,19 @@ import Link from 'next/link';
 import { PageHeader } from "@/components/page-header";
 import { ReportCharts } from "@/components/reports/charts";
 import { Button } from "@/components/ui/button";
-import { getTickets, getProjects } from "@/lib/firestore";
+import { getTickets, getProjects, getUsers } from "@/lib/firestore";
 import { Download, Printer, Loader, ShieldAlert } from "lucide-react";
 import { useAuth } from '@/contexts/auth-context';
-import type { Ticket, Project } from '@/lib/data';
+import type { Ticket, Project, User } from '@/lib/data';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { TicketVolumeTrendsChart, TicketsByStatusChart, ReportAvgResolutionTimeChart, ProjectsByStatusChart, TicketStatusTrendsChart, AgentTicketStatusChart, AgentResolutionTimeChart } from '@/components/reports/charts';
 
 export default function ReportsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = React.useState(true);
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
+  const [users, setUsers] = React.useState<User[]>([]);
 
   React.useEffect(() => {
     if (user) {
@@ -26,12 +28,14 @@ export default function ReportsPage() {
       }
       const fetchData = async () => {
         setLoading(true);
-        const [ticketsData, projectsData] = await Promise.all([
+        const [ticketsData, projectsData, usersData] = await Promise.all([
           getTickets(user),
-          getProjects(user)
+          getProjects(user),
+          getUsers()
         ]);
         setTickets(ticketsData);
         setProjects(projectsData);
+        setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
         setLoading(false);
       };
       fetchData();
@@ -60,7 +64,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <PageHeader title="Reports" description="Analyze trends and performance with detailed reports.">
         <Button variant="outline">
           <Printer className="mr-2 h-4 w-4" />
@@ -71,7 +75,48 @@ export default function ReportsPage() {
           Download All
         </Button>
       </PageHeader>
-      <ReportCharts tickets={tickets} projects={projects} />
+      
+      <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>General Tickets and Project Graphs</CardTitle>
+            <CardDescription>
+              A high-level overview of ticket and project distributions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 md:grid-cols-2">
+            <TicketsByStatusChart tickets={tickets} />
+            <ProjectsByStatusChart projects={projects} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Agent Performance</CardTitle>
+            <CardDescription>
+              Metrics on agent workload and efficiency.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 md:grid-cols-2">
+             <AgentTicketStatusChart tickets={tickets} agents={users} />
+             <AgentResolutionTimeChart tickets={tickets} agents={users} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Long-Term Trends</CardTitle>
+            <CardDescription>
+              Analyze data patterns over longer periods.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <TicketVolumeTrendsChart tickets={tickets} />
+            <TicketStatusTrendsChart tickets={tickets} />
+          </CardContent>
+        </Card>
+      </div>
+
     </div>
   );
 }
