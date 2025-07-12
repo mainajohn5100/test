@@ -15,6 +15,8 @@ const INACTIVITY_TIMEOUT_OPTIONS = [
     { value: 30, label: '30 minutes' },
 ];
 
+export type LoadingScreenStyle = 'spinner' | 'skeleton';
+
 interface SettingsContextType {
   showFullScreenButton: boolean;
   setShowFullScreenButton: (show: boolean) => void;
@@ -43,6 +45,8 @@ interface SettingsContextType {
   inactivityTimeout: number;
   setInactivityTimeout: (minutes: number) => void;
   INACTIVITY_TIMEOUT_OPTIONS: typeof INACTIVITY_TIMEOUT_OPTIONS;
+  loadingScreenStyle: LoadingScreenStyle;
+  setLoadingScreenStyle: (style: LoadingScreenStyle) => void;
   loading: boolean;
 }
 
@@ -84,6 +88,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [agentSignupEnabled, _setAgentSignupEnabled] = useState(true);
     const [customerSignupEnabled, _setCustomerSignupEnabled] = useState(true);
     const [inactivityTimeout, _setInactivityTimeout] = useState(2); // Default to 2 minutes
+    const [loadingScreenStyle, _setLoadingScreenStyle] = useState<LoadingScreenStyle>('spinner');
+
 
     // Use useEffect to load settings from localStorage on the client-side
     useEffect(() => {
@@ -100,6 +106,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setAgentSignupEnabled(getItemFromStorage('agent-signup-enabled', true));
         _setCustomerSignupEnabled(getItemFromStorage('customer-signup-enabled', true));
         _setInactivityTimeout(getItemFromStorage('inactivity-timeout', 2));
+        _setLoadingScreenStyle(getItemFromStorage('loading-screen-style', 'spinner'));
+
 
         setLoading(false);
     }, []);
@@ -175,6 +183,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setItem('inactivity-timeout', String(minutes));
     };
 
+    const setLoadingScreenStyle = (style: LoadingScreenStyle) => {
+        _setLoadingScreenStyle(style);
+        setItem('loading-screen-style', style);
+    };
+
+
     const value = { 
         showFullScreenButton, 
         setShowFullScreenButton,
@@ -203,6 +217,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         inactivityTimeout,
         setInactivityTimeout,
         INACTIVITY_TIMEOUT_OPTIONS,
+        loadingScreenStyle,
+        setLoadingScreenStyle,
         loading
     };
 

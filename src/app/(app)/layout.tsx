@@ -1,4 +1,5 @@
 
+
 'use client';
 import React from "react";
 import { useRouter } from "next/navigation";
@@ -11,16 +12,21 @@ import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
 import { Loader, ShieldAlert } from "lucide-react";
 import { useInactivity } from "@/hooks/use-inactivity";
+import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const { agentPanelEnabled, customerPanelEnabled, loading: settingsLoading } = useSettings();
+  const { 
+    agentPanelEnabled, 
+    customerPanelEnabled, 
+    loading: settingsLoading,
+    loadingScreenStyle 
+  } = useSettings();
   const router = useRouter();
   const { toast } = useToast();
   const [accessDenied, setAccessDenied] = React.useState(false);
 
   const handleLogout = (message?: string) => {
-    // Redirect immediately for better UX
     router.replace('/login');
     signOut(auth).then(() => {
       toast({
@@ -43,7 +49,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
 
   React.useEffect(() => {
-    // Wait for auth to load and settings to be loaded
     if (authLoading || settingsLoading) return;
 
     if (!user) {
@@ -53,7 +58,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     
     let isDenied = false;
     
-    // Check access based on user role and panel settings
     if (user.role === 'Agent' && !agentPanelEnabled) {
       isDenied = true;
     } else if (user.role === 'Customer' && !customerPanelEnabled) {
@@ -70,6 +74,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Show loading while auth is loading or settings are loading
   if (authLoading || settingsLoading || !user) {
+     if (loadingScreenStyle === 'skeleton' && !user) {
+        return (
+          <AppShell>
+            <DashboardSkeleton />
+          </AppShell>
+        );
+    }
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin" />

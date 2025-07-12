@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -15,10 +16,11 @@ import { format, getMonth, differenceInDays } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
+import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { excludeClosedTickets } = useSettings();
+  const { excludeClosedTickets, loadingScreenStyle } = useSettings();
   const [loading, setLoading] = React.useState(true);
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
@@ -50,6 +52,9 @@ export default function DashboardPage() {
   }, [tickets, excludeClosedTickets]);
 
   if (loading || !user) {
+    if (loadingScreenStyle === 'skeleton') {
+        return <DashboardSkeleton />;
+    }
     return (
       <div className="flex h-full items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />
@@ -58,7 +63,8 @@ export default function DashboardPage() {
   }
   
   // Create a map for quick user lookup.
-  const userMap = new Map(users.map(u => [u.name, u]));
+  const userMap = new Map(users.map(u => [u.id, u.name]));
+  const userMapByName = new Map(users.map(u => [u.name, u]));
 
   // Process data for TicketsOverviewChart
   const ticketsByStatus = displayedTickets.reduce((acc, ticket) => {
@@ -109,7 +115,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <RecentTickets tickets={displayedTickets} userMap={userMap} />
+          <RecentTickets tickets={displayedTickets} userMap={userMapByName} />
         </div>
         <div className="flex flex-col gap-6">
           <TicketsOverviewChart data={ticketsOverviewData} />
