@@ -33,7 +33,7 @@ function ChartToolbar({ supportedTypes, chartType, setChartType }: { supportedTy
       {supportedTypes.map(type => (
         typeMap[type] && (
             <Button key={type} size="icon" variant={chartType === type ? 'secondary' : 'ghost'} onClick={() => setChartType(type)} className="h-8 w-8">
-              <typeMap[type]!.icon className="h-4 w-4" />
+              {/* <typeMap[type]!.icon className="h-4 w-4" /> */}
               <span className="sr-only">{typeMap[type]!.label}</span>
             </Button>
         )

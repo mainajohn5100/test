@@ -5,15 +5,18 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, PieChart, Pie, Cell, Legend } from "recharts";
 import type { Ticket, Project, User } from "@/lib/data";
-import { Briefcase, Ticket as TicketIcon, Users, MoreVertical } from "lucide-react";
+import { Briefcase, Ticket as TicketIcon, MoreVertical } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { subDays, format } from "date-fns";
+import { subDays, format, isWithinInterval } from "date-fns";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { DateRangePicker } from "../ui/date-range-picker";
+import { DateRange } from "react-day-picker";
 
 const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
 const StyledTooltip = () => (
     <Tooltip
-        cursor={{fill: "hsl(var(--muted))"}}
+        cursor={{fill: "hsla(var(--muted))"}}
         contentStyle={{
             background: "hsl(var(--background))",
             border: "1px solid hsla(var(--border) / 0.5)",
@@ -170,16 +173,22 @@ function TicketVolumeChart({ tickets }: { tickets: Ticket[] }) {
 }
 
 function TicketsByProjectChart({ tickets, projects }: { tickets: Ticket[], projects: Project[] }) {
+    const [date, setDate] = React.useState<DateRange | undefined>();
+
     const data = React.useMemo(() => {
+        const filteredTickets = date?.from && date?.to
+            ? tickets.filter(t => isWithinInterval(new Date(t.createdAt), { start: date.from!, end: date.to! }))
+            : tickets;
+
         const projectTicketCounts = projects.map(project => ({
             name: project.name,
-            tickets: tickets.filter(t => t.project === project.name).length
+            tickets: filteredTickets.filter(t => t.project === project.name).length
         })).filter(p => p.tickets > 0)
          .sort((a,b) => b.tickets - a.tickets)
          .slice(0, 5); // top 5
          
          return projectTicketCounts;
-    }, [tickets, projects]);
+    }, [tickets, projects, date]);
 
     return (
         <Card>
@@ -188,7 +197,14 @@ function TicketsByProjectChart({ tickets, projects }: { tickets: Ticket[], proje
                     <CardTitle>Tickets by Project</CardTitle>
                     <CardDescription>Distribution of tickets across top projects.</CardDescription>
                 </div>
-                <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                         <MoreVertical className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="p-0 border-none">
+                       <DateRangePicker date={date} setDate={setDate} />
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </CardHeader>
             <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
@@ -196,6 +212,7 @@ function TicketsByProjectChart({ tickets, projects }: { tickets: Ticket[], proje
                         <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border), 0.5)" horizontal={false} />
                         <XAxis type="number" hide />
                         <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} stroke="#888888" fontSize={12} width={100} />
+                        <StyledTooltip />
                         <Bar dataKey="tickets" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} barSize={15}>
                             <LabelList dataKey="tickets" position="right" offset={8} fontSize={12} fill="#888888"/>
                         </Bar>
@@ -233,15 +250,15 @@ function TicketsByPriorityChart({ tickets }: { tickets: Ticket[] }) {
                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
+                 <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                         <StyledTooltip />
                         <Pie
                             data={data}
                             cx="50%"
                             cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
+                            innerRadius={50}
+                            outerRadius={70}
                             paddingAngle={5}
                             dataKey="value"
                         >
@@ -252,16 +269,26 @@ function TicketsByPriorityChart({ tickets }: { tickets: Ticket[] }) {
                         <Legend
                             iconType="circle"
                             layout="vertical"
-                            verticalAlign="middle"
+                            verticalAlign="bottom"
                             align="right"
                             iconSize={8}
-                            formatter={(value, entry) => (
-                                <span className="text-muted-foreground text-xs">{value}</span>
-                            )}
+                            content={(props) => {
+                                const { payload } = props;
+                                return (
+                                <ul className="flex flex-col space-y-1 text-xs text-muted-foreground">
+                                    {payload?.map((entry: any, index: number) => (
+                                    <li key={`item-${index}`} className="flex items-center">
+                                        <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }} />
+                                        <span>{entry.value}: {entry.payload.value}</span>
+                                    </li>
+                                    ))}
+                                </ul>
+                                );
+                            }}
                         />
                     </PieChart>
                 </ResponsiveContainer>
-                 <div className="text-center -mt-8">
+                 <div className="text-center -mt-16">
                     <p className="text-3xl font-bold">{total}</p>
                     <p className="text-xs text-muted-foreground">Total Tickets</p>
                 </div>
