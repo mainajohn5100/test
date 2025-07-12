@@ -19,6 +19,7 @@ export type Ticket = {
   tags: string[];
   project: string | null;
   attachments?: Attachment[];
+  source?: 'Project' | 'Customer Inquiry' | 'Internal' | 'Partner' | 'Vendor' | 'General Inquiry';
 };
 
 export type TicketConversation = {
@@ -113,7 +114,8 @@ export const tickets: Ticket[] = [
     createdAt: '2024-05-01T10:00:00Z',
     updatedAt: '2024-05-02T14:30:00Z',
     tags: ['bug', 'safari', 'login'],
-    project: 'Website Redesign'
+    project: 'Website Redesign',
+    source: 'Project',
   },
   {
     id: 'TKT-002',
@@ -126,7 +128,8 @@ export const tickets: Ticket[] = [
     createdAt: '2024-05-02T11:00:00Z',
     updatedAt: '2024-05-03T09:00:00Z',
     tags: ['performance', 'api', 'backend'],
-    project: 'API V2'
+    project: 'API V2',
+    source: 'Project',
   },
   {
     id: 'TKT-003',
@@ -140,7 +143,8 @@ export const tickets: Ticket[] = [
     createdAt: '2024-05-03T15:20:00Z',
     updatedAt: '2024-05-03T15:20:00Z',
     tags: ['feature-request', 'reports', 'csv'],
-    project: 'Reporting Module'
+    project: 'Reporting Module',
+    source: 'Project',
   },
   {
     id: 'TKT-004',
@@ -153,7 +157,8 @@ export const tickets: Ticket[] = [
     createdAt: '2024-05-04T18:00:00Z',
     updatedAt: '2024-05-04T18:00:00Z',
     tags: ['documentation', 'legal'],
-    project: 'Website Redesign'
+    project: 'Website Redesign',
+    source: 'Internal'
   },
   {
     id: 'TKT-005',
@@ -167,7 +172,8 @@ export const tickets: Ticket[] = [
     createdAt: '2024-05-05T09:30:00Z',
     updatedAt: '2024-05-05T11:00:00Z',
     tags: ['crash', 'android', 'mobile-app'],
-    project: 'Mobile App Q3'
+    project: 'Mobile App Q3',
+    source: 'Project',
   },
   {
     id: 'TKT-006',
@@ -181,6 +187,7 @@ export const tickets: Ticket[] = [
     updatedAt: '2024-04-29T10:00:00Z',
     tags: ['email', 'outage', 'backend'],
     project: null,
+    source: 'Internal',
   },
   {
     id: 'TKT-007',
@@ -195,6 +202,7 @@ export const tickets: Ticket[] = [
     updatedAt: '2024-04-20T11:45:00Z',
     tags: ['onboarding', 'feature-request', 'ux'],
     project: null,
+    source: 'Internal'
   }
 ];
 

@@ -487,7 +487,7 @@ export default function ViewTicketPage() {
                   <CardContent className="space-y-4 pt-2">
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">ID</span>
-                          <code>{ticket.id}</code>
+                          <code>{ticket.id.substring(0, 6)}...</code>
                       </div>
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Status</span>

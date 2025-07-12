@@ -1,5 +1,6 @@
 
 
+
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation } from './data';
@@ -364,6 +365,7 @@ export async function addTicket(ticketData: {
     priority: "Low" | "Medium" | "High" | "Urgent";
     assignee: string;
     project: string | null;
+    source: Ticket['source'];
   }): Promise<string> {
   try {
     const docRef = await addDoc(collection(db, 'tickets'), {

@@ -303,7 +303,7 @@ export default function ViewProjectPage() {
                   <CardContent className="space-y-4 pt-2">
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">ID</span>
-                          <code>{project.id}</code>
+                          <code>{project.id.substring(0, 8)}...</code>
                       </div>
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Status</span>

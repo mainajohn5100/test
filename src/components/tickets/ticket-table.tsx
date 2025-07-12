@@ -1,3 +1,4 @@
+
 //ticket-table.tsx
 "use client";
 
@@ -25,6 +26,16 @@ interface TicketTableProps {
     users: User[];
 }
 
+const sourceVariantMap: { [key: string]: string } = {
+  'Project': 'text-purple-700 border-purple-500/50 bg-purple-500/10',
+  'Customer Inquiry': 'text-sky-700 border-sky-500/50 bg-sky-500/10',
+  'Internal': 'text-gray-700 border-gray-500/50 bg-gray-500/10',
+  'Partner': 'text-rose-700 border-rose-500/50 bg-rose-500/10',
+  'Vendor': 'text-amber-700 border-amber-500/50 bg-amber-500/10',
+  'General Inquiry': 'text-cyan-700 border-cyan-500/50 bg-cyan-500/10',
+};
+
+
 export function TicketTable({ tickets, users }: TicketTableProps) {
   const router = useRouter();
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
@@ -50,7 +61,20 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                     const assignee = userMap.get(ticket.assignee);
                     return (
                     <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer">
-                        <TableCell className="font-medium truncate max-w-[150px]">{ticket.id}</TableCell>
+                        <TableCell>
+                          {ticket.source && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "mb-1 text-xs font-medium capitalize",
+                                sourceVariantMap[ticket.source] || 'text-gray-700 border-gray-500/50 bg-gray-500/10'
+                              )}
+                            >
+                              {ticket.source}
+                            </Badge>
+                          )}
+                          <div className="font-medium truncate">{ticket.id.substring(0, 6)}...</div>
+                        </TableCell>
                         <TableCell>{ticket.title}</TableCell>
                         <TableCell>
                           <Badge

@@ -42,6 +42,7 @@ export async function createTicketAction(formData: FormData) {
 
   const finalAssignee = (!assignee || assignee === 'unassigned') ? 'Unassigned' : assignee;
   const finalProject = (!project || project === 'none') ? null : project;
+  const source: Ticket['source'] = finalProject ? 'Project' : 'Customer Inquiry';
 
   const ticketData = {
     title,
@@ -52,6 +53,7 @@ export async function createTicketAction(formData: FormData) {
     priority: priorityMap[priority],
     assignee: finalAssignee,
     project: finalProject,
+    source,
   };
 
   let newTicketId: string;
