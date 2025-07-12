@@ -116,11 +116,7 @@ export default function ReportsPage() {
             </TabsContent>
             <TabsContent value="long-term-trends" className="space-y-4">
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Long-Term Trends</CardTitle>
-                        <CardDescription>Analyze data patterns over longer periods.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-6 pt-6">
                         <TicketVolumeTrendsChart tickets={tickets} />
                         <TicketStatusTrendsChart tickets={tickets} />
                         <TicketPriorityTrendsChart tickets={tickets} />
@@ -131,3 +127,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
