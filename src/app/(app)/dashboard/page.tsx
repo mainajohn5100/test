@@ -12,11 +12,12 @@ import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
 import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
 import { getTickets, getProjects, getUsers } from "@/lib/firestore";
-import { format, getMonth, differenceInDays } from 'date-fns';
+import { format, getMonth, differenceInDays, isToday } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
 import { DashboardSkeleton } from '@/components/dashboard-skeleton';
+import { generateDashboardGreeting } from '@/ai/flows/generate-dashboard-greeting';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
+  const [greeting, setGreeting] = React.useState("Here's a snapshot of your helpdesk activity.");
 
   React.useEffect(() => {
     if (user) {
@@ -38,6 +40,24 @@ export default function DashboardPage() {
         setTickets(ticketsData);
         setProjects(projectsData);
         setUsers(usersData);
+        
+        try {
+            const openTickets = ticketsData.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length;
+            const newTicketsToday = ticketsData.filter(t => isToday(new Date(t.createdAt))).length;
+            
+            const greetingResponse = await generateDashboardGreeting({
+                totalTickets: ticketsData.length,
+                openTickets: openTickets,
+                newTicketsToday: newTicketsToday,
+                totalProjects: projectsData.length
+            });
+            setGreeting(greetingResponse.greeting);
+        } catch (e) {
+            console.error("AI Greeting failed:", e);
+            // Fallback greeting
+            setGreeting("Here's a snapshot of your helpdesk activity.");
+        }
+
         setLoading(false);
       };
       fetchData();
@@ -102,7 +122,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Dashboard" description="Here's a snapshot of your helpdesk activity.">
+      <PageHeader title={`Welcome, ${user.name}!`} description={greeting}>
         <Link href="/tickets/new" passHref>
           <Button>
             <PlusCircle />

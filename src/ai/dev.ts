@@ -6,3 +6,4 @@ import '@/ai/flows/suggest-tags.ts';
 import '@/ai/flows/smart-replies.ts';
 import '@/ai/flows/evaluate-tags.ts';
 import '@/ai/flows/analyze-email-priority.ts';
+import '@/ai/flows/generate-dashboard-greeting.ts';

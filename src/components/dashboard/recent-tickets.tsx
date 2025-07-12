@@ -16,6 +16,12 @@ import type { Ticket, User } from "@/lib/data";
 import { useRouter } from "next/navigation"
 import Link from "next/link";
 import { TicketTableRowActions } from "../tickets/ticket-table-row-actions";
+import { Button } from "../ui/button";
+import { MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
+import { useSettings } from "@/contexts/settings-context";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   'New': 'secondary',
@@ -33,15 +39,38 @@ interface RecentTicketsProps {
 
 export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
   const router = useRouter();
+  const { excludeClosedTickets, setExcludeClosedTickets } = useSettings();
   const recentTickets = tickets
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent Tickets</CardTitle>
-        <CardDescription>A list of the most recently updated tickets. Click a row to view details.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Recent Tickets</CardTitle>
+          <CardDescription>A list of the most recently updated tickets. Click a row to view details.</CardDescription>
+        </div>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="sr-only">Open menu</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <div className="flex items-center justify-between w-full">
+                        <Label htmlFor="hide-closed" className="pr-2 font-normal">Hide Closed Tickets</Label>
+                        <Switch
+                            id="hide-closed"
+                            checked={excludeClosedTickets}
+                            onCheckedChange={setExcludeClosedTickets}
+                        />
+                    </div>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </CardHeader>
       <CardContent>
         <Table>
