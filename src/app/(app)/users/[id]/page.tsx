@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound, useParams, useRouter } from "next/navigation";
@@ -9,7 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Loader } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -22,6 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -308,8 +310,14 @@ export default function UserProfilePage() {
                     <DialogTrigger asChild>
                       <Button className="w-full" variant="outline">Edit Profile & Security</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <EditProfileForm user={user} setOpen={setEditDialogOpen} />
+                    <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Edit Profile</DialogTitle>
+                            <DialogDescription>
+                            Make changes to your profile here. Click save when you&apos;re done.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <EditProfileForm user={user} setOpen={setEditDialogOpen} />
                     </DialogContent>
                   </Dialog>
                 </CardContent>
@@ -441,3 +449,5 @@ export default function UserProfilePage() {
     </div>
   );
 }
+
+    

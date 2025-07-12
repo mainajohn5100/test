@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
-import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Loader } from 'lucide-react';
 import { EditProfileForm } from './edit-profile-form';
 import { Label } from '../ui/label';
@@ -98,6 +99,12 @@ export function AccountForm() {
                         <Button className="w-full" variant="outline">Edit Profile & Security</Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Edit Profile</DialogTitle>
+                            <DialogDescription>
+                              Make changes to your profile here. Click save when you&apos;re done.
+                            </DialogDescription>
+                          </DialogHeader>
                           <EditProfileForm user={user} setOpen={setEditDialogOpen} />
                         </DialogContent>
                     </Dialog>
@@ -159,3 +166,5 @@ export function AccountForm() {
         </div>
     );
 }
+
+    

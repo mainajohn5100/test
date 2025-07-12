@@ -75,90 +75,84 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
   };
 
   return (
-    <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-          <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
-            <DialogDescription>
-              Make changes to your profile here. Click save when you&apos;re done.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                    <AvatarImage src={previewUrl || undefined} alt={user.name} />
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="w-full">
-                    <FormLabel>Profile Photo</FormLabel>
-                    <Input 
-                      id="avatar-file" 
-                      type="file" 
-                      className="mt-1" 
-                      accept="image/png, image/jpeg, image/gif"
-                      onChange={handleFileChange}
-                    />
-                    <p className="text-xs text-muted-foreground pt-1">
-                        Upload a new profile picture.
-                    </p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                      <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-              <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                      <Input type="email" {...field} />
-                      </FormControl>
-                       <p className="text-xs text-muted-foreground pt-1">
-                        Changing email requires re-authentication and verification. This feature is not fully implemented on server actions.
-                       </p>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-            </div>
-             <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-              <DialogTrigger asChild>
-                  <Button type="button" variant="outline" className="w-full">
-                      <KeyRound className="mr-2"/>
-                      Change Password
-                  </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                  <ChangePasswordForm setOpen={setPasswordDialogOpen} />
-              </DialogContent>
-            </Dialog>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+        <div className="grid gap-6 py-4">
+          <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                  <AvatarImage src={previewUrl || undefined} alt={user.name} />
+                  <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="w-full">
+                  <FormLabel>Profile Photo</FormLabel>
+                  <Input 
+                    id="avatar-file" 
+                    type="file" 
+                    className="mt-1" 
+                    accept="image/png, image/jpeg, image/gif"
+                    onChange={handleFileChange}
+                  />
+                  <p className="text-xs text-muted-foreground pt-1">
+                      Upload a new profile picture.
+                  </p>
+              </div>
           </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">Cancel</Button>
-            </DialogClose>
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </form>
-      </Form>
-    </>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                    <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                    <Input type="email" {...field} />
+                    </FormControl>
+                      <p className="text-xs text-muted-foreground pt-1">
+                      Changing email requires re-authentication and verification. This feature is not fully implemented on server actions.
+                      </p>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+          </div>
+            <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+            <DialogTrigger asChild>
+                <Button type="button" variant="outline" className="w-full">
+                    <KeyRound className="mr-2"/>
+                    Change Password
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <ChangePasswordForm setOpen={setPasswordDialogOpen} />
+            </DialogContent>
+          </Dialog>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">Cancel</Button>
+          </DialogClose>
+          <Button type="submit" disabled={isPending}>
+            {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
   );
 }
+
+    
