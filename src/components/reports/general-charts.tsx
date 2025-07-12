@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, PieChart, Pie, Cell, Legend } from "recharts";
 import type { Ticket, Project, User } from "@/lib/data";
 import { Briefcase, Ticket as TicketIcon, MoreVertical } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -196,6 +196,7 @@ function TicketsByProjectChart({ tickets, projects }: { tickets: Ticket[], proje
                         <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border), 0.5)" horizontal={false} />
                         <XAxis type="number" hide />
                         <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} stroke="#888888" fontSize={12} width={100} />
+                        <StyledTooltip />
                         <Bar dataKey="tickets" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} barSize={15}>
                             <LabelList dataKey="tickets" position="right" offset={8} fontSize={12} fill="#888888"/>
                         </Bar>
@@ -232,7 +233,23 @@ function TicketsByPriorityChart({ tickets }: { tickets: Ticket[] }) {
             </CardHeader>
             <CardContent>
                  <ResponsiveContainer width="100%" height={200}>
-                    {/* Placeholder for Pie Chart */}
+                    <PieChart>
+                        <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            dataKey="value"
+                            nameKey="name"
+                        >
+                            {data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                        </Pie>
+                        <StyledTooltip />
+                        <Legend iconSize={10} wrapperStyle={{fontSize: '0.8rem'}}/>
+                    </PieChart>
                 </ResponsiveContainer>
             </CardContent>
         </Card>
