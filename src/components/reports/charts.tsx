@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -48,7 +48,7 @@ const StyledTooltip = () => (
         cursor={{fill: "hsl(var(--muted))"}}
         contentStyle={{
             background: "hsl(var(--background))",
-            border: "1px solid hsl(var(--border))",
+            border: "1px solid hsla(var(--border) / 0.5)",
             borderRadius: "var(--radius)",
         }}
     />
@@ -143,7 +143,7 @@ export function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
     }, [tickets]);
 
     return (
-    <>
+    <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
         <div>
             <CardTitle>Tickets by Status</CardTitle>
@@ -174,7 +174,7 @@ export function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
             )}
         </ResponsiveContainer>
       </CardContent>
-    </>
+    </Card>
   );
 }
 
@@ -189,7 +189,7 @@ export function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
     }, [projects]);
 
     return (
-    <>
+    <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
         <div>
             <CardTitle>Projects by Status</CardTitle>
@@ -220,7 +220,7 @@ export function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
             )}
         </ResponsiveContainer>
       </CardContent>
-    </>
+    </Card>
   );
 }
 
@@ -237,7 +237,6 @@ function TimeSeriesChart({ title, description, tickets, dataKey, categories }: T
     const [timeframe, setTimeframe] = React.useState<Timeframe>("monthly");
 
     const data = React.useMemo(() => {
-        if (!tickets) return [];
         const getInitialCounts = () => categories.reduce((acc, cat) => ({...acc, [cat]: 0}), {});
 
         const dataMap: { [key: string]: any } = {};
@@ -274,7 +273,7 @@ function TimeSeriesChart({ title, description, tickets, dataKey, categories }: T
     }, [tickets, timeframe, categories, dataKey]);
 
     return (
-        <>
+        <Card>
             <CardHeader className="flex-row items-start justify-between pb-2">
                 <div>
                     <CardTitle>{title}</CardTitle>
@@ -318,7 +317,7 @@ function TimeSeriesChart({ title, description, tickets, dataKey, categories }: T
                     )}
                 </ResponsiveContainer>
             </CardContent>
-        </>
+        </Card>
     )
 }
 
@@ -361,7 +360,7 @@ export function AgentTicketStatusChart({ tickets, agents }: { tickets: Ticket[],
     }, [tickets, agents]);
 
     return (
-        <>
+        <Card>
             <CardHeader className="flex-row items-center justify-between pb-2">
                 <div>
                     <CardTitle>Agent Workload</CardTitle>
@@ -394,7 +393,7 @@ export function AgentTicketStatusChart({ tickets, agents }: { tickets: Ticket[],
                     )}
                 </ResponsiveContainer>
             </CardContent>
-        </>
+        </Card>
     );
 }
 
@@ -421,7 +420,7 @@ export function AgentResolutionTimeChart({ tickets, agents }: { tickets: Ticket[
     }, [tickets, agents]);
 
     return (
-        <>
+        <Card>
             <CardHeader className="flex-row items-center justify-between pb-2">
                 <div>
                     <CardTitle>Agent Avg. Resolution Time</CardTitle>
@@ -450,8 +449,6 @@ export function AgentResolutionTimeChart({ tickets, agents }: { tickets: Ticket[
                     )}
                 </ResponsiveContainer>
             </CardContent>
-        </>
+        </Card>
     );
 }
-
-    
