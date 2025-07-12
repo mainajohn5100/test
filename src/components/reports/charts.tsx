@@ -4,48 +4,47 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
+  LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ComposedChart
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon } from "lucide-react";
+import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon, AreaChart } from "lucide-react";
 import type { Ticket, Project, User } from "@/lib/data";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, startOfWeek, startOfMonth } from "date-fns";
+import { addDays, format, startOfWeek, startOfMonth, startOfYear, isWithinInterval } from "date-fns";
 import { differenceInDays } from 'date-fns';
+import { DateRange } from "react-day-picker";
+import { DateRangePicker } from "../ui/date-range-picker";
 
 
-type ChartType = "bar" | "line" | "pie";
-type Timeframe = "daily" | "weekly" | "monthly";
+type ChartType = "bar" | "line" | "pie" | "composed";
+type Timeframe = "daily" | "weekly" | "monthly" | "yearly";
 const STACK_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
 function ChartToolbar({ supportedTypes, chartType, setChartType }: { supportedTypes: ChartType[], chartType: ChartType, setChartType: (type: ChartType) => void }) {
+  const typeMap: {[key in ChartType]?: {icon: React.ElementType, label: string}} = {
+      bar: { icon: BarChartIcon, label: "Bar Chart" },
+      line: { icon: LineChartIcon, label: "Line Chart" },
+      pie: { icon: PieChartIcon, label: "Pie Chart" },
+      composed: { icon: AreaChart, label: "Composed Chart" }
+  };
+
   return (
     <div className="flex items-center gap-2">
-      {supportedTypes.includes("bar") && (
-        <Button size="icon" variant={chartType === 'bar' ? 'secondary' : 'ghost'} onClick={() => setChartType('bar')} className="h-8 w-8">
-          <BarChartIcon className="h-4 w-4" />
-          <span className="sr-only">Bar Chart</span>
-        </Button>
-      )}
-      {supportedTypes.includes("line") && (
-        <Button size="icon" variant={chartType === 'line' ? 'secondary' : 'ghost'} onClick={() => setChartType('line')} className="h-8 w-8">
-          <LineChartIcon className="h-4 w-4" />
-          <span className="sr-only">Line Chart</span>
-        </Button>
-      )}
-      {supportedTypes.includes("pie") && (
-         <Button size="icon" variant={chartType === 'pie' ? 'secondary' : 'ghost'} onClick={() => setChartType('pie')} className="h-8 w-8">
-          <PieChartIcon className="h-4 w-4" />
-          <span className="sr-only">Pie Chart</span>
-        </Button>
-      )}
+      {supportedTypes.map(type => (
+        typeMap[type] && (
+            <Button key={type} size="icon" variant={chartType === type ? 'secondary' : 'ghost'} onClick={() => setChartType(type)} className="h-8 w-8">
+              <typeMap[type]!.icon className="h-4 w-4" />
+              <span className="sr-only">{typeMap[type]!.label}</span>
+            </Button>
+        )
+      ))}
     </div>
   );
 }
 
 const StyledTooltip = () => (
     <Tooltip
-        cursor={{fill: "hsl(var(--muted))"}}
+        cursor={{fill: "hsla(var(--muted))"}}
         contentStyle={{
             background: "hsl(var(--background))",
             border: "1px solid hsla(var(--border) / 0.5)",
@@ -228,25 +227,36 @@ interface TimeSeriesChartProps {
     title: string;
     description: string;
     tickets: Ticket[];
-    dataKey: keyof Ticket;
     categories: readonly string[];
+    dataKey: keyof Ticket;
+    chartType: ChartType;
+    setChartType: (type: ChartType) => void;
+    dateRange: DateRange | undefined;
 }
 
-function TimeSeriesChart({ title, description, tickets, dataKey, categories }: TimeSeriesChartProps) {
-    const [chartType, setChartType] = React.useState<ChartType>("bar");
+function TimeSeriesChart(props: TimeSeriesChartProps) {
+    const { title, description, tickets, dataKey, categories, chartType, setChartType, dateRange } = props;
     const [timeframe, setTimeframe] = React.useState<Timeframe>("monthly");
 
     const data = React.useMemo(() => {
         const getInitialCounts = () => categories.reduce((acc, cat) => ({...acc, [cat]: 0}), {});
 
+        const filteredTickets = dateRange?.from && dateRange?.to 
+            ? tickets.filter(t => isWithinInterval(new Date(t.createdAt), { start: dateRange.from!, end: dateRange.to! }))
+            : tickets;
+
         const dataMap: { [key: string]: any } = {};
 
-        tickets.forEach(ticket => {
+        filteredTickets.forEach(ticket => {
             const createdAt = new Date(ticket.createdAt);
             let key = '';
             let name = '';
 
-            if (timeframe === 'monthly') {
+            if (timeframe === 'yearly') {
+                const yearStart = startOfYear(createdAt);
+                key = format(yearStart, 'yyyy');
+                name = key;
+            } else if (timeframe === 'monthly') {
                 const monthStart = startOfMonth(createdAt);
                 key = format(monthStart, 'yyyy-MM');
                 name = format(monthStart, 'MMM yyyy');
@@ -270,7 +280,7 @@ function TimeSeriesChart({ title, description, tickets, dataKey, categories }: T
         
         const sortedKeys = Object.keys(dataMap).sort();
         return sortedKeys.map(key => dataMap[key]);
-    }, [tickets, timeframe, categories, dataKey]);
+    }, [tickets, timeframe, categories, dataKey, dateRange]);
 
     return (
         <Card>
@@ -285,6 +295,7 @@ function TimeSeriesChart({ title, description, tickets, dataKey, categories }: T
                             <TabsTrigger value="daily">Daily</TabsTrigger>
                             <TabsTrigger value="weekly">Weekly</TabsTrigger>
                             <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                            <TabsTrigger value="yearly">Yearly</TabsTrigger>
                         </TabsList>
                     </Tabs>
                     <ChartToolbar supportedTypes={["bar", "line"]} chartType={chartType} setChartType={setChartType} />
@@ -322,12 +333,12 @@ function TimeSeriesChart({ title, description, tickets, dataKey, categories }: T
 }
 
 const TICKET_STATUSES: readonly Ticket['status'][] = ['New', 'Active', 'Pending', 'On Hold', 'Closed', 'Terminated'];
-export function TicketStatusTrendsChart(props: { tickets: Ticket[] }) {
+export function TicketStatusTrendsChart(props: Omit<TimeSeriesChartProps, 'dataKey' | 'categories'>) {
     return (
         <TimeSeriesChart
+            {...props}
             title="Ticket Status Trends"
             description="Volume of tickets created over time, by status."
-            tickets={props.tickets}
             dataKey="status"
             categories={TICKET_STATUSES}
         />
@@ -335,12 +346,12 @@ export function TicketStatusTrendsChart(props: { tickets: Ticket[] }) {
 };
 
 const TICKET_PRIORITIES: readonly Ticket['priority'][] = ['Low', 'Medium', 'High', 'Urgent'];
-export function TicketPriorityTrendsChart(props: { tickets: Ticket[] }) {
+export function TicketPriorityTrendsChart(props: Omit<TimeSeriesChartProps, 'dataKey' | 'categories'>) {
     return (
         <TimeSeriesChart
+            {...props}
             title="Ticket Priority Trends"
             description="Volume of tickets created over time, by priority."
-            tickets={props.tickets}
             dataKey="priority"
             categories={TICKET_PRIORITIES}
         />
@@ -447,6 +458,86 @@ export function AgentResolutionTimeChart({ tickets, agents }: { tickets: Ticket[
                             <Line type="monotone" dataKey="Avg Days" stroke="hsl(var(--chart-1))" />
                         </LineChart>
                     )}
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function TicketVolumePriorityChart({ tickets, dateRange }: { tickets: Ticket[], dateRange: DateRange | undefined }) {
+    const [timeframe, setTimeframe] = React.useState<Timeframe>("monthly");
+
+    const data = React.useMemo(() => {
+        const dataMap: { [key: string]: { name: string, total: number, highPriority: number } } = {};
+        
+        const filteredTickets = dateRange?.from && dateRange?.to 
+            ? tickets.filter(t => isWithinInterval(new Date(t.createdAt), { start: dateRange.from!, end: dateRange.to! }))
+            : tickets;
+
+        filteredTickets.forEach(ticket => {
+            const createdAt = new Date(ticket.createdAt);
+            let key = '';
+            let name = '';
+
+            if (timeframe === 'yearly') {
+                const yearStart = startOfYear(createdAt);
+                key = format(yearStart, 'yyyy');
+                name = key;
+            } else if (timeframe === 'monthly') {
+                const monthStart = startOfMonth(createdAt);
+                key = format(monthStart, 'yyyy-MM');
+                name = format(monthStart, 'MMM yyyy');
+            } else if (timeframe === 'weekly') {
+                const weekStart = startOfWeek(createdAt, { weekStartsOn: 1 });
+                key = format(weekStart, 'yyyy-MM-dd');
+                name = format(weekStart, 'd MMM');
+            } else { // daily
+                key = format(createdAt, 'yyyy-MM-dd');
+                name = format(createdAt, 'd MMM');
+            }
+            
+            if (!dataMap[key]) {
+                dataMap[key] = { name, total: 0, highPriority: 0 };
+            }
+
+            dataMap[key].total++;
+            if (ticket.priority === 'High' || ticket.priority === 'Urgent') {
+                dataMap[key].highPriority++;
+            }
+        });
+        
+        const sortedKeys = Object.keys(dataMap).sort();
+        return sortedKeys.map(key => dataMap[key]);
+    }, [tickets, timeframe, dateRange]);
+
+    return (
+        <Card>
+            <CardHeader className="flex-row items-start justify-between pb-2">
+                <div>
+                    <CardTitle>Ticket Volume & Priority</CardTitle>
+                    <CardDescription>Total tickets vs. High/Urgent priority tickets over time.</CardDescription>
+                </div>
+                <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as any)}>
+                    <TabsList>
+                        <TabsTrigger value="daily">Daily</TabsTrigger>
+                        <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                        <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                        <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </CardHeader>
+            <CardContent className="pl-2">
+                <ResponsiveContainer width="100%" height={350}>
+                    <ComposedChart data={data}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsla(var(--border), 0.5)" />
+                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis yAxisId="left" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <StyledTooltip />
+                        <Legend />
+                        <Bar yAxisId="left" dataKey="highPriority" name="High Priority" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                        <Line yAxisId="right" type="monotone" dataKey="total" name="Total Tickets" stroke="hsl(var(--chart-2))" />
+                    </ComposedChart>
                 </ResponsiveContainer>
             </CardContent>
         </Card>

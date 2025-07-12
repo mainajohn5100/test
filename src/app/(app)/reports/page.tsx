@@ -10,10 +10,7 @@ import { Loader, ShieldAlert } from "lucide-react";
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-    AgentPerformanceCharts,
-    LongTermTrendsCharts
-} from '@/components/reports/legacy-charts';
+import { AgentPerformanceCharts, LongTermTrendsCharts } from '@/components/reports/legacy-charts';
 import { GeneralReportDashboard } from '@/components/reports/general-charts';
 
 export default function ReportsPage() {
@@ -70,7 +67,7 @@ export default function ReportsPage() {
     <Tabs defaultValue="general" className="flex flex-col gap-6">
         <PageHeader title="Reports" description="Analyze trends and performance with detailed reports.">
             <TabsList className="h-auto flex-wrap justify-start">
-                <TabsTrigger value="general">General Report</TabsTrigger>
+                <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="agent-performance">Agent Performance</TabsTrigger>
                 <TabsTrigger value="long-term-trends">Long-Term Trends</TabsTrigger>
             </TabsList>
