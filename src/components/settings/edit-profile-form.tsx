@@ -26,7 +26,7 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
   const [isPasswordDialogOpen, setPasswordDialogOpen] = React.useState(false);
 
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(user.avatar);
 
   const form = useForm<z.infer<typeof updateUserSchema>>({
     resolver: zodResolver(updateUserSchema),
@@ -49,6 +49,7 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
       const formData = new FormData();
       formData.append('name', values.name || '');
       formData.append('email', values.email || '');
+      formData.append('currentEmail', user.email);
 
       if (selectedFile) {
           formData.append('avatar', selectedFile);
@@ -57,7 +58,7 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
       const result = await updateUserAction(user.id, formData);
       if (result.success) {
         toast({
-          title: "Profile Update Initiated",
+          title: "Profile Updated",
           description: result.message,
           duration: 8000
         });
@@ -86,7 +87,7 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
           <div className="grid gap-6 py-4">
             <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                    <AvatarImage src={previewUrl || user.avatar} alt={user.name} />
+                    <AvatarImage src={previewUrl || undefined} alt={user.name} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="w-full">
@@ -127,6 +128,9 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                       <FormControl>
                       <Input type="email" {...field} />
                       </FormControl>
+                       <p className="text-xs text-muted-foreground pt-1">
+                        Changing email requires re-authentication and verification. This feature is not fully implemented on server actions.
+                       </p>
                       <FormMessage />
                   </FormItem>
                   )}

@@ -1,9 +1,10 @@
 
 
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation } from './data';
 import { cache } from 'react';
+import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -43,6 +44,26 @@ function docToData<T>(docSnap: DocumentSnapshot): T | null {
       id: docSnap.id,
     } as T;
 }
+
+export async function reauthenticateUserPassword(password: string): Promise<{success: boolean, error?: string}> {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      return { success: false, error: 'No authenticated user found.' };
+    }
+
+    try {
+        const credential = EmailAuthProvider.credential(user.email, password);
+        await reauthenticateWithCredential(user, credential);
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          return { success: false, error: 'Incorrect password.' };
+        }
+        console.error("Re-authentication error:", error);
+        return { success: false, error: 'Re-authentication failed.' };
+    }
+}
+
 
 export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
   try {

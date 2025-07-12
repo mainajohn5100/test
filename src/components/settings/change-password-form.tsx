@@ -5,7 +5,6 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-
 import {
   Form,
   FormControl,
@@ -18,41 +17,39 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
+  Dialog,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
   DialogClose,
+  DialogContent,
 } from '@/components/ui/dialog';
 import { Eye, EyeOff, Loader } from 'lucide-react';
-import { changePasswordAction } from '@/app/(app)/settings/actions';
+import { auth } from '@/lib/firebase';
+import { updatePassword } from 'firebase/auth';
+import { ReauthenticationForm } from './reauthentication-form';
 
 const passwordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required.'),
   newPassword: z.string().min(6, 'New password must be at least 6 characters.'),
   confirmPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmPassword, {
   message: "New passwords don't match.",
   path: ["confirmPassword"],
-}).refine(data => data.currentPassword !== data.newPassword, {
-  message: "New password must be different from the current password.",
-  path: ["newPassword"],
 });
-
 
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export function ChangePasswordForm({ setOpen }: { setOpen: (open: boolean) => void }) {
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
-  const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [reauthRequired, setReauthRequired] = React.useState(true);
   
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
-      currentPassword: '',
       newPassword: '',
       confirmPassword: '',
     },
@@ -60,23 +57,38 @@ export function ChangePasswordForm({ setOpen }: { setOpen: (open: boolean) => vo
 
   const onSubmit = (values: PasswordFormValues) => {
     startTransition(async () => {
-      const result = await changePasswordAction({
-          currentPassword: values.currentPassword,
-          newPassword: values.newPassword
-      });
-
-      if (result.success) {
-        toast({ title: "Success", description: result.message });
+      const user = auth.currentUser;
+      if (!user) {
+        toast({ title: "Error", description: "Not authenticated.", variant: "destructive" });
+        return;
+      }
+      
+      try {
+        await updatePassword(user, values.newPassword);
+        toast({ title: "Success", description: "Password updated successfully." });
         setOpen(false);
-      } else {
-        toast({
-          title: "Error",
-          description: result.error,
-          variant: "destructive",
-        });
+      } catch (error: any) {
+        if (error.code === 'auth/requires-recent-login') {
+          setReauthRequired(true);
+        } else {
+          console.error("Error updating password:", error);
+          toast({ title: "Error", description: error.message, variant: "destructive" });
+        }
       }
     });
   };
+
+  if (reauthRequired) {
+    return (
+        <DialogContent>
+            <ReauthenticationForm 
+                onSuccess={() => setReauthRequired(false)}
+                onCancel={() => setOpen(false)}
+                description="For your security, please enter your current password to continue."
+            />
+        </DialogContent>
+    )
+  }
 
   return (
     <Form {...form}>
@@ -84,35 +96,11 @@ export function ChangePasswordForm({ setOpen }: { setOpen: (open: boolean) => vo
         <DialogHeader>
           <DialogTitle>Change Password</DialogTitle>
           <DialogDescription>
-            Enter your current password and a new password below.
+            Enter and confirm your new password below.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-6">
             <FormField
-                control={form.control}
-                name="currentPassword"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Current Password</FormLabel>
-                    <FormControl>
-                        <div className="relative">
-                            <Input type={showCurrentPassword ? "text" : "password"} {...field} className="pr-10" />
-                            <Button 
-                                type="button" 
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
-                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                            >
-                                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-             <FormField
                 control={form.control}
                 name="newPassword"
                 render={({ field }) => (
