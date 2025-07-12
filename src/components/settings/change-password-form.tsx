@@ -93,12 +93,6 @@ export function ChangePasswordForm({ setOpen }: { setOpen: (open: boolean) => vo
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <DialogHeader>
-          <DialogTitle>Change Password</DialogTitle>
-          <DialogDescription>
-            Enter and confirm your new password below.
-          </DialogDescription>
-        </DialogHeader>
         <div className="grid gap-4 py-6">
             <FormField
                 control={form.control}

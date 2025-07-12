@@ -129,7 +129,7 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                 )}
             />
           </div>
-            <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+          <Dialog open={isPasswordDialogOpen} onOpenChange={setPasswordDialogOpen}>
             <DialogTrigger asChild>
                 <Button type="button" variant="outline" className="w-full">
                     <KeyRound className="mr-2"/>
@@ -137,6 +137,12 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Change Password</DialogTitle>
+                    <DialogDescription>
+                        Enter and confirm your new password below.
+                    </DialogDescription>
+                </DialogHeader>
                 <ChangePasswordForm setOpen={setPasswordDialogOpen} />
             </DialogContent>
           </Dialog>
@@ -154,5 +160,3 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
     </Form>
   );
 }
-
-    
