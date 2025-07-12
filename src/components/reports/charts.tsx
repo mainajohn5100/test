@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon } from "lucide-react";
 import type { Ticket, Project, User } from "@/lib/data";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, getMonth, differenceInDays, startOfWeek } from "date-fns";
+import { format, getMonth, differenceInDays, startOfWeek, startOfMonth } from "date-fns";
 
 type ChartType = "bar" | "line" | "pie";
+type Timeframe = "daily" | "weekly" | "monthly";
 const STACK_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
 function ChartToolbar({ supportedTypes, chartType, setChartType }: { supportedTypes: ChartType[], chartType: ChartType, setChartType: (type: ChartType) => void }) {
@@ -92,7 +93,7 @@ export function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
 }, [tickets]);
 
   return (
-    <Card className="md:col-span-2">
+    <>
       <CardHeader className="flex-row items-center justify-between pb-2">
         <div>
           <CardTitle>Ticket Volume Trends</CardTitle>
@@ -104,7 +105,7 @@ export function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
         <ResponsiveContainer width="100%" height={300}>
           {chartType === 'line' ? (
             <LineChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <StyledTooltip />
@@ -114,7 +115,7 @@ export function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
             </LineChart>
           ) : (
              <BarChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
               <StyledTooltip />
@@ -125,7 +126,7 @@ export function TicketVolumeTrendsChart({ tickets }: { tickets: Ticket[] }) {
           )}
         </ResponsiveContainer>
       </CardContent>
-    </Card>
+    </>
   );
 }
 
@@ -140,7 +141,7 @@ export function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
     }, [tickets]);
 
     return (
-    <Card>
+    <>
       <CardHeader className="flex-row items-center justify-between pb-2">
         <div>
             <CardTitle>Tickets by Status</CardTitle>
@@ -160,6 +161,7 @@ export function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
                 </PieChart>
             ) : (
                 <BarChart data={data} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis type="number" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis type="category" dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} width={80} />
                     <StyledTooltip />
@@ -170,70 +172,7 @@ export function TicketsByStatusChart({ tickets }: { tickets: Ticket[] }) {
             )}
         </ResponsiveContainer>
       </CardContent>
-    </Card>
-  );
-}
-
-export function ReportAvgResolutionTimeChart({ tickets }: { tickets: Ticket[] }) {
-  const [chartType, setChartType] = React.useState<ChartType>("line");
-  const data = React.useMemo(() => {
-    const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status === 'Terminated');
-    const monthlyResolutionTimes: { [key: number]: { totalDays: number; count: number } } = {};
-  
-    closedTickets.forEach(ticket => {
-      const createdAt = new Date(ticket.createdAt);
-      const resolvedAt = new Date(ticket.updatedAt);
-      const resolutionDays = differenceInDays(resolvedAt, createdAt);
-      const month = getMonth(resolvedAt);
-      
-      if (!monthlyResolutionTimes[month]) {
-        monthlyResolutionTimes[month] = { totalDays: 0, count: 0 };
-      }
-      monthlyResolutionTimes[month].totalDays += resolutionDays;
-      monthlyResolutionTimes[month].count++;
-    });
-  
-    return Array.from({ length: 12 }).map((_, i) => {
-      const monthName = format(new Date(2000, i, 1), 'MMM');
-      if (monthlyResolutionTimes[i] && monthlyResolutionTimes[i].count > 0) {
-        const avg = monthlyResolutionTimes[i].totalDays / monthlyResolutionTimes[i].count;
-        return { name: monthName, days: parseFloat(avg.toFixed(1)) };
-      }
-      return { name: monthName, days: 0 };
-    });
-  }, [tickets]);
-
-  return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle>Average Resolution Time</CardTitle>
-          <CardDescription>Average time to close tickets in days.</CardDescription>
-        </div>
-        <ChartToolbar supportedTypes={["line", "bar"]} chartType={chartType} setChartType={setChartType} />
-      </CardHeader>
-      <CardContent className="pl-2">
-        <ResponsiveContainer width="100%" height={300}>
-           {chartType === 'line' ? (
-             <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="d" />
-              <StyledTooltip />
-              <Line type="monotone" dataKey="days" name="Avg. Days" stroke="hsl(var(--chart-3))" connectNulls />
-            </LineChart>
-           ) : (
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="d" />
-              <StyledTooltip />
-              <Bar dataKey="days" name="Avg. Days" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-           )}
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    </>
   );
 }
 
@@ -248,7 +187,7 @@ export function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
     }, [projects]);
 
     return (
-    <Card>
+    <>
       <CardHeader className="flex-row items-center justify-between pb-2">
         <div>
             <CardTitle>Projects by Status</CardTitle>
@@ -268,7 +207,7 @@ export function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
                 </PieChart>
             ) : (
                  <BarChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <StyledTooltip />
@@ -279,102 +218,128 @@ export function ProjectsByStatusChart({ projects }: { projects: Project[] }) {
             )}
         </ResponsiveContainer>
       </CardContent>
-    </Card>
+    </>
   );
 }
 
-export function TicketStatusTrendsChart({ tickets }: { tickets: Ticket[] }) {
-  const [chartType, setChartType] = React.useState<ChartType>("bar");
-  const [timeframe, setTimeframe] = React.useState<"daily" | "weekly" | "monthly">("monthly");
-  
-  const statuses = ['New', 'Active', 'Pending', 'On Hold', 'Closed', 'Terminated'];
-  const getInitialCounts = () => statuses.reduce((acc, status) => ({...acc, [status]: 0}), {});
+const timeSeriesChart = (
+    title: string,
+    description: string,
+    tickets: Ticket[],
+    dataKey: keyof Ticket,
+    categories: readonly string[]
+) => {
+    return function TimeSeriesChart() {
+        const [chartType, setChartType] = React.useState<ChartType>("bar");
+        const [timeframe, setTimeframe] = React.useState<Timeframe>("monthly");
 
-  const data = React.useMemo(() => {
-    if (!tickets) return [];
+        const data = React.useMemo(() => {
+            if (!tickets) return [];
+            const getInitialCounts = () => categories.reduce((acc, cat) => ({...acc, [cat]: 0}), {});
 
-    const dataMap: { [key: string]: any } = {};
+            const dataMap: { [key: string]: any } = {};
 
-    tickets.forEach(ticket => {
-        const createdAt = new Date(ticket.createdAt);
-        let key = '';
-        let name = '';
+            tickets.forEach(ticket => {
+                const createdAt = new Date(ticket.createdAt);
+                let key = '';
+                let name = '';
 
-        if (timeframe === 'monthly') {
-            key = format(new Date(createdAt.getFullYear(), createdAt.getMonth(), 1), 'yyyy-MM');
-            name = format(createdAt, 'MMM yyyy');
-        } else if (timeframe === 'weekly') {
-            const weekStart = startOfWeek(createdAt, { weekStartsOn: 1 });
-            key = format(weekStart, 'yyyy-MM-dd');
-            name = format(weekStart, 'd MMM');
-        } else { // daily
-            key = format(createdAt, 'yyyy-MM-dd');
-            name = format(createdAt, 'd MMM');
-        }
-        
-        if (!dataMap[key]) {
-            dataMap[key] = { name, ...getInitialCounts() };
-        }
-        if (statuses.includes(ticket.status)) {
-            dataMap[key][ticket.status]++;
-        }
-    });
-    
-    const sortedKeys = Object.keys(dataMap).sort();
-    return sortedKeys.map(key => dataMap[key]);
+                if (timeframe === 'monthly') {
+                    const monthStart = startOfMonth(createdAt);
+                    key = format(monthStart, 'yyyy-MM');
+                    name = format(monthStart, 'MMM yyyy');
+                } else if (timeframe === 'weekly') {
+                    const weekStart = startOfWeek(createdAt, { weekStartsOn: 1 });
+                    key = format(weekStart, 'yyyy-MM-dd');
+                    name = format(weekStart, 'd MMM');
+                } else { // daily
+                    key = format(createdAt, 'yyyy-MM-dd');
+                    name = format(createdAt, 'd MMM');
+                }
+                
+                if (!dataMap[key]) {
+                    dataMap[key] = { name, ...getInitialCounts() };
+                }
+                const categoryValue = ticket[dataKey] as string;
+                if (categories.includes(categoryValue)) {
+                    dataMap[key][categoryValue]++;
+                }
+            });
+            
+            const sortedKeys = Object.keys(dataMap).sort();
+            return sortedKeys.map(key => dataMap[key]);
+        }, [tickets, timeframe]);
 
-  }, [tickets, timeframe]);
-
-  return (
-    <Card className="md:col-span-2">
-      <CardHeader className="flex-row items-start justify-between pb-2">
-        <div>
-          <CardTitle>Ticket Status Trends</CardTitle>
-          <CardDescription>
-              Volume of tickets created over time, by status.
-          </CardDescription>
-        </div>
-        <div className="flex items-center gap-4">
-          <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as any)}>
-            <TabsList>
-              <TabsTrigger value="daily">Daily</TabsTrigger>
-              <TabsTrigger value="weekly">Weekly</TabsTrigger>
-              <TabsTrigger value="monthly">Monthly</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <ChartToolbar supportedTypes={["bar", "line"]} chartType={chartType} setChartType={setChartType} />
-        </div>
-      </CardHeader>
-      <CardContent className="pl-2">
-        <ResponsiveContainer width="100%" height={350}>
-           {chartType === 'bar' ? (
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <StyledTooltip />
-              <Legend />
-              {statuses.map((status, i) => (
-                <Bar key={status} dataKey={status} stackId="a" fill={STACK_COLORS[i % STACK_COLORS.length]} radius={i === statuses.length - 1 ? [4, 4, 0, 0] : [0,0,0,0]} />
-              ))}
-            </BarChart>
-           ) : (
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-              <StyledTooltip />
-              <Legend />
-              {statuses.map((status, i) => (
-                 <Line key={status} type="monotone" dataKey={status} stroke={STACK_COLORS[i % STACK_COLORS.length]} />
-              ))}
-            </LineChart>
-           )}
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  )
+        return (
+            <>
+                <CardHeader className="flex-row items-start justify-between pb-2">
+                    <div>
+                        <CardTitle>{title}</CardTitle>
+                        <CardDescription>{description}</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as any)}>
+                            <TabsList>
+                                <TabsTrigger value="daily">Daily</TabsTrigger>
+                                <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                                <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        <ChartToolbar supportedTypes={["bar", "line"]} chartType={chartType} setChartType={setChartType} />
+                    </div>
+                </CardHeader>
+                <CardContent className="pl-2">
+                    <ResponsiveContainer width="100%" height={350}>
+                        {chartType === 'bar' ? (
+                            <BarChart data={data}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <StyledTooltip />
+                                <Legend />
+                                {categories.map((cat, i) => (
+                                    <Bar key={cat} dataKey={cat} stackId="a" fill={STACK_COLORS[i % STACK_COLORS.length]} radius={i === categories.length - 1 ? [4, 4, 0, 0] : [0,0,0,0]} />
+                                ))}
+                            </BarChart>
+                        ) : (
+                            <LineChart data={data}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <StyledTooltip />
+                                <Legend />
+                                {categories.map((cat, i) => (
+                                    <Line key={cat} type="monotone" dataKey={cat} stroke={STACK_COLORS[i % STACK_COLORS.length]} />
+                                ))}
+                            </LineChart>
+                        )}
+                    </ResponsiveContainer>
+                </CardContent>
+            </>
+        )
+    }
 }
+
+const TICKET_STATUSES: Ticket['status'][] = ['New', 'Active', 'Pending', 'On Hold', 'Closed', 'Terminated'];
+export const TicketStatusTrendsChart = timeSeriesChart(
+    "Ticket Status Trends",
+    "Volume of tickets created over time, by status.",
+    // @ts-ignore
+    (props) => props.tickets,
+    "status",
+    TICKET_STATUSES
+);
+
+const TICKET_PRIORITIES: Ticket['priority'][] = ['Low', 'Medium', 'High', 'Urgent'];
+export const TicketPriorityTrendsChart = timeSeriesChart(
+    "Ticket Priority Trends",
+    "Volume of tickets created over time, by priority.",
+    // @ts-ignore
+    (props) => props.tickets,
+    "priority",
+    TICKET_PRIORITIES
+);
+
 
 export function AgentTicketStatusChart({ tickets, agents }: { tickets: Ticket[], agents: User[] }) {
     const [chartType, setChartType] = React.useState<ChartType>("bar");
@@ -388,28 +353,40 @@ export function AgentTicketStatusChart({ tickets, agents }: { tickets: Ticket[],
     }, [tickets, agents]);
 
     return (
-        <Card>
+        <>
             <CardHeader className="flex-row items-center justify-between pb-2">
                 <div>
                     <CardTitle>Agent Workload</CardTitle>
                     <CardDescription>Open vs. Closed tickets per agent.</CardDescription>
                 </div>
-                <ChartToolbar supportedTypes={["bar"]} chartType={chartType} setChartType={setChartType} />
+                <ChartToolbar supportedTypes={["bar", "line"]} chartType={chartType} setChartType={setChartType} />
             </CardHeader>
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                        <StyledTooltip />
-                        <Legend />
-                        <Bar dataKey="open" name="Open" stackId="a" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="closed" name="Closed" stackId="a" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                    {chartType === 'bar' ? (
+                        <BarChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <StyledTooltip />
+                            <Legend />
+                            <Bar dataKey="open" name="Open" stackId="a" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="closed" name="Closed" stackId="a" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    ) : (
+                         <LineChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <StyledTooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="open" name="Open" stroke="hsl(var(--chart-4))" />
+                            <Line type="monotone" dataKey="closed" name="Closed" stroke="hsl(var(--chart-5))" />
+                        </LineChart>
+                    )}
                 </ResponsiveContainer>
             </CardContent>
-        </Card>
+        </>
     );
 }
 
@@ -436,35 +413,45 @@ export function AgentResolutionTimeChart({ tickets, agents }: { tickets: Ticket[
     }, [tickets, agents]);
 
     return (
-        <Card>
+        <>
             <CardHeader className="flex-row items-center justify-between pb-2">
                 <div>
                     <CardTitle>Agent Avg. Resolution Time</CardTitle>
                     <CardDescription>Average time to close tickets per agent.</CardDescription>
                 </div>
-                <ChartToolbar supportedTypes={["bar"]} chartType={chartType} setChartType={setChartType} />
+                <ChartToolbar supportedTypes={["bar", "line"]} chartType={chartType} setChartType={setChartType} />
             </CardHeader>
             <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="d" />
-                        <StyledTooltip />
-                        <Bar dataKey="Avg Days" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                   {chartType === 'bar' ? (
+                        <BarChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="d" />
+                            <StyledTooltip />
+                            <Bar dataKey="Avg Days" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    ) : (
+                         <LineChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} unit="d" />
+                            <StyledTooltip />
+                            <Line type="monotone" dataKey="Avg Days" stroke="hsl(var(--chart-1))" />
+                        </LineChart>
+                    )}
                 </ResponsiveContainer>
             </CardContent>
-        </Card>
+        </>
     );
 }
 
+// This component is no longer used directly on the page but is kept for potential future use.
 export function ReportCharts({ tickets, projects }: { tickets: Ticket[]; projects: Project[] }) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <TicketVolumeTrendsChart tickets={tickets} />
       <TicketsByStatusChart tickets={tickets} />
-      <ReportAvgResolutionTimeChart tickets={tickets} />
       <ProjectsByStatusChart projects={projects} />
       <TicketStatusTrendsChart tickets={tickets} />
     </div>

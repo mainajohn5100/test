@@ -4,14 +4,22 @@
 import React from 'react';
 import Link from 'next/link';
 import { PageHeader } from "@/components/page-header";
-import { ReportCharts } from "@/components/reports/charts";
 import { Button } from "@/components/ui/button";
 import { getTickets, getProjects, getUsers } from "@/lib/firestore";
 import { Download, Printer, Loader, ShieldAlert } from "lucide-react";
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { TicketVolumeTrendsChart, TicketsByStatusChart, ReportAvgResolutionTimeChart, ProjectsByStatusChart, TicketStatusTrendsChart, AgentTicketStatusChart, AgentResolutionTimeChart } from '@/components/reports/charts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+    TicketsByStatusChart, 
+    ProjectsByStatusChart,
+    TicketVolumeTrendsChart,
+    TicketStatusTrendsChart, 
+    TicketPriorityTrendsChart,
+    AgentTicketStatusChart, 
+    AgentResolutionTimeChart 
+} from '@/components/reports/charts';
 
 export default function ReportsPage() {
   const { user } = useAuth();
@@ -66,57 +74,60 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Reports" description="Analyze trends and performance with detailed reports.">
-        <Button variant="outline">
+        <Button variant="outline" onClick={() => window.print()}>
           <Printer className="mr-2 h-4 w-4" />
           Print Reports
         </Button>
-        <Button>
+        <Button disabled>
           <Download className="mr-2 h-4 w-4" />
           Download All
         </Button>
       </PageHeader>
       
-      <div className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>General Tickets and Project Graphs</CardTitle>
-            <CardDescription>
-              A high-level overview of ticket and project distributions.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2">
-            <TicketsByStatusChart tickets={tickets} />
-            <ProjectsByStatusChart projects={projects} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Agent Performance</CardTitle>
-            <CardDescription>
-              Metrics on agent workload and efficiency.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2">
-             <AgentTicketStatusChart tickets={tickets} agents={users} />
-             <AgentResolutionTimeChart tickets={tickets} agents={users} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Long-Term Trends</CardTitle>
-            <CardDescription>
-              Analyze data patterns over longer periods.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <TicketVolumeTrendsChart tickets={tickets} />
-            <TicketStatusTrendsChart tickets={tickets} />
-          </CardContent>
-        </Card>
-      </div>
-
+        <Tabs defaultValue="general" className="space-y-4">
+            <TabsList>
+                <TabsTrigger value="general">General</TabsTrigger>
+                <TabsTrigger value="agent-performance">Agent Performance</TabsTrigger>
+                <TabsTrigger value="long-term-trends">Long-Term Trends</TabsTrigger>
+            </TabsList>
+            <TabsContent value="general" className="space-y-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>General Tickets and Project Graphs</CardTitle>
+                        <CardDescription>A high-level overview of ticket and project distributions.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-6 md:grid-cols-2">
+                        <TicketsByStatusChart tickets={tickets} />
+                        <ProjectsByStatusChart projects={projects} />
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="agent-performance" className="space-y-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Agent Performance</CardTitle>
+                        <CardDescription>Metrics on agent workload and efficiency.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-6 md:grid-cols-2">
+                        <AgentTicketStatusChart tickets={tickets} agents={users} />
+                        <AgentResolutionTimeChart tickets={tickets} agents={users} />
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="long-term-trends" className="space-y-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Long-Term Trends</CardTitle>
+                        <CardDescription>Analyze data patterns over longer periods.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <TicketVolumeTrendsChart tickets={tickets} />
+                        <TicketStatusTrendsChart tickets={tickets} />
+                        <TicketPriorityTrendsChart tickets={tickets} />
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
