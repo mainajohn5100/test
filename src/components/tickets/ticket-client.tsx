@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { TicketTableToolbar } from "@/components/tickets/ticket-table-toolbar";
 import { TicketTable } from "@/components/tickets/ticket-table";
 import type { Ticket, User } from "@/lib/data";
@@ -11,12 +11,17 @@ import { useSettings } from "@/contexts/settings-context";
 interface TicketClientProps {
   tickets: Ticket[];
   users: User[];
+  initialSearchTerm?: string;
 }
 
-export function TicketClient({ tickets, users }: TicketClientProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketClientProps) {
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [sortBy, setSortBy] = useState('updatedAt_desc');
   const { excludeClosedTickets } = useSettings();
+  
+  useEffect(() => {
+      setSearchTerm(initialSearchTerm);
+  }, [initialSearchTerm]);
 
   const filteredAndSortedTickets = useMemo(() => {
     let displayTickets = tickets ? [...tickets] : [];

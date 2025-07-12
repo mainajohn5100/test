@@ -103,17 +103,19 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
                 </TableCell>
                 <TableCell>{ticket.priority}</TableCell>
                 <TableCell>
-                    {assignee ? (
-                    <div className="flex items-center gap-2">
-                      <Link href={`/users/${assignee.id}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 relative z-10 p-1 -m-1 rounded-md hover:bg-background">
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage src={assignee.avatar} alt={assignee.name} />
-                            <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="hover:underline">{assignee.name}</span>
-                      </Link>
+                    <div className="flex items-center gap-2 max-w-[150px] truncate">
+                        {assignee ? (
+                            <Link href={`/users/${assignee.id}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 relative z-10 p-1 -m-1 rounded-md hover:bg-background">
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                    <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="hover:underline truncate">{assignee.name}</span>
+                            </Link>
+                        ) : (
+                            <span className="truncate">{ticket.assignee}</span>
+                        )}
                     </div>
-                    ) : ticket.assignee }
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                     <TicketTableRowActions ticket={ticket} />

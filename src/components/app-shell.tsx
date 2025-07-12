@@ -64,8 +64,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { showFullScreenButton, inAppNotifications } = useSettings();
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = React.useState(true);
+  const [globalSearchTerm, setGlobalSearchTerm] = React.useState('');
   
   const unreadCount = React.useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
+
+  const handleGlobalSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && globalSearchTerm.trim()) {
+      router.push(`/tickets/all?search=${encodeURIComponent(globalSearchTerm.trim())}`);
+    }
+  };
+
 
   React.useEffect(() => {
     if (!currentUser?.id || !inAppNotifications) {
@@ -245,7 +253,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search..." className="pl-9" />
+              <Input 
+                placeholder="Search tickets..." 
+                className="pl-9" 
+                value={globalSearchTerm}
+                onChange={(e) => setGlobalSearchTerm(e.target.value)}
+                onKeyDown={handleGlobalSearch}
+              />
             </div>
             {showFullScreenButton && (
                 <Button variant="ghost" size="icon" className="rounded-full" onClick={handleFullScreen}>

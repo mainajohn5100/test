@@ -28,8 +28,6 @@ export default function SettingsPage() {
     setCustomerCanSelectProject,
     agentCanEditTeam,
     setAgentCanEditTeam,
-    excludeClosedTickets,
-    setExcludeClosedTickets,
     adminEmailPattern,
     setAdminEmailPattern,
     agentEmailPattern,
@@ -190,22 +188,6 @@ export default function SettingsPage() {
                               checked={agentCanEditTeam}
                               onCheckedChange={setAgentCanEditTeam}
                               aria-label="Toggle agent team editing"
-                          />
-                      </div>
-                       <div className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                              <Label htmlFor="exclude-closed-tickets" className="text-base">
-                                  Exclude Closed Tickets
-                              </Label>
-                              <p className="text-sm text-muted-foreground">
-                                  Hide closed and terminated tickets from default views.
-                              </p>
-                          </div>
-                          <Switch
-                              id="exclude-closed-tickets"
-                              checked={excludeClosedTickets}
-                              onCheckedChange={setExcludeClosedTickets}
-                              aria-label="Toggle excluding closed tickets"
                           />
                       </div>
                   </CardContent>

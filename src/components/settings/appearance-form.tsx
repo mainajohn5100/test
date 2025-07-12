@@ -47,7 +47,9 @@ export function AppearanceForm() {
     showFullScreenButton, 
     setShowFullScreenButton,
     loadingScreenStyle,
-    setLoadingScreenStyle
+    setLoadingScreenStyle,
+    excludeClosedTickets,
+    setExcludeClosedTickets
   } = useSettings();
   const [appTheme, setAppTheme] = React.useState('default')
 
@@ -263,7 +265,7 @@ export function AppearanceForm() {
          <div className="space-y-4">
             <FormLabel>Interface Elements</FormLabel>
             <FormDescription>
-                Manage visibility of UI elements in the header.
+                Manage visibility and default filters.
             </FormDescription>
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
@@ -279,6 +281,22 @@ export function AppearanceForm() {
                 onCheckedChange={setShowFullScreenButton}
                 aria-label="Toggle full screen button"
               />
+            </div>
+             <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                    <FormLabel htmlFor="exclude-closed-tickets" className="text-base">
+                        Exclude Closed Tickets
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                        Hide closed and terminated tickets from default views.
+                    </p>
+                </div>
+                <Switch
+                    id="exclude-closed-tickets"
+                    checked={excludeClosedTickets}
+                    onCheckedChange={setExcludeClosedTickets}
+                    aria-label="Toggle excluding closed tickets"
+                />
             </div>
         </div>
       </form>
