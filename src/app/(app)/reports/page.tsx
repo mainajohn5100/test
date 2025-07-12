@@ -9,7 +9,7 @@ import { getTickets, getProjects, getUsers } from "@/lib/firestore";
 import { Loader, ShieldAlert } from "lucide-react";
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
     AgentPerformanceCharts,
     LongTermTrendsCharts
