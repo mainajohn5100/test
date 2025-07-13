@@ -1,10 +1,8 @@
 
-
 'use client';
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,12 +30,12 @@ export default function NewTicketPage() {
   const { customerCanSelectProject } = useSettings();
 
   const [tagInput, setTagInput] = useState('');
-  const [suggestedTags, setSuggestedTags] = useState([]);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState<File[]>([]);
   
-  const [projects, setProjects] = React.useState([]);
-  const [users, setUsers] = React.useState([]);
+  const [projects, setProjects] = React.useState<Project[]>([]);
+  const [users, setUsers] = React.useState<User[]>([]);
 
   React.useEffect(() => {
     if (user) {
@@ -65,7 +63,7 @@ export default function NewTicketPage() {
   }, [user, toast]);
 
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof ticketSchema>>({
     resolver: zodResolver(ticketSchema),
     defaultValues: {
       title: "",
@@ -74,8 +72,8 @@ export default function NewTicketPage() {
       reporterId: "",
       email: "",
       priority: "medium",
-      project: "",
-      assignee: "",
+      project: "none",
+      assignee: "unassigned",
       tags: [],
     },
   });
@@ -89,18 +87,18 @@ export default function NewTicketPage() {
   }, [user, form]);
 
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       setFiles(prevFiles => [...prevFiles, ...newFiles]);
     }
   };
 
-  const removeFile = (fileNameToRemove) => {
+  const removeFile = (fileNameToRemove: string) => {
     setFiles(prevFiles => prevFiles.filter(file => file.name !== fileNameToRemove));
   };
 
-  const onSubmit = (values) => {
+  const onSubmit = (values: z.infer<typeof ticketSchema>) => {
     startTransition(async () => {
       const formData = new FormData();
       
@@ -109,7 +107,7 @@ export default function NewTicketPage() {
           if (Array.isArray(value)) {
             value.forEach(item => formData.append(key, item));
           } else {
-            formData.append(key, value);
+            formData.append(key as string, value as string);
           }
         }
       });
@@ -147,8 +145,8 @@ export default function NewTicketPage() {
     setIsSuggesting(true);
     try {
       const result = await suggestTags({ ticketContent: description });
-      const currentTags = form.getValues("tags") || [];
-      const newSuggestions = result.tags.filter(t => !currentTags.includes(t));
+      const currentTagsValue = form.getValues("tags") || [];
+      const newSuggestions = result.tags.filter(t => !currentTagsValue.includes(t));
       setSuggestedTags(newSuggestions);
       if(newSuggestions.length === 0) {
         toast({ title: "No new tags suggested." });
@@ -165,16 +163,16 @@ export default function NewTicketPage() {
     }
   };
 
-  const addTag = (tag) => {
+  const addTag = (tag: string) => {
     const trimmedTag = tag.trim();
-    const currentTags = form.getValues("tags") || [];
-    if (trimmedTag && !currentTags.includes(trimmedTag)) {
-      form.setValue("tags", [...currentTags, trimmedTag]);
+    const currentTagsValue = form.getValues("tags") || [];
+    if (trimmedTag && !currentTagsValue.includes(trimmedTag)) {
+      form.setValue("tags", [...currentTagsValue, trimmedTag]);
       setSuggestedTags(suggestedTags.filter(t => t !== trimmedTag));
     }
   };
     
-  const handleTagInputKeyDown = (e) => {
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
       addTag(tagInput.trim());
@@ -182,216 +180,220 @@ export default function NewTicketPage() {
     }
   };
 
-  const removeTag = (tagToRemove) => {
-    const currentTags = form.getValues("tags") || [];
-    form.setValue("tags", currentTags.filter(tag => tag !== tagToRemove));
+  const removeTag = (tagToRemove: string) => {
+    const currentTagsValue = form.getValues("tags") || [];
+    form.setValue("tags", currentTagsValue.filter(tag => tag !== tagToRemove));
   };
   
   const currentTags = form.watch("tags") || [];
 
   return (
-    
-        
-            
-                Create New Ticket
-                Fill in the details below to submit a new ticket.
-            
-        
-        
-            
-                
-                    
-                        Ticket Information
-                        Fill in the details for the new support ticket.
-                    
-                    
-                        
-                            
-                                
-                                    Customer Name
-                                
-                                
-                                    
-                                
-                                
-                            
-                            
-                                
-                                    Customer Email
-                                
-                                
-                                    
-                                
-                                
-                            
-                        
-                        
-                            
-                                Ticket Title
-                            
-                            
-                                
-                            
-                            
-                        
-                        
-                            
-                                Description
-                            
-                            
-                                
-                                    Detailed description of the issue...
-                                
-                            
-                            
-                        
-                        
-                            
-                                Attachments
-                            
-                            
-                                
-                                    
-                                        
-                                            
-                                                
-                                                    
-                                                    
-                                                        Click to upload
-                                                         or drag and drop
-                                                        Attach images or log files
-                                                
-                                                
-                                            
-                                        
-                                    
-                                
-                                
-                                    
-                                        Selected files:
-                                        
-                                            
-                                                
-                                                
-                                                    
-                                                    
-                                                        
-                                                    
-                                                
-                                            
-                                        
-                                    
-                                
-                            
-                        
-                    
-                
-                
-                    
-                        Properties
-                    
-                    
-                        
-                            
-                                Priority
-                            
-                            
-                                
-                                    
-                                
-                                
-                                    
-                                        Low
-                                        Medium
-                                        High
-                                        Urgent
-                                    
-                                
-                            
-                            
-                        
-                        
-                            
-                                Project (Optional)
-                            
-                            
-                                
-                                    
-                                
-                                
-                                    
-                                        None
-                                        {projects.map(p => {p.name}{p.name})}
-                                    
-                                
-                            
-                            
-                        
-                        
-                            
-                                Assignee (Optional)
-                            
-                            
-                                
-                                    
-                                
-                                
-                                    
-                                        Unassigned
-                                        {users.map(u => {u.name}{u.name})}
-                                    
-                                
-                            
-                            
-                        
-                    
-                
-                
-                    
-                        Tags
-                    
-                    
-                        
-                            
-                                Add Tags
-                            
-                            
-                                
-                            
-                            
-                                
-                                    {tag}
-                                    
-                                
-                            
-                        
-                        
-                            
-                                
-                                    
-                                        Suggest Tags with AI
-                                    
-                                    
-                                        
-                                            {tag}
-                                        
-                                    
-                                
-                            
-                        
-                    
-                
-                
-                    
-                        
-                            
-                                Submit Ticket
-                            
-                        
-                    
-                
-            
-        
-    
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Create New Ticket"
+        description="Fill in the details below to submit a new ticket."
+      />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ticket Information</CardTitle>
+                  <CardDescription>Fill in the details for the new support ticket.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ticket Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Login button not working" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Provide a detailed description of the issue..." 
+                            className="min-h-40"
+                            {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormItem>
+                    <FormLabel>Attachments (Optional)</FormLabel>
+                    <FormControl>
+                        <div className="relative w-full">
+                            <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <FileUp className="w-8 h-8 mb-2 text-muted-foreground" />
+                                    <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p className="text-xs text-muted-foreground">Attach images or log files (up to 5MB each)</p>
+                                </div>
+                                <Input id="file-upload" type="file" className="hidden" multiple onChange={handleFileChange} />
+                            </label>
+                        </div>
+                    </FormControl>
+                    {files.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                            <p className="text-sm font-medium">Selected files:</p>
+                            <div className="flex flex-wrap gap-2">
+                            {files.map((file, index) => (
+                                <Badge key={index} variant="secondary" className="flex items-center gap-2">
+                                    <span className="truncate max-w-[150px]">{file.name}</span>
+                                    <button type="button" onClick={() => removeFile(file.name)} className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                        <XCircle className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                    </button>
+                                </Badge>
+                            ))}
+                            </div>
+                        </div>
+                    )}
+                  </FormItem>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="lg:col-span-1 space-y-6">
+              <Card>
+                <CardHeader>
+                    <CardTitle>Properties</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="urgent">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {(user?.role !== 'Customer' || customerCanSelectProject) && (
+                  <FormField
+                    control={form.control}
+                    name="project"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Assign to a project" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {projects.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  )}
+                  {user?.role !== 'Customer' && (
+                  <FormField
+                    control={form.control}
+                    name="assignee"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Assignee (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Assign to an agent" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                    <CardTitle>Tags</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <FormLabel htmlFor="tags">Add Tags</FormLabel>
+                    <Input 
+                      id="tags" 
+                      value={tagInput}
+                      onChange={e => setTagInput(e.target.value)}
+                      onKeyDown={handleTagInputKeyDown}
+                      placeholder="Type a tag and press Enter"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 min-h-6">
+                    {currentTags.map(tag => (
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                        <button onClick={() => removeTag(tag)} className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                            <XCircle className="h-4 w-4" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <div>
+                    <Button type="button" variant="outline" size="sm" onClick={handleSuggestTags} disabled={isSuggesting}>
+                      {isSuggesting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                      Suggest Tags with AI
+                    </Button>
+                    {suggestedTags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {suggestedTags.map(tag => (
+                          <Button key={tag} size="sm" variant="outline" onClick={() => addTag(tag)}>
+                            {tag}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button type="submit" size="lg" disabled={isPending}>
+              {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Submit Ticket
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 }
