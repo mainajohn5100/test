@@ -48,7 +48,7 @@ export async function createTicketAction(formData: FormData) {
 
   const finalAssignee = (!assignee || assignee === 'unassigned') ? 'Unassigned' : assignee;
   const finalProject = (!project || project === 'none') ? null : project;
-  const source: Ticket['source'] = finalProject ? 'Project' : 'Customer Inquiry';
+  const source: Ticket['source'] = finalProject ? 'Project' : 'Client Inquiry';
 
   const ticketData = {
     title,

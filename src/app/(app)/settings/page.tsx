@@ -23,20 +23,12 @@ export default function SettingsPage() {
     setEmailNotifications,
     agentPanelEnabled,
     setAgentPanelEnabled,
-    customerPanelEnabled,
-    setCustomerPanelEnabled,
-    customerCanSelectProject,
-    setCustomerCanSelectProject,
+    clientPanelEnabled,
+    setClientPanelEnabled,
+    clientCanSelectProject,
+    setClientCanSelectProject,
     agentCanEditTeam,
     setAgentCanEditTeam,
-    adminEmailPattern,
-    setAdminEmailPattern,
-    agentEmailPattern,
-    setAgentEmailPattern,
-    agentSignupEnabled,
-    setAgentSignupEnabled,
-    customerSignupEnabled,
-    setCustomerSignupEnabled,
   } = useSettings();
 
   return (
@@ -145,34 +137,34 @@ export default function SettingsPage() {
                       </div>
                       <div className="flex items-center justify-between rounded-lg border p-4">
                           <div className="space-y-0.5">
-                              <Label htmlFor="customer-panel" className="text-base">
-                                  Customer Panel
+                              <Label htmlFor="client-panel" className="text-base">
+                                  Client Panel
                               </Label>
                               <p className="text-sm text-muted-foreground">
-                                  Enable access for users with the 'Customer' role.
+                                  Enable access for users with the 'Client' role.
                               </p>
                           </div>
                           <Switch
-                              id="customer-panel"
-                              checked={customerPanelEnabled}
-                              onCheckedChange={setCustomerPanelEnabled}
-                              aria-label="Toggle customer panel access"
+                              id="client-panel"
+                              checked={clientPanelEnabled}
+                              onCheckedChange={setClientPanelEnabled}
+                              aria-label="Toggle client panel access"
                           />
                       </div>
                        <div className="flex items-center justify-between rounded-lg border p-4">
                           <div className="space-y-0.5">
-                              <Label htmlFor="customer-project" className="text-base">
-                                  Customer Can Select Project
+                              <Label htmlFor="client-project" className="text-base">
+                                  Client Can Select Project
                               </Label>
                               <p className="text-sm text-muted-foreground">
-                                  Allow customers to assign tickets to projects during creation.
+                                  Allow clients to assign tickets to projects during creation.
                               </p>
                           </div>
                           <Switch
-                              id="customer-project"
-                              checked={customerCanSelectProject}
-                              onCheckedChange={setCustomerCanSelectProject}
-                              aria-label="Toggle customer project selection"
+                              id="client-project"
+                              checked={clientCanSelectProject}
+                              onCheckedChange={setClientCanSelectProject}
+                              aria-label="Toggle client project selection"
                           />
                       </div>
                        <div className="flex items-center justify-between rounded-lg border p-4">
@@ -189,81 +181,6 @@ export default function SettingsPage() {
                               checked={agentCanEditTeam}
                               onCheckedChange={setAgentCanEditTeam}
                               aria-label="Toggle agent team editing"
-                          />
-                      </div>
-                  </CardContent>
-              </Card>
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Signup Control</CardTitle>
-                      <CardDescription>
-                          Enable or disable public account creation for different roles. Admins can always be created from the user management page.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                      <div className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                              <Label htmlFor="agent-signup-enabled" className="text-base">
-                                  Enable Agent Signup
-                              </Label>
-                              <p className="text-sm text-muted-foreground">
-                                  Allow users to sign up as Agents if their email matches the agent pattern.
-                              </p>
-                          </div>
-                          <Switch
-                              id="agent-signup-enabled"
-                              checked={agentSignupEnabled}
-                              onCheckedChange={setAgentSignupEnabled}
-                              aria-label="Toggle Agent Signup"
-                          />
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                              <Label htmlFor="customer-signup-enabled" className="text-base">
-                                  Enable Customer Signup
-                              </Label>
-                              <p className="text-sm text-muted-foreground">
-                                  Allow users to sign up as Customers if their email does not match other patterns.
-                              </p>
-                          </div>
-                          <Switch
-                              id="customer-signup-enabled"
-                              checked={customerSignupEnabled}
-                              onCheckedChange={setCustomerSignupEnabled}
-                              aria-label="Toggle Customer Signup"
-                          />
-                      </div>
-                  </CardContent>
-              </Card>
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Role Assignment by Email</CardTitle>
-                      <CardDescription>
-                          Automatically assign roles to new users based on their email address. 
-                          Use `*` as a wildcard (e.g., `*@company.com`).
-                          Any email that doesn't match a pattern will be assigned the 'Customer' role.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                      <div className="space-y-2">
-                          <Label htmlFor="admin-pattern">Admin Email Pattern</Label>
-                          <Input 
-                            id="admin-pattern"
-                            value={adminEmailPattern}
-                            onChange={(e) => setAdminEmailPattern(e.target.value)}
-                            placeholder="e.g., *.admin@requestflow.app, admin@company.com"
-                          />
-                           <p className="text-xs text-muted-foreground">
-                            The primary billing email is always a super-admin.
-                          </p>
-                      </div>
-                       <div className="space-y-2">
-                          <Label htmlFor="agent-pattern">Agent Email Pattern</Label>
-                          <Input 
-                            id="agent-pattern"
-                            value={agentEmailPattern}
-                            onChange={(e) => setAgentEmailPattern(e.target.value)}
-                            placeholder="e.g., *.agent@requestflow.app, support@company.com"
                           />
                       </div>
                   </CardContent>

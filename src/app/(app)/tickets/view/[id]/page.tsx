@@ -126,7 +126,7 @@ export default function ViewTicketPage() {
   
 
   React.useEffect(() => {
-    if (ticket && userMap.size > 0) {
+    if (ticket) {
       const reporterUser = userMap.get(ticket.reporter);
       const reporterName = reporterUser ? (
         <span className="font-medium text-foreground">{reporterUser.name}</span>
@@ -608,7 +608,7 @@ export default function ViewTicketPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Customer Details</CardTitle>
+                    <CardTitle>Client Details</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center gap-4">

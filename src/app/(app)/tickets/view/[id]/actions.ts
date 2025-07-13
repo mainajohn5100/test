@@ -93,10 +93,10 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
       throw new Error("Ticket or author not found");
     }
 
-    const isCustomerReply = author.role === 'Customer';
+    const isClientReply = author.role === 'Client';
     
-    // Notify the assignee if a customer replied
-    if (isCustomerReply && ticket.assignee !== 'Unassigned') {
+    // Notify the assignee if a client replied
+    if (isClientReply && ticket.assignee !== 'Unassigned') {
       const assigneeUser = await getUserByName(ticket.assignee);
       if (assigneeUser) {
         await createNotification({
@@ -107,14 +107,14 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
         });
         await sendEmailNotification(
             assigneeUser.email,
-            `[Ticket #${ticket.id.substring(0,6)}] New reply from customer: ${ticket.title}`,
+            `[Ticket #${ticket.id.substring(0,6)}] New reply from client: ${ticket.title}`,
             `Hi ${assigneeUser.name},\n\nA new reply has been added to ticket "${ticket.title}" by ${author.name}.\n\nReply: ${content.replace(/<[^>]*>?/gm, '')}\n\nYou can view the ticket here: /tickets/view/${ticketId}`
         );
       }
     }
 
-    // Notify the customer if an agent replied
-    if (!isCustomerReply) {
+    // Notify the client if an agent replied
+    if (!isClientReply) {
         const reporterUser = await getUserByName(ticket.reporter);
         if (reporterUser && reporterUser.email) {
              await sendEmailNotification(

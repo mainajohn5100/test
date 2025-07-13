@@ -28,7 +28,7 @@ interface TicketTableProps {
 
 const sourceVariantMap: { [key: string]: string } = {
   'Project': 'text-purple-700 border-purple-500/50 bg-purple-500/10',
-  'Customer Inquiry': 'text-sky-700 border-sky-500/50 bg-sky-500/10',
+  'Client Inquiry': 'text-sky-700 border-sky-500/50 bg-sky-500/10',
   'Internal': 'text-gray-700 border-gray-500/50 bg-gray-500/10',
   'Partner': 'text-rose-700 border-rose-500/50 bg-rose-500/10',
   'Vendor': 'text-amber-700 border-amber-500/50 bg-amber-500/10',

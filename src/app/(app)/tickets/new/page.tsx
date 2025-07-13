@@ -27,7 +27,7 @@ export default function NewTicketPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
-  const { customerCanSelectProject } = useSettings();
+  const { clientCanSelectProject } = useSettings();
 
   const [tagInput, setTagInput] = useState('');
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
@@ -294,7 +294,7 @@ export default function NewTicketPage() {
                       </FormItem>
                     )}
                   />
-                  {(user?.role !== 'Customer' || customerCanSelectProject) && (
+                  {(user?.role !== 'Client' || clientCanSelectProject) && (
                   <FormField
                     control={form.control}
                     name="project"
@@ -317,7 +317,7 @@ export default function NewTicketPage() {
                     )}
                   />
                   )}
-                  {user?.role !== 'Customer' && (
+                  {user?.role !== 'Client' && (
                   <FormField
                     control={form.control}
                     name="assignee"

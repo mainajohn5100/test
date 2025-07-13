@@ -343,7 +343,7 @@ export default function UserProfilePage() {
                               <DropdownMenuContent align="end">
                                   <DropdownMenuItem onSelect={() => handleRoleChange('Admin')}>Admin</DropdownMenuItem>
                                   <DropdownMenuItem onSelect={() => handleRoleChange('Agent')}>Agent</DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => handleRoleChange('Customer')}>Customer</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => handleRoleChange('Client')}>Client</DropdownMenuItem>
                               </DropdownMenuContent>
                           </DropdownMenu>
                       </div>

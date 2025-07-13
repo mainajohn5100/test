@@ -1,10 +1,9 @@
 
-      
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation } from './data';
 import { cache } from 'react';
-import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword } from 'firebase/auth';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -71,8 +70,8 @@ export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
     const ticketsCol = collection(db, 'tickets');
     const orgQuery = where("organizationId", "==", user.organizationId);
     
-    // For customers, show all tickets from their org. For agents, only assigned.
-    if (user.role === 'Customer') {
+    // For clients, show all tickets from their org. For agents, only assigned.
+    if (user.role === 'Client') {
       const q = query(ticketsCol, orgQuery);
       const ticketSnapshot = await getDocs(q);
       return snapshotToData<Ticket>(ticketSnapshot);
@@ -97,8 +96,8 @@ export const getTicketsByStatus = cache(async (status: string, user: User): Prom
     const orgQuery = where("organizationId", "==", user.organizationId);
     const statusQuery = status !== 'all' ? [where("status", "==", status)] : [];
     
-    // For customers, show all tickets from their org. For agents, only assigned.
-    if (user.role === 'Customer') {
+    // For clients, show all tickets from their org. For agents, only assigned.
+    if (user.role === 'Client') {
       const q = query(ticketsCol, orgQuery, ...statusQuery);
       const ticketSnapshot = await getDocs(q);
       return snapshotToData<Ticket>(ticketSnapshot);
@@ -184,13 +183,13 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
   const projectsCol = collection(db, 'projects');
   const orgQuery = where("organizationId", "==", user.organizationId);
 
-  // Customers can only see projects associated with tickets they've reported.
-  if (user.role === 'Customer') {
+  // Clients can only see projects associated with tickets they've reported.
+  if (user.role === 'Client') {
       try {
-          const customerTickets = await getTicketsByReporter(user.name);
-          if (customerTickets.length === 0) return [];
+          const clientTickets = await getTicketsByReporter(user.name);
+          if (clientTickets.length === 0) return [];
           
-          const projectNames = [...new Set(customerTickets.map(t => t.project).filter(Boolean))];
+          const projectNames = [...new Set(clientTickets.map(t => t.project).filter(Boolean))];
           if (projectNames.length === 0) return [];
 
           // Query projects within their org that match the names from their tickets.
@@ -199,7 +198,7 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
           return snapshotToData<Project>(projectSnapshot);
 
       } catch (error) {
-          console.error("Error fetching projects for customer:", error);
+          console.error("Error fetching projects for client:", error);
           return [];
       }
   }
@@ -240,13 +239,13 @@ export const getProjectsByStatus = cache(async (status: string, user: User): Pro
     const orgQuery = where("organizationId", "==", user.organizationId);
     const statusFilter = status !== 'all' ? [where("status", "==", status)] : [];
 
-    // Customers can only see projects associated with tickets they've reported.
-    if (user.role === 'Customer') {
+    // Clients can only see projects associated with tickets they've reported.
+    if (user.role === 'Client') {
         try {
-            const customerTickets = await getTicketsByReporter(user.name);
-            if (customerTickets.length === 0) return [];
+            const clientTickets = await getTicketsByReporter(user.name);
+            if (clientTickets.length === 0) return [];
             
-            const projectNames = [...new Set(customerTickets.map(t => t.project).filter(Boolean))];
+            const projectNames = [...new Set(clientTickets.map(t => t.project).filter(Boolean))];
             if (projectNames.length === 0) return [];
 
             const q = query(projectsCol, orgQuery, where("name", "in", projectNames));
@@ -255,7 +254,7 @@ export const getProjectsByStatus = cache(async (status: string, user: User): Pro
             return snapshotToData<Project>(projectSnapshot);
 
         } catch (error) {
-            console.error("Error fetching projects for customer:", error);
+            console.error("Error fetching projects for client:", error);
             return [];
         }
     }
@@ -369,6 +368,35 @@ export const getUserByEmail = cache(async (email: string): Promise<User | null> 
         return null;
     }
 });
+
+export async function createUserInAuth(email: string, password: string):Promise<string> {
+    // This is a simplified example. In a real app, this should be done
+    // through a secure backend with the Firebase Admin SDK.
+    // Creating users client-side is generally not recommended for production.
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        return userCredential.user.uid;
+    } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+            throw new Error('This email address is already in use by another account.');
+        }
+        if (error.code === 'auth/weak-password') {
+            throw new Error('The password is too weak. Please use at least 6 characters.');
+        }
+        console.error("Error creating user in Firebase Auth:", error);
+        throw new Error("Could not create user account.");
+    }
+}
+
+export async function createUserInFirestore(userId: string, userData: Omit<User, 'id'>): Promise<void> {
+    try {
+        const userRef = doc(db, 'users', userId);
+        await setDoc(userRef, userData);
+    } catch (error) {
+        console.error("Error creating user in Firestore:", error);
+        throw new Error("Failed to create user profile in database.");
+    }
+}
 
 
 export async function updateUser(userId: string, userData: Partial<Omit<User, 'id'>>): Promise<void> {
@@ -536,5 +564,3 @@ export async function markAllUserNotificationsAsRead(userId: string): Promise<vo
         throw new Error("Failed to mark all notifications as read.");
     }
 }
-
-    

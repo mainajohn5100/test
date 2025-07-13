@@ -13,15 +13,19 @@ import { getUsers } from "@/lib/firestore";
 import type { User } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
-import { Loader, ShieldAlert } from "lucide-react";
+import { Loader, ShieldAlert, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CreateUserForm } from "./create-user-form";
+
 
 export default function UsersPage() {
   const router = useRouter();
   const { user: currentUser } = useAuth();
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [isCreateUserOpen, setCreateUserOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (currentUser?.role === 'Admin') {
@@ -40,7 +44,7 @@ export default function UsersPage() {
     } else if (currentUser) {
       setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, isCreateUserOpen]);
 
   if (loading || !currentUser) {
     return (
@@ -71,13 +75,31 @@ export default function UsersPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="User Accounts Management"
-        description="View all user accounts in the system. New users can be created via the signup page."
-      />
+        description="View and manage all user accounts in your organization."
+      >
+        <Dialog open={isCreateUserOpen} onOpenChange={setCreateUserOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle />
+              Create User
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New User</DialogTitle>
+              <DialogDescription>
+                Create a new user and assign them a role. They will receive an email to set their password.
+              </DialogDescription>
+            </DialogHeader>
+            <CreateUserForm setOpen={setCreateUserOpen} />
+          </DialogContent>
+        </Dialog>
+      </PageHeader>
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>
           <CardDescription>
-            Here is a list of all users in the system. Click a user to view their profile.
+            Here is a list of all users in your organization. Click a user to view their profile.
           </CardDescription>
         </CardHeader>
         <CardContent>

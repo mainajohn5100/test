@@ -18,7 +18,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { 
     agentPanelEnabled, 
-    customerPanelEnabled, 
+    clientPanelEnabled, 
     loading: settingsLoading,
     loadingScreenStyle 
   } = useSettings();
@@ -60,13 +60,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     
     if (user.role === 'Agent' && !agentPanelEnabled) {
       isDenied = true;
-    } else if (user.role === 'Customer' && !customerPanelEnabled) {
+    } else if (user.role === 'Client' && !clientPanelEnabled) {
       isDenied = true;
     }
     
     setAccessDenied(isDenied);
 
-  }, [user, authLoading, settingsLoading, router, agentPanelEnabled, customerPanelEnabled]);
+  }, [user, authLoading, settingsLoading, router, agentPanelEnabled, clientPanelEnabled]);
 
   const handleAccessDeniedLogout = () => {
       handleLogout("You have been signed out because your access level has changed.");

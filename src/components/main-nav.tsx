@@ -47,12 +47,12 @@ const menuItems: NavItem[] = [
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-    roles: ['Admin', 'Agent', 'Customer'],
+    roles: ['Admin', 'Agent', 'Client'],
   },
   {
     label: "Tickets",
     icon: Ticket,
-    roles: ['Admin', 'Agent', 'Customer'],
+    roles: ['Admin', 'Agent', 'Client'],
     subItems: [
       ...allTicketSubItems,
       { label: "Create Ticket", href: "/tickets/new" },
@@ -67,7 +67,7 @@ const menuItems: NavItem[] = [
   {
     label: "Projects",
     icon: Briefcase,
-    roles: ['Admin', 'Agent', 'Customer'],
+    roles: ['Admin', 'Agent', 'Client'],
     subItems: [
       { label: "All Projects", href: "/projects/all" },
       { label: "New", href: "/projects/new" },
@@ -87,16 +87,16 @@ const menuItems: NavItem[] = [
     label: "Settings",
     href: "/settings",
     icon: Settings,
-    roles: ['Admin', 'Agent', 'Customer'],
+    roles: ['Admin', 'Agent', 'Client'],
   },
 ];
 
-const customerTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
+const clientTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
     ...allTicketSubItems,
     { label: "Create Ticket", href: "/tickets/new" },
 ];
 
-const customerProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
+const clientProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
     { label: "All Projects", href: "/projects/all" },
 ];
 
@@ -123,19 +123,19 @@ export function MainNav() {
       let finalSubItems = item.subItems;
 
       if (item.label === 'Tickets') {
-        if (user.role === 'Customer') {
-          finalSubItems = customerTicketSubItems;
+        if (user.role === 'Client') {
+          finalSubItems = clientTicketSubItems;
         } else if (user.role === 'Agent') {
           finalSubItems = [...allTicketSubItems, { label: "Create Ticket", href: "/tickets/new" }];
         }
       } else if (item.label === 'Projects') {
-        if (user.role === 'Customer') {
-          finalSubItems = customerProjectSubItems;
+        if (user.role === 'Client') {
+          finalSubItems = clientProjectSubItems;
         }
       }
       
-      if (item.label === 'Settings' && user.role === 'Customer') {
-          return { ...item, subItems: undefined } // Direct link, no sub-items for customer
+      if (item.label === 'Settings' && user.role === 'Client') {
+          return { ...item, subItems: undefined } // Direct link, no sub-items for client
       }
 
       return { ...item, subItems: finalSubItems };

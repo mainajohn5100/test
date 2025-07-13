@@ -2,12 +2,58 @@
 'use server';
 
 import { z } from 'zod';
-import { updateUser as updateFirestoreUser, reauthenticateUserPassword } from '@/lib/firestore';
+import { updateUser as updateFirestoreUser, createUserInAuth, createUserInFirestore } from '@/lib/firestore';
 import { revalidatePath } from 'next/cache';
 import { storage, auth } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import type { User } from '@/lib/data';
 import { updateProfile, verifyBeforeUpdateEmail, updatePassword as updateAuthPassword } from 'firebase/auth';
+import { userCreateSchema } from './schema';
+
+export async function createUserAction(values: z.infer<typeof userCreateSchema>, creatorId: string) {
+    const validatedFields = userCreateSchema.safeParse(values);
+
+    if (!validatedFields.success) {
+        return { error: 'Invalid data provided.' };
+    }
+
+    const { name, email, password, role } = validatedFields.data;
+
+    try {
+        const creatorUser = auth.currentUser;
+        if (!creatorUser || creatorId !== creatorUser.uid) {
+            return { error: 'Unauthorized: You can only create users for your own organization.' };
+        }
+        
+        const orgId = (await (await creatorUser.getIdTokenResult()).claims.organizationId) as string;
+
+        if (!orgId) {
+             return { error: 'Could not determine your organization.' };
+        }
+        
+        const newUserId = await createUserInAuth(email, password);
+
+        const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const avatar = `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;
+        
+        const newUser: Omit<User, 'id'> = {
+            name,
+            email,
+            role,
+            avatar,
+            organizationId: orgId,
+            activityIsPublic: false,
+        };
+
+        await createUserInFirestore(newUserId, newUser);
+
+        revalidatePath('/users');
+        return { success: true, message: `User ${name} created successfully.` };
+    } catch (error: any) {
+        console.error("Error in createUserAction:", error);
+        return { error: error.message || 'An unexpected error occurred.' };
+    }
+}
 
 export async function updateUserAction(userId: string, formData: FormData) {
   try {

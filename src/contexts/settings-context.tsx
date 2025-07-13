@@ -26,22 +26,14 @@ interface SettingsContextType {
   setEmailNotifications: (enabled: boolean) => void;
   agentPanelEnabled: boolean;
   setAgentPanelEnabled: (enabled: boolean) => void;
-  customerPanelEnabled: boolean;
-  setCustomerPanelEnabled: (enabled: boolean) => void;
-  customerCanSelectProject: boolean;
-  setCustomerCanSelectProject: (enabled: boolean) => void;
+  clientPanelEnabled: boolean;
+  setClientPanelEnabled: (enabled: boolean) => void;
+  clientCanSelectProject: boolean;
+  setClientCanSelectProject: (enabled: boolean) => void;
   agentCanEditTeam: boolean;
   setAgentCanEditTeam: (enabled: boolean) => void;
   excludeClosedTickets: boolean;
   setExcludeClosedTickets: (enabled: boolean) => void;
-  adminEmailPattern: string;
-  setAdminEmailPattern: (pattern: string) => void;
-  agentEmailPattern: string;
-  setAgentEmailPattern: (pattern: string) => void;
-  agentSignupEnabled: boolean;
-  setAgentSignupEnabled: (enabled: boolean) => void;
-  customerSignupEnabled: boolean;
-  setCustomerSignupEnabled: (enabled: boolean) => void;
   inactivityTimeout: number;
   setInactivityTimeout: (minutes: number) => void;
   supportEmail: string;
@@ -81,14 +73,10 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [inAppNotifications, _setInAppNotifications] = useState(true);
     const [emailNotifications, _setEmailNotifications] = useState(false);
     const [agentPanelEnabled, _setAgentPanelEnabled] = useState(true);
-    const [customerPanelEnabled, _setCustomerPanelEnabled] = useState(true);
-    const [customerCanSelectProject, _setCustomerCanSelectProject] = useState(true);
+    const [clientPanelEnabled, _setClientPanelEnabled] = useState(true);
+    const [clientCanSelectProject, _setClientCanSelectProject] = useState(true);
     const [agentCanEditTeam, _setAgentCanEditTeam] = useState(true);
     const [excludeClosedTickets, _setExcludeClosedTickets] = useState(false);
-    const [adminEmailPattern, _setAdminEmailPattern] = useState('*.admin.requestflow.app');
-    const [agentEmailPattern, _setAgentEmailPattern] = useState('*.agent.requestflow.app');
-    const [agentSignupEnabled, _setAgentSignupEnabled] = useState(true);
-    const [customerSignupEnabled, _setCustomerSignupEnabled] = useState(true);
     const [inactivityTimeout, _setInactivityTimeout] = useState(2); // Default to 2 minutes
     const [supportEmail, _setSupportEmail] = useState('');
     const [loadingScreenStyle, _setLoadingScreenStyle] = useState<LoadingScreenStyle>('spinner');
@@ -100,14 +88,10 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setInAppNotifications(getItemFromStorage('in-app-notifications', true));
         _setEmailNotifications(getItemFromStorage('email-notifications', false));
         _setAgentPanelEnabled(getItemFromStorage('agent-panel-enabled', true));
-        _setCustomerPanelEnabled(getItemFromStorage('customer-panel-enabled', true));
-        _setCustomerCanSelectProject(getItemFromStorage('customer-can-select-project', true));
+        _setClientPanelEnabled(getItemFromStorage('client-panel-enabled', true));
+        _setClientCanSelectProject(getItemFromStorage('client-can-select-project', true));
         _setAgentCanEditTeam(getItemFromStorage('agent-can-edit-team', true));
         _setExcludeClosedTickets(getItemFromStorage('exclude-closed-tickets', false));
-        _setAdminEmailPattern(getItemFromStorage('admin-email-pattern', '*.admin.requestflow.app'));
-        _setAgentEmailPattern(getItemFromStorage('agent-email-pattern', '*.agent.requestflow.app'));
-        _setAgentSignupEnabled(getItemFromStorage('agent-signup-enabled', true));
-        _setCustomerSignupEnabled(getItemFromStorage('customer-signup-enabled', true));
         _setInactivityTimeout(getItemFromStorage('inactivity-timeout', 2));
         _setSupportEmail(getItemFromStorage('support-email', ''));
         _setLoadingScreenStyle(getItemFromStorage('loading-screen-style', 'spinner'));
@@ -142,14 +126,14 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setItem('agent-panel-enabled', String(enabled));
     };
 
-    const setCustomerPanelEnabled = (enabled: boolean) => {
-        _setCustomerPanelEnabled(enabled);
-        setItem('customer-panel-enabled', String(enabled));
+    const setClientPanelEnabled = (enabled: boolean) => {
+        _setClientPanelEnabled(enabled);
+        setItem('client-panel-enabled', String(enabled));
     };
 
-    const setCustomerCanSelectProject = (enabled: boolean) => {
-        _setCustomerCanSelectProject(enabled);
-        setItem('customer-can-select-project', String(enabled));
+    const setClientCanSelectProject = (enabled: boolean) => {
+        _setClientCanSelectProject(enabled);
+        setItem('client-can-select-project', String(enabled));
     };
 
     const setAgentCanEditTeam = (enabled: boolean) => {
@@ -161,27 +145,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setExcludeClosedTickets(enabled);
         setItem('exclude-closed-tickets', String(enabled));
     };
-
-    const setAdminEmailPattern = (pattern: string) => {
-        _setAdminEmailPattern(pattern);
-        setItem('admin-email-pattern', pattern);
-    };
-
-    const setAgentEmailPattern = (pattern: string) => {
-        _setAgentEmailPattern(pattern);
-        setItem('agent-email-pattern', pattern);
-    };
     
-    const setAgentSignupEnabled = (enabled: boolean) => {
-        _setAgentSignupEnabled(enabled);
-        setItem('agent-signup-enabled', String(enabled));
-    };
-
-    const setCustomerSignupEnabled = (enabled: boolean) => {
-        _setCustomerSignupEnabled(enabled);
-        setItem('customer-signup-enabled', String(enabled));
-    };
-
     const setInactivityTimeout = (minutes: number) => {
         _setInactivityTimeout(minutes);
         setItem('inactivity-timeout', String(minutes));
@@ -207,22 +171,14 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setEmailNotifications,
         agentPanelEnabled,
         setAgentPanelEnabled,
-        customerPanelEnabled,
-        setCustomerPanelEnabled,
-        customerCanSelectProject,
-        setCustomerCanSelectProject,
+        clientPanelEnabled,
+        setClientPanelEnabled,
+        clientCanSelectProject,
+        setClientCanSelectProject,
         agentCanEditTeam,
         setAgentCanEditTeam,
         excludeClosedTickets,
         setExcludeClosedTickets,
-        adminEmailPattern,
-        setAdminEmailPattern,
-        agentEmailPattern,
-        setAgentEmailPattern,
-        agentSignupEnabled,
-        setAgentSignupEnabled,
-        customerSignupEnabled,
-        setCustomerSignupEnabled,
         inactivityTimeout,
         setInactivityTimeout,
         supportEmail,
