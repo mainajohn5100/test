@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon, AreaChart } from "lucide-react";
 import type { Ticket, Project, User } from "@/lib/data";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { addDays, format, startOfWeek, startOfMonth, startOfYear, isWithinInterval } from "date-fns";
+import { isWithinInterval, startOfYear, startOfMonth, startOfWeek, format } from "date-fns";
 import { differenceInDays } from 'date-fns';
 import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "../ui/date-range-picker";
@@ -30,14 +30,17 @@ function ChartToolbar({ supportedTypes, chartType, setChartType }: { supportedTy
 
   return (
     <div className="flex items-center gap-2">
-      {supportedTypes.map(type => (
-        typeMap[type] && (
+      {supportedTypes.map(type => {
+        const typeInfo = typeMap[type];
+        if (!typeInfo) return null;
+        const Icon = typeInfo.icon;
+        return (
             <Button key={type} size="icon" variant={chartType === type ? 'secondary' : 'ghost'} onClick={() => setChartType(type)} className="h-8 w-8">
-              {/* <typeMap[type]!.icon className="h-4 w-4" /> */}
-              <span className="sr-only">{typeMap[type]!.label}</span>
+              <Icon className="h-4 w-4" />
+              <span className="sr-only">{typeInfo.label}</span>
             </Button>
         )
-      ))}
+      })}
     </div>
   );
 }
@@ -543,7 +546,3 @@ export function TicketVolumePriorityChart({ tickets, dateRange }: { tickets: Tic
         </Card>
     );
 }
-
-    
-
-    
