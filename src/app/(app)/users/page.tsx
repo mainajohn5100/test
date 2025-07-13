@@ -20,7 +20,7 @@ import Link from "next/link";
 export default function UsersPage() {
   const router = useRouter();
   const { user: currentUser } = useAuth();
-  const [users, setUsers] = React.useState([]);
+  const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -44,111 +44,112 @@ export default function UsersPage() {
 
   if (loading || !currentUser) {
     return (
-      
-          
-      
+      <div className="flex h-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   if (currentUser.role !== 'Admin') {
     return (
-      
-          
-              
-              Access Denied
+      <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed shadow-sm p-8 text-center">
+          <div className="flex flex-col items-center justify-center text-center">
+            <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
+            <h2 className="text-2xl font-bold">Access Denied</h2>
+            <p className="text-muted-foreground max-w-sm mt-2">
               You do not have permission to view this page.
-              
-                  Return to Dashboard
-              
-          
-      
+            </p>
+            <Link href="/dashboard" passHref>
+                <Button className="mt-6">Return to Dashboard</Button>
+            </Link>
+          </div>
+      </div>
     );
   }
 
   return (
-    
-      
-        
-            
-                User Accounts Management
-                View all user accounts in the system. New users can be created via the signup page.
-            
-        
-        
-            
-                
-                    Users
-                    Here is a list of all users in the system. Click a user to view their profile.
-                
-                
-                    
-                        
-                            
-                            
-                            
-                        
-                        
-                            
-                                
-                                    
-                                        
-                                            
-                                            
-                                        
-                                        
-                                    
-                                
-                                
-                                
-                            
-                            
-                                
-                                
-                            
-                            
-                                
-                                
-                            
-                        
-                    
-                    
-                        
-                            
-                                
-                                    
-                                        
-                                            
-                                            
-                                        
-                                        
-                                            
-                                        
-                                        
-                                    
-                                
-                                
-                                
-                            
-                            
-                                
-                                    
-                                
-                            
-                            
-                                
-                            
-                        
-                    
-                    
-                        
-                            
-                                No users found.
-                            
-                        
-                    
-                
-            
-        
-    
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="User Accounts Management"
+        description="View all user accounts in the system. New users can be created via the signup page."
+      />
+      <Card>
+        <CardHeader>
+          <CardTitle>Users</CardTitle>
+          <CardDescription>
+            Here is a list of all users in the system. Click a user to view their profile.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <div className="flex items-center gap-4">
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                          <div className="space-y-1">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-32" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                      </TableCell>
+                      <TableCell>
+                         <Skeleton className="h-4 w-12" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : users.length > 0 ? (
+                  users.map((user) => (
+                    <TableRow
+                      key={user.id}
+                      onClick={() => router.push(`/users/${user.id}`)}
+                      className="cursor-pointer"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-4">
+                          <Avatar>
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{user.role}</Badge>
+                      </TableCell>
+                       <TableCell>
+                        Active
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                      No users found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
