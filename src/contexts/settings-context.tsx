@@ -44,6 +44,8 @@ interface SettingsContextType {
   setCustomerSignupEnabled: (enabled: boolean) => void;
   inactivityTimeout: number;
   setInactivityTimeout: (minutes: number) => void;
+  supportEmail: string;
+  setSupportEmail: (email: string) => void;
   INACTIVITY_TIMEOUT_OPTIONS: typeof INACTIVITY_TIMEOUT_OPTIONS;
   loadingScreenStyle: LoadingScreenStyle;
   setLoadingScreenStyle: (style: LoadingScreenStyle) => void;
@@ -88,6 +90,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [agentSignupEnabled, _setAgentSignupEnabled] = useState(true);
     const [customerSignupEnabled, _setCustomerSignupEnabled] = useState(true);
     const [inactivityTimeout, _setInactivityTimeout] = useState(2); // Default to 2 minutes
+    const [supportEmail, _setSupportEmail] = useState('');
     const [loadingScreenStyle, _setLoadingScreenStyle] = useState<LoadingScreenStyle>('spinner');
 
 
@@ -106,6 +109,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setAgentSignupEnabled(getItemFromStorage('agent-signup-enabled', true));
         _setCustomerSignupEnabled(getItemFromStorage('customer-signup-enabled', true));
         _setInactivityTimeout(getItemFromStorage('inactivity-timeout', 2));
+        _setSupportEmail(getItemFromStorage('support-email', ''));
         _setLoadingScreenStyle(getItemFromStorage('loading-screen-style', 'spinner'));
 
 
@@ -182,6 +186,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setInactivityTimeout(minutes);
         setItem('inactivity-timeout', String(minutes));
     };
+    
+    const setSupportEmail = (email: string) => {
+        _setSupportEmail(email);
+        setItem('support-email', email);
+    };
 
     const setLoadingScreenStyle = (style: LoadingScreenStyle) => {
         _setLoadingScreenStyle(style);
@@ -216,6 +225,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setCustomerSignupEnabled,
         inactivityTimeout,
         setInactivityTimeout,
+        supportEmail,
+        setSupportEmail,
         INACTIVITY_TIMEOUT_OPTIONS,
         loadingScreenStyle,
         setLoadingScreenStyle,

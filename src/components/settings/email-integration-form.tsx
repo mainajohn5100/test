@@ -6,10 +6,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Mail } from 'lucide-react';
+import { Mail, Copy } from 'lucide-react';
+import { useSettings } from '@/contexts/settings-context';
+import { useAuth } from '@/contexts/auth-context';
+import { Button } from '../ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export function EmailIntegrationForm() {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const { supportEmail, setSupportEmail } = useSettings();
     const [isEnabled, setIsEnabled] = React.useState(false);
+    
+    // Generate a unique, stable alias for the user's inbound email
+    const inboundAlias = React.useMemo(() => {
+      if (!user) return 'your-unique-alias';
+      // Simple hash to create a somewhat unique but stable alias from user ID
+      const hash = user.id.split('').reduce((acc, char) => {
+        return char.charCodeAt(0) + ((acc << 5) - acc);
+      }, 0);
+      return `inbound-${(hash & 0x7FFFFFFF).toString(16)}`;
+    }, [user]);
+
+    const inboundAddress = `${inboundAlias}@inbound.requestflow.app`;
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(inboundAddress).then(() => {
+            toast({ title: 'Copied to clipboard!', description: 'The inbound email address has been copied.' });
+        }, (err) => {
+            toast({ title: 'Failed to copy', description: 'Could not copy the address to your clipboard.', variant: 'destructive' });
+            console.error('Could not copy text: ', err);
+        });
+    };
+
+    const effectiveSupportEmail = supportEmail || user?.email;
 
     return (
         <Card>
@@ -36,20 +66,42 @@ export function EmailIntegrationForm() {
                         aria-label="Toggle email-to-ticket integration"
                     />
                 </div>
+
                 <div className="space-y-2">
-                    <Label htmlFor="support-email">Your Support Email Address</Label>
+                    <Label htmlFor="support-email">Your Public Support Email</Label>
                     <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
                             id="support-email" 
                             type="email" 
-                            readOnly 
-                            value="support@requestflow.app"
-                            className="pl-9 bg-muted/50"
+                            placeholder={user?.email || "e.g., support@yourcompany.com"}
+                            value={supportEmail}
+                            onChange={(e) => setSupportEmail(e.target.value)}
+                            className="pl-9"
                         />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        This is your dedicated email address. Emails sent here will become tickets. This address cannot be changed at this time.
+                        Enter your company's support email. If left blank, your account email ({user?.email}) will be used.
+                    </p>
+                </div>
+
+                 <div className="space-y-2">
+                    <Label htmlFor="forwarding-address">Your Unique Forwarding Address</Label>
+                    <div className="relative">
+                        <Input 
+                            id="forwarding-address" 
+                            type="text" 
+                            readOnly 
+                            value={inboundAddress}
+                            className="pr-10 bg-muted/50"
+                        />
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2" onClick={copyToClipboard}>
+                            <Copy className="h-4 w-4" />
+                            <span className="sr-only">Copy</span>
+                        </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        To complete setup, configure your support inbox (<span className="font-semibold text-foreground">{effectiveSupportEmail}</span>) to automatically forward all incoming mail to this unique address.
                     </p>
                 </div>
             </CardContent>
