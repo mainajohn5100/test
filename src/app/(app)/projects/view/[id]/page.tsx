@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound, useParams, useRouter } from "next/navigation";
@@ -164,6 +163,7 @@ export default function ViewProjectPage() {
         const result = await updateProjectAction(project.id, { team: newTeam });
         if (result.success) {
             toast({ title: "Team updated successfully!" });
+            // Manually update local state to reflect the change immediately
             setProject(prev => prev ? { ...prev, team: newTeam } : null);
         } else {
             toast({ title: "Error", description: result.error, variant: 'destructive' });
@@ -322,134 +322,106 @@ export default function ViewProjectPage() {
                                       {Object.keys(projectStatusVariantMap).map(status => (
                                           <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as any)} disabled={isUpdating}>
                                               {status}
-                                          DropdownMenuItem>
+                                          </DropdownMenuItem>
                                       ))}
-                                  DropdownMenuContent>
+                                  </DropdownMenuContent>
                               )}
                           </DropdownMenu>
                       </div>
-                       
-                       
-                          
-                              
-                                  
-                                      
-                                          
-                                              
-                                              
-                                                  
-                                              
-                                          
-                                      
-                                  
-                              
-                          
-                      
-                      
-
-                          
-                              
-                                  
-                                      
-                                          
-                                              
-                                              
-                                                  
-                                              
-                                          
-                                      
-                                  
-                              
-                          
-                      
-                      
-                          
-                      
-                       
-
-                      
-                          
-                            
-                                    Add Team Members
-                                    
-                                        
-                                            
-                                                 Add Team Members
-                                             
-                                             
-                                                 {assignableUsers.map(u => (
-                                                    
-                                                        {u.name}
-                                                    
-                                                 ))}
-                                             
-                                         
-                                     
-                                 
-                             
-                          
-                          
-                              
-                                  
-                                      
-                                          
-                                              
-                                                  
-                                                      
-                                                          
-                                                          
-                                                      
-                                                  
-                                              
-                                          
-                                      
-                                  
-                              
-                          
-                      
-                      
-                       
-
-                       
-                          
-                              
-                                  
-                              
-                          
-                      
-                       
-                          
-                              
-                                  
-                              
-                          
-                      
-                  
-              
-          
+                      <Separator />
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Project Manager</h4>
+                        {manager ? (
+                          <Link href={`/users/${manager.id}`} className="flex items-center gap-2 p-1 -ml-1 rounded-md hover:bg-accent w-fit">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={manager.avatar} />
+                                <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-semibold">{manager.name}</p>
+                                <p className="text-xs text-muted-foreground">{manager.email}</p>
+                              </div>
+                          </Link>
+                        ) : (<p className="text-sm text-muted-foreground">Not assigned</p>)}
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-sm font-medium">Team Members</h4>
+                            {canEditTeam && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button size="sm" variant="outline" className="h-7">
+                                            <PlusCircle className="mr-2 h-3.5 w-3.5"/>
+                                            Add
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuLabel>Add Team Members</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        {assignableUsers.map(u => (
+                                           <DropdownMenuCheckboxItem
+                                                key={u.id}
+                                                checked={project.team?.includes(u.id)}
+                                                onCheckedChange={(checked) => handleTeamChange(u.id, checked)}
+                                                disabled={isUpdating}
+                                            >
+                                                {u.name}
+                                            </DropdownMenuCheckboxItem>
+                                         ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                          {teamMembers.length > 0 ? (
+                            <TooltipProvider>
+                              <div className="flex flex-wrap gap-2">
+                                {teamMembers.map(member => (
+                                  <Tooltip key={member.id}>
+                                    <TooltipTrigger asChild>
+                                      <Link href={`/users/${member.id}`}>
+                                        <Avatar>
+                                          <AvatarImage src={member.avatar} />
+                                          <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                      </Link>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{member.name}</TooltipContent>
+                                  </Tooltip>
+                                ))}
+                              </div>
+                            </TooltipProvider>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No team members assigned.</p>
+                          )}
+                        </div>
+                      </div>
+                  </CardContent>
+              </Card>
+          </div>
+        </div>
         
-      
-        
-            
-                
-                    Are you absolutely sure?
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete this
                     project and remove its data from our servers.
-                
-            
-            
-                
-                    Cancel
-                    
-                        
-                            
-                            
-                        
-                        Continue
-                    
-                
-            
-        
-    
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    onClick={handleDeleteProject}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    disabled={isDeleting}
+                >
+                    {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : null}
+                    Continue
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </div>
+  </AlertDialog>
   );
 }
