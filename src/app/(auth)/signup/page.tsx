@@ -122,6 +122,10 @@ export default function SignupPage() {
 
       const initials = name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
       const avatar = `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;
+      
+      // For multi-tenancy, an Admin creates a new organization.
+      // We use the admin's user ID as the organization ID for simplicity.
+      const organizationId = role === 'Admin' ? user.uid : 'default_org'; // Non-admins would need an invite flow in a real app
 
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
@@ -129,6 +133,7 @@ export default function SignupPage() {
         email,
         role,
         avatar,
+        organizationId,
         phone: phone || null,
         country: country || null,
         city: city || null,
@@ -187,12 +192,15 @@ export default function SignupPage() {
         const initials = user.displayName?.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() || '??';
         const avatar = user.photoURL || `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;
         
+        const organizationId = role === 'Admin' ? user.uid : 'default_org';
+
         await setDoc(doc(db, 'users', user.uid), {
           id: user.uid,
           name: user.displayName,
           email: user.email,
           role: role,
           avatar,
+          organizationId,
           activityIsPublic: false,
         });
       }

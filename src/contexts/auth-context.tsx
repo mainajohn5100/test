@@ -27,11 +27,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchAppUser = useCallback(async (fbUser: FirebaseUser | null) => {
     if (fbUser) {
-      const userDocRef = doc(db, 'users', fbUser.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        setUser({ id: userDoc.id, ...userDoc.data() } as AppUser);
-      } else {
+      try {
+        const userDocRef = doc(db, 'users', fbUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          setUser({ id: userDoc.id, ...userDoc.data() } as AppUser);
+        } else {
+          // This case can happen if the user exists in Auth but not in Firestore.
+          // This might be a sign of an incomplete signup.
+          console.warn("User exists in Firebase Auth but not in Firestore.", fbUser.uid);
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Error fetching app user from Firestore:", error);
         setUser(null);
       }
     } else {
@@ -51,8 +59,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [fetchAppUser]);
   
   const refreshUser = useCallback(async () => {
-    await fetchAppUser(firebaseUser);
-  }, [firebaseUser, fetchAppUser]);
+    // Re-fetch the currently signed-in user from auth to ensure it's fresh
+    const currentFbUser = auth.currentUser;
+    setFirebaseUser(currentFbUser);
+    await fetchAppUser(currentFbUser);
+  }, [fetchAppUser]);
 
   const value = { firebaseUser, user, loading, refreshUser };
 

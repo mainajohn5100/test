@@ -2,11 +2,11 @@
 'use server';
 
 import { z } from 'zod';
-import { addTicket, createNotification, getUserByName, updateTicket } from '@/lib/firestore';
+import { addTicket, createNotification, getUserByName, updateTicket, getUserById } from '@/lib/firestore';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { ticketSchema } from './schema';
-import type { Ticket, Attachment } from '@/lib/data';
+import type { Ticket, Attachment, User } from '@/lib/data';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -15,6 +15,7 @@ export async function createTicketAction(formData: FormData) {
     title: formData.get('title') as string,
     description: formData.get('description') as string,
     reporter: formData.get('reporter') as string,
+    reporterId: formData.get('reporterId') as string,
     email: formData.get('email') as string,
     priority: formData.get('priority') as 'low' | 'medium' | 'high' | 'urgent',
     project: formData.get('project') as string,
@@ -31,7 +32,7 @@ export async function createTicketAction(formData: FormData) {
     };
   }
   
-  const { title, description, reporter, email, priority, project, assignee, tags } = validatedFields.data;
+  const { title, description, reporter, reporterId, email, priority, project, assignee, tags } = validatedFields.data;
   
   const priorityMap: { [key: string]: Ticket['priority'] } = {
     low: 'Low',
@@ -39,6 +40,11 @@ export async function createTicketAction(formData: FormData) {
     high: 'High',
     urgent: 'Urgent',
   };
+
+  const reporterUser = await getUserById(reporterId);
+  if (!reporterUser) {
+    return { error: 'Could not find the user creating the ticket.' };
+  }
 
   const finalAssignee = (!assignee || assignee === 'unassigned') ? 'Unassigned' : assignee;
   const finalProject = (!project || project === 'none') ? null : project;
@@ -54,6 +60,7 @@ export async function createTicketAction(formData: FormData) {
     assignee: finalAssignee,
     project: finalProject,
     source,
+    organizationId: reporterUser.organizationId,
   };
 
   let newTicketId: string;

@@ -70,6 +70,7 @@ export default function NewTicketPage() {
       title: "",
       description: "",
       reporter: "",
+      reporterId: "",
       email: "",
       priority: "medium",
       project: "",
@@ -81,6 +82,7 @@ export default function NewTicketPage() {
   React.useEffect(() => {
     if (user) {
       form.setValue('reporter', user.name);
+      form.setValue('reporterId', user.id);
       form.setValue('email', user.email);
     }
   }, [user, form]);

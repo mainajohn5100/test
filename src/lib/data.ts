@@ -20,6 +20,7 @@ export type Ticket = {
   project: string | null;
   attachments?: Attachment[];
   source?: 'Project' | 'Customer Inquiry' | 'Internal' | 'Partner' | 'Vendor' | 'General Inquiry';
+  organizationId: string;
 };
 
 export type TicketConversation = {
@@ -42,6 +43,7 @@ export type User = {
   dob?: string; // ISO Date string
   gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
   activityIsPublic: boolean;
+  organizationId: string;
 };
 
 export type Project = {
@@ -55,6 +57,7 @@ export type Project = {
   createdAt: string;
   creatorId: string;
   ticketsEnabled?: boolean;
+  organizationId: string;
 }
 
 export type Notification = {
@@ -81,7 +84,8 @@ export const users: User[] = [
         zipCode: '10001',
         dob: '1985-05-15',
         gender: 'Male',
-        activityIsPublic: false
+        activityIsPublic: false,
+        organizationId: 'org_1'
     },
     { 
         id: 'usr_2', 
@@ -95,10 +99,11 @@ export const users: User[] = [
         zipCode: '28001',
         dob: '1992-11-20',
         gender: 'Female',
-        activityIsPublic: true
+        activityIsPublic: true,
+        organizationId: 'org_1'
     },
-    { id: 'usr_3', name: 'James Smith', email: 'james.s@example.com', avatar: 'https://placehold.co/32x32/C2DFFF/4A4A4A.png?text=JS', role: 'Agent', activityIsPublic: false },
-    { id: 'usr_4', name: 'Priya Patel', email: 'priya.p@example.com', avatar: 'https://placehold.co/32x32/FFE6B3/4A4A4A.png?text=PP', role: 'Customer', activityIsPublic: false },
+    { id: 'usr_3', name: 'James Smith', email: 'james.s@example.com', avatar: 'https://placehold.co/32x32/C2DFFF/4A4A4A.png?text=JS', role: 'Agent', activityIsPublic: false, organizationId: 'org_1' },
+    { id: 'usr_4', name: 'Priya Patel', email: 'priya.p@example.com', avatar: 'https://placehold.co/32x32/FFE6B3/4A4A4A.png?text=PP', role: 'Customer', activityIsPublic: false, organizationId: 'org_1' },
 ];
 
 export const tickets: Ticket[] = [
@@ -116,6 +121,7 @@ export const tickets: Ticket[] = [
     tags: ['bug', 'safari', 'login'],
     project: 'Website Redesign',
     source: 'Project',
+    organizationId: 'org_1',
   },
   {
     id: 'TKT-002',
@@ -130,6 +136,7 @@ export const tickets: Ticket[] = [
     tags: ['performance', 'api', 'backend'],
     project: 'API V2',
     source: 'Project',
+    organizationId: 'org_1',
   },
   {
     id: 'TKT-003',
@@ -145,6 +152,7 @@ export const tickets: Ticket[] = [
     tags: ['feature-request', 'reports', 'csv'],
     project: 'Reporting Module',
     source: 'Project',
+    organizationId: 'org_1',
   },
   {
     id: 'TKT-004',
@@ -158,7 +166,8 @@ export const tickets: Ticket[] = [
     updatedAt: '2024-05-04T18:00:00Z',
     tags: ['documentation', 'legal'],
     project: 'Website Redesign',
-    source: 'Internal'
+    source: 'Internal',
+    organizationId: 'org_1',
   },
   {
     id: 'TKT-005',
@@ -174,6 +183,7 @@ export const tickets: Ticket[] = [
     tags: ['crash', 'android', 'mobile-app'],
     project: 'Mobile App Q3',
     source: 'Project',
+    organizationId: 'org_1',
   },
   {
     id: 'TKT-006',
@@ -188,6 +198,7 @@ export const tickets: Ticket[] = [
     tags: ['email', 'outage', 'backend'],
     project: null,
     source: 'Internal',
+    organizationId: 'org_1',
   },
   {
     id: 'TKT-007',
@@ -202,14 +213,15 @@ export const tickets: Ticket[] = [
     updatedAt: '2024-04-20T11:45:00Z',
     tags: ['onboarding', 'feature-request', 'ux'],
     project: null,
-    source: 'Internal'
+    source: 'Internal',
+    organizationId: 'org_1',
   }
 ];
 
 export const projects: Project[] = [
-  { id: 'proj_1', name: 'Website Redesign', description: 'A complete overhaul of the public-facing website with a new design system and CMS.', status: 'Active', manager: 'usr_1', team: ['usr_2', 'usr_3'], deadline: '2024-07-30', createdAt: '2024-01-15', creatorId: 'usr_1', ticketsEnabled: true },
-  { id: 'proj_2', name: 'API V2', description: 'Development of the next version of our public API with new endpoints and improved performance.', status: 'Active', manager: 'usr_1', team: ['usr_1', 'usr_2'], deadline: '2024-06-15', createdAt: '2024-02-01', creatorId: 'usr_1', ticketsEnabled: true },
-  { id: 'proj_3', name: 'Reporting Module', description: 'A new module for generating and exporting custom reports for our enterprise customers.', status: 'On Hold', manager: 'usr_3', team: ['usr_3'], deadline: '2024-08-20', createdAt: '2024-03-10', creatorId: 'usr_1', ticketsEnabled: false },
-  { id: 'proj_4', name: 'Mobile App Q3', description: 'Adding new features to the mobile app for the third quarter, including offline support.', status: 'Completed', manager: 'usr_2', team: ['usr_2'], deadline: '2024-03-31', createdAt: '2023-12-01', creatorId: 'usr_1', ticketsEnabled: true },
-  { id: 'proj_5', name: 'New Project', description: 'A placeholder for a new and exciting upcoming project.', status: 'New', manager: 'usr_2', team: ['usr_1', 'usr_3'], deadline: '2025-07-08', createdAt: '2024-05-20', creatorId: 'usr_1', ticketsEnabled: true },
+  { id: 'proj_1', name: 'Website Redesign', description: 'A complete overhaul of the public-facing website with a new design system and CMS.', status: 'Active', manager: 'usr_1', team: ['usr_2', 'usr_3'], deadline: '2024-07-30', createdAt: '2024-01-15', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1' },
+  { id: 'proj_2', name: 'API V2', description: 'Development of the next version of our public API with new endpoints and improved performance.', status: 'Active', manager: 'usr_1', team: ['usr_1', 'usr_2'], deadline: '2024-06-15', createdAt: '2024-02-01', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1' },
+  { id: 'proj_3', name: 'Reporting Module', description: 'A new module for generating and exporting custom reports for our enterprise customers.', status: 'On Hold', manager: 'usr_3', team: ['usr_3'], deadline: '2024-08-20', createdAt: '2024-03-10', creatorId: 'usr_1', ticketsEnabled: false, organizationId: 'org_1' },
+  { id: 'proj_4', name: 'Mobile App Q3', description: 'Adding new features to the mobile app for the third quarter, including offline support.', status: 'Completed', manager: 'usr_2', team: ['usr_2'], deadline: '2024-03-31', createdAt: '2023-12-01', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1' },
+  { id: 'proj_5', name: 'New Project', description: 'A placeholder for a new and exciting upcoming project.', status: 'New', manager: 'usr_2', team: ['usr_1', 'usr_3'], deadline: '2025-07-08', createdAt: '2024-05-20', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1' },
 ];

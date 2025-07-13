@@ -2,12 +2,18 @@
 'use server';
 
 import { z } from 'zod';
-import { addProject, createNotification } from '@/lib/firestore';
+import { addProject, createNotification, getUserById } from '@/lib/firestore';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { projectSchema } from './schema';
 
 export async function createProjectAction(values: z.infer<typeof projectSchema>) {
+  
+  const creator = await getUserById(values.creatorId);
+  if (!creator) {
+    return { error: 'Could not find the user creating the project.' };
+  }
+
   const projectData = {
     name: values.name,
     description: values.description || '',
@@ -15,6 +21,7 @@ export async function createProjectAction(values: z.infer<typeof projectSchema>)
     team: values.team || [],
     deadline: values.deadline,
     creatorId: values.creatorId,
+    organizationId: creator.organizationId,
   };
 
   let newProjectId: string;
