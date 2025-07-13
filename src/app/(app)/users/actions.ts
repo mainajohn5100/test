@@ -2,13 +2,14 @@
 'use server';
 
 import { z } from 'zod';
-import { updateUser as updateFirestoreUser, createUserInAuth, createUserInFirestore } from '@/lib/firestore';
+import { updateUser as updateFirestoreUser, createUserInAuth, createUserInFirestore, setAuthUserClaims } from '@/lib/firestore';
 import { revalidatePath } from 'next/cache';
 import { storage, auth } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import type { User } from '@/lib/data';
 import { updateProfile, verifyBeforeUpdateEmail, updatePassword as updateAuthPassword } from 'firebase/auth';
 import { userCreateSchema } from './schema';
+import { getUserById } from '@/lib/firestore';
 
 export async function createUserAction(values: z.infer<typeof userCreateSchema>, creatorId: string) {
     const validatedFields = userCreateSchema.safeParse(values);
@@ -20,18 +21,19 @@ export async function createUserAction(values: z.infer<typeof userCreateSchema>,
     const { name, email, password, role } = validatedFields.data;
 
     try {
-        const creatorUser = auth.currentUser;
-        if (!creatorUser || creatorId !== creatorUser.uid) {
-            return { error: 'Unauthorized: You can only create users for your own organization.' };
+        const creatorUser = await getUserById(creatorId);
+        if (!creatorUser || !creatorUser.organizationId) {
+            return { error: 'Could not determine your organization to create a new user.' };
         }
         
-        const orgId = (await (await creatorUser.getIdTokenResult()).claims.organizationId) as string;
-
-        if (!orgId) {
-             return { error: 'Could not determine your organization.' };
-        }
+        const orgId = creatorUser.organizationId;
         
         const newUserId = await createUserInAuth(email, password);
+        
+        await setAuthUserClaims(newUserId, {
+            organizationId: orgId,
+            role: role,
+        });
 
         const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         const avatar = `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=${initials}`;

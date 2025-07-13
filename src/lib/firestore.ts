@@ -3,7 +3,7 @@ import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation } from './data';
 import { cache } from 'react';
-import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -370,11 +370,11 @@ export const getUserByEmail = cache(async (email: string): Promise<User | null> 
 });
 
 export async function createUserInAuth(email: string, password: string):Promise<string> {
-    // This is a simplified example. In a real app, this should be done
-    // through a secure backend with the Firebase Admin SDK.
-    // Creating users client-side is generally not recommended for production.
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // We must be signed out to create a new user this way on the client.
+        // In a real app, this should be an admin-only server action.
+        const tempAuth = auth;
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
         return userCredential.user.uid;
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
@@ -563,4 +563,32 @@ export async function markAllUserNotificationsAsRead(userId: string): Promise<vo
         console.error("Error marking all notifications as read:", error);
         throw new Error("Failed to mark all notifications as read.");
     }
+}
+
+
+// Functions for Organization and Auth Claims
+// IMPORTANT: In a production app, setAuthUserClaims should be a trusted server-side operation (e.g., Firebase Function)
+// as it grants permissions. It is simulated here for prototype purposes.
+
+export async function createOrganization(name: string): Promise<string> {
+    try {
+        const docRef = await addDoc(collection(db, 'organizations'), {
+            name,
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error creating organization:", error);
+        throw new Error("Failed to create organization.");
+    }
+}
+
+export async function setAuthUserClaims(uid: string, claims: object): Promise<void> {
+    console.log(`[SIMULATED] Setting custom claims for user ${uid}:`, claims);
+    console.log("In a production environment, this would be a call to a secure Firebase Function.");
+    // This is where you would call a Firebase Function to set claims using the Admin SDK.
+    // Example:
+    // const setClaimsFunction = httpsCallable(functions, 'setCustomClaims');
+    // await setClaimsFunction({ uid, claims });
+    return Promise.resolve();
 }

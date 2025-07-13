@@ -108,7 +108,10 @@ export default function LoginPage() {
         </CardContent>
          <CardFooter className="flex flex-col gap-4">
             <p className="text-sm text-center text-muted-foreground">
-              Contact your administrator if you have trouble logging in.
+              Don&apos;t have an account?{' '}
+              <Link href="/signup" className="font-semibold text-primary hover:underline">
+                Sign up
+              </Link>
             </p>
         </CardFooter>
       </Card>
