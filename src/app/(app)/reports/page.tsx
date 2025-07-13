@@ -20,6 +20,7 @@ export default function ReportsPage() {
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
+  const [activeTab, setActiveTab] = React.useState("general");
 
   React.useEffect(() => {
     if (user) {
@@ -70,26 +71,27 @@ export default function ReportsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-        <PageHeader title="Reports" description="Analyze trends and performance across your helpdesk.">
-            <Tabs defaultValue="general" className="space-y-6">
-                <TabsList className="h-auto flex-wrap justify-start">
-                    <TabsTrigger value="general">General</TabsTrigger>
-                    <TabsTrigger value="agent-performance">Agent Performance</TabsTrigger>
-                    <TabsTrigger value="long-term-trends">Long-Term Trends</TabsTrigger>
-                </TabsList>
-            </Tabs>
-        </PageHeader>
-        <Tabs defaultValue="general" className="space-y-6">
-            <TabsContent value="general">
-                <GeneralReportDashboard tickets={tickets} projects={projects} users={users} />
-            </TabsContent>
-            <TabsContent value="agent-performance">
-                <AgentPerformanceCharts tickets={tickets} agents={users} />
-            </TabsContent>
-            <TabsContent value="long-term-trends">
-                <LongTermTrendsCharts tickets={tickets} />
-            </TabsContent>
+      <PageHeader title="Reports" description="Analyze trends and performance across your helpdesk.">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="h-auto flex-wrap justify-start">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="agent-performance">Agent Performance</TabsTrigger>
+            <TabsTrigger value="long-term-trends">Long-Term Trends</TabsTrigger>
+          </TabsList>
         </Tabs>
+      </PageHeader>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsContent value="general">
+          <GeneralReportDashboard tickets={tickets} projects={projects} users={users} />
+        </TabsContent>
+        <TabsContent value="agent-performance">
+          <AgentPerformanceCharts tickets={tickets} agents={users} />
+        </TabsContent>
+        <TabsContent value="long-term-trends">
+          <LongTermTrendsCharts tickets={tickets} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

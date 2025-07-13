@@ -1,4 +1,5 @@
 
+
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation } from './data';
@@ -70,9 +71,9 @@ export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
     const ticketsCol = collection(db, 'tickets');
     const orgQuery = where("organizationId", "==", user.organizationId);
     
-    // For clients, show all tickets from their org. For agents, only assigned.
+    // For clients, show only tickets they reported. For agents, only assigned.
     if (user.role === 'Client') {
-      const q = query(ticketsCol, orgQuery);
+      const q = query(ticketsCol, orgQuery, where("reporter", "==", user.name));
       const ticketSnapshot = await getDocs(q);
       return snapshotToData<Ticket>(ticketSnapshot);
     }
@@ -96,9 +97,9 @@ export const getTicketsByStatus = cache(async (status: string, user: User): Prom
     const orgQuery = where("organizationId", "==", user.organizationId);
     const statusQuery = status !== 'all' ? [where("status", "==", status)] : [];
     
-    // For clients, show all tickets from their org. For agents, only assigned.
+    // For clients, show only tickets they reported.
     if (user.role === 'Client') {
-      const q = query(ticketsCol, orgQuery, ...statusQuery);
+      const q = query(ticketsCol, orgQuery, where("reporter", "==", user.name), ...statusQuery);
       const ticketSnapshot = await getDocs(q);
       return snapshotToData<Ticket>(ticketSnapshot);
     }
