@@ -1,7 +1,5 @@
 
-
-
-
+      
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation } from './data';
@@ -72,17 +70,20 @@ export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
     if (!user || !user.organizationId) return [];
     const ticketsCol = collection(db, 'tickets');
     const orgQuery = where("organizationId", "==", user.organizationId);
-    let roleQuery = [];
-
+    
+    // For customers, show all tickets from their org. For agents, only assigned.
     if (user.role === 'Customer') {
-        roleQuery.push(where("reporter", "==", user.name));
-    } else if (user.role === 'Agent') {
-        roleQuery.push(where("assignee", "==", user.name));
+      const q = query(ticketsCol, orgQuery);
+      const ticketSnapshot = await getDocs(q);
+      return snapshotToData<Ticket>(ticketSnapshot);
     }
     
+    // Agent or Admin
+    const roleQuery = user.role === 'Agent' ? [where("assignee", "==", user.name)] : [];
     const ticketQuery = query(ticketsCol, orgQuery, ...roleQuery);
     const ticketSnapshot = await getDocs(ticketQuery);
     return snapshotToData<Ticket>(ticketSnapshot);
+
   } catch (error) {
     console.error("Error fetching tickets:", error);
     return [];
@@ -96,12 +97,14 @@ export const getTicketsByStatus = cache(async (status: string, user: User): Prom
     const orgQuery = where("organizationId", "==", user.organizationId);
     const statusQuery = status !== 'all' ? [where("status", "==", status)] : [];
     
-    let roleQuery = [];
+    // For customers, show all tickets from their org. For agents, only assigned.
     if (user.role === 'Customer') {
-        roleQuery.push(where("reporter", "==", user.name));
-    } else if (user.role === 'Agent') {
-        roleQuery.push(where("assignee", "==", user.name));
+      const q = query(ticketsCol, orgQuery, ...statusQuery);
+      const ticketSnapshot = await getDocs(q);
+      return snapshotToData<Ticket>(ticketSnapshot);
     }
+
+    const roleQuery = user.role === 'Agent' ? [where("assignee", "==", user.name)] : [];
     
     const q = query(ticketsCol, orgQuery, ...statusQuery, ...roleQuery);
     const ticketSnapshot = await getDocs(q);
@@ -352,6 +355,22 @@ export const getUserByName = cache(async (name: string): Promise<User | null> =>
     }
 });
 
+export const getUserByEmail = cache(async (email: string): Promise<User | null> => {
+    try {
+        const usersCol = collection(db, 'users');
+        const q = query(usersCol, where("email", "==", email), limit(1));
+        const userSnapshot = await getDocs(q);
+        if (userSnapshot.empty) {
+            return null;
+        }
+        return docToData<User>(userSnapshot.docs[0]);
+    } catch (error) {
+        console.error("Error fetching user by email:", error);
+        return null;
+    }
+});
+
+
 export async function updateUser(userId: string, userData: Partial<Omit<User, 'id'>>): Promise<void> {
     try {
         const userRef = doc(db, 'users', userId);
@@ -517,3 +536,5 @@ export async function markAllUserNotificationsAsRead(userId: string): Promise<vo
         throw new Error("Failed to mark all notifications as read.");
     }
 }
+
+    
