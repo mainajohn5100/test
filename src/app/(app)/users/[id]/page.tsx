@@ -360,7 +360,7 @@ export default function UserProfilePage() {
               <CardTitle>User Activity</CardTitle>
               <CardDescription>A summary of tickets and projects associated with this user.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               {assignedTickets.length > 0 && (
                 <div>
                   <h3 className="font-medium mb-2">Assigned Tickets ({assignedTickets.length})</h3>
@@ -389,7 +389,7 @@ export default function UserProfilePage() {
                 </div>
               )}
                {reportedTickets.length > 0 && (
-                <div>
+                <div className="mt-4">
                   <h3 className="font-medium mb-2">Reported Tickets ({reportedTickets.length})</h3>
                   <div className="border rounded-md">
                     <Table>
@@ -416,7 +416,7 @@ export default function UserProfilePage() {
                 </div>
               )}
               {managedProjects.length > 0 && (
-                 <div>
+                 <div className="mt-4">
                   <h3 className="font-medium mb-2">Managed Projects ({managedProjects.length})</h3>
                   <div className="border rounded-md">
                      <Table>
@@ -444,3 +444,9 @@ export default function UserProfilePage() {
                 <p className="text-muted-foreground text-center py-4">No activity found for this user.</p>
               )}
             </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
