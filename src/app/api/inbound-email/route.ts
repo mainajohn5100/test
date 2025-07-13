@@ -1,20 +1,31 @@
 
-      
 import { NextResponse } from 'next/server';
-import { addTicket, getUserByName, getUserByEmail } from '@/lib/firestore';
+import { addTicket, getUserByEmail } from '@/lib/firestore';
 import { analyzeEmailForSource } from '@/ai/flows/analyze-email-for-source';
 import { analyzeEmailPriority } from '@/ai/flows/analyze-email-priority';
 import { suggestTags } from '@/ai/flows/suggest-tags';
-import type { Ticket } from '@/lib/data';
+import formData from 'form-data';
+import Mailgun from 'mailgun.js';
 
-// This is a simplified model of what an email service webhook might send.
-// In a real-world scenario, this would be more complex and might include
-// HTML body, headers, and attachment data.
-interface InboundEmailPayload {
-    from: string; // "John Doe <john.doe@example.com>"
-    to: string; // The unique forwarding address like "inbound-alias@inbound.requestflow.app"
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+    username: 'api',
+    key: process.env.MAILGUN_API_KEY || '',
+});
+
+// A more realistic model of the Mailgun webhook payload for parsed emails.
+// See: https://documentation.mailgun.com/en/latest/user_manual.html#routes
+interface MailgunWebhookPayload {
+    sender: string; // "bob@example.com"
+    from: string; // "Bob <bob@example.com>"
+    recipient: string; // The unique forwarding address, "inbound-alias@inbound.requestflow.app"
     subject: string;
-    text: string; // Plain text body of the email
+    'body-plain': string; // Plain text body of the email
+    signature: {
+        timestamp: string;
+        token: string;
+        signature: string;
+    }
 }
 
 // Helper to parse "Name <email@example.com>" into name and email
@@ -26,18 +37,26 @@ function parseFromAddress(from: string): { name: string, email: string } {
     return { name: from, email: from };
 }
 
-
 export async function POST(request: Request) {
   try {
-    // In a production app, you would add a secret key or signature verification
-    // to ensure this endpoint is only called by your trusted email service.
-    // For example:
-    // const secret = request.headers.get('x-webhook-secret');
-    // if (secret !== process.env.EMAIL_WEBHOOK_SECRET) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    const payload = await request.json() as MailgunWebhookPayload;
 
-    const payload: InboundEmailPayload = await request.json();
+    // Verify the webhook signature to ensure it's from Mailgun
+    const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
+    if (!signingKey) {
+        console.error("MAILGUN_WEBHOOK_SIGNING_KEY is not set in environment variables.");
+        return NextResponse.json({ error: 'Webhook signing key is not configured.' }, { status: 500 });
+    }
+
+    const isAuthentic = await mg.webhooks.verifyWebhookSignature({
+      signature: payload.signature.signature,
+      timestamp: payload.signature.timestamp,
+      token: payload.signature.token,
+    });
+    
+    if (!isAuthentic) {
+        return NextResponse.json({ error: 'Unauthentic webhook signature' }, { status: 401 });
+    }
 
     const { name: reporterName, email: reporterEmail } = parseFromAddress(payload.from);
     
@@ -45,7 +64,7 @@ export async function POST(request: Request) {
     const priorityAnalysis = await analyzeEmailPriority({
       fromAddress: reporterEmail,
       subject: payload.subject,
-      body: payload.text,
+      body: payload['body-plain'],
     });
 
     if (priorityAnalysis.isSystemNotification) {
@@ -57,23 +76,24 @@ export async function POST(request: Request) {
     const sourceAnalysis = await analyzeEmailForSource({
         fromAddress: reporterEmail,
         subject: payload.subject,
-        body: payload.text,
+        body: payload['body-plain'],
     });
 
     // Find the user who submitted the ticket to get their organizationId
-    // In a real multi-tenant app, we might look up the org based on the 'to' address.
     const reporterUser = await getUserByEmail(reporterEmail);
     if (!reporterUser) {
-        return NextResponse.json({ error: `User with email ${reporterEmail} not found.` }, { status: 404 });
+        console.warn(`Webhook received for an unknown user: ${reporterEmail}. Ticket will not be created.`);
+        // Respond with a 200 OK to Mailgun so it doesn't retry, but log the issue.
+        return NextResponse.json({ message: `User with email ${reporterEmail} not found.` });
     }
 
     // 3. Suggest tags based on content
-    const tagSuggestions = await suggestTags({ ticketContent: payload.text });
+    const tagSuggestions = await suggestTags({ ticketContent: payload['body-plain'] });
 
     // 4. Create the ticket
     const ticketData = {
       title: payload.subject,
-      description: payload.text,
+      description: payload['body-plain'],
       reporter: reporterName,
       reporterEmail: reporterEmail,
       tags: tagSuggestions.tags || [],
@@ -96,5 +116,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to process inbound email.', details: errorMessage }, { status: 500 });
   }
 }
-
-    
