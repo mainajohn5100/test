@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useTransition } from "react";
@@ -41,9 +42,10 @@ export default function CreateProjectPage() {
   const { user } = useAuth();
 
   React.useEffect(() => {
+    if (!user) return;
     const fetchData = async () => {
       try {
-        const usersData = await getUsers();
+        const usersData = await getUsers(user);
         // Filter for users who can be managers or team members
         setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
       } catch (error) {
@@ -56,7 +58,7 @@ export default function CreateProjectPage() {
       }
     };
     fetchData();
-  }, [toast]);
+  }, [user, toast]);
 
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),

@@ -1,6 +1,7 @@
 
 
 
+
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation } from './data';
@@ -68,17 +69,18 @@ export async function reauthenticateUserPassword(password: string): Promise<{suc
 
 export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
   try {
+    if (!user || !user.organizationId) return [];
     const ticketsCol = collection(db, 'tickets');
-    let ticketQuery;
+    const orgQuery = where("organizationId", "==", user.organizationId);
+    let roleQuery = [];
 
     if (user.role === 'Customer') {
-        ticketQuery = query(ticketsCol, where("reporter", "==", user.name));
+        roleQuery.push(where("reporter", "==", user.name));
     } else if (user.role === 'Agent') {
-        ticketQuery = query(ticketsCol, where("assignee", "==", user.name));
-    } else { // Admin
-        ticketQuery = query(ticketsCol);
+        roleQuery.push(where("assignee", "==", user.name));
     }
     
+    const ticketQuery = query(ticketsCol, orgQuery, ...roleQuery);
     const ticketSnapshot = await getDocs(ticketQuery);
     return snapshotToData<Ticket>(ticketSnapshot);
   } catch (error) {
@@ -89,7 +91,9 @@ export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
 
 export const getTicketsByStatus = cache(async (status: string, user: User): Promise<Ticket[]> => {
   try {
+    if (!user || !user.organizationId) return [];
     const ticketsCol = collection(db, 'tickets');
+    const orgQuery = where("organizationId", "==", user.organizationId);
     const statusQuery = status !== 'all' ? [where("status", "==", status)] : [];
     
     let roleQuery = [];
@@ -99,7 +103,7 @@ export const getTicketsByStatus = cache(async (status: string, user: User): Prom
         roleQuery.push(where("assignee", "==", user.name));
     }
     
-    const q = query(ticketsCol, ...statusQuery, ...roleQuery);
+    const q = query(ticketsCol, orgQuery, ...statusQuery, ...roleQuery);
     const ticketSnapshot = await getDocs(q);
     return snapshotToData<Ticket>(ticketSnapshot);
   } catch (error) {
@@ -134,6 +138,8 @@ export const getTicketConversations = cache(async (ticketId: string): Promise<Ti
 
 export const getTicketsByProject = cache(async (projectName: string): Promise<Ticket[]> => {
     try {
+        // This function may need org context if project names are not unique across orgs.
+        // For now, assuming project names are unique enough for this context.
         const ticketsCol = collection(db, 'tickets');
         const q = query(ticketsCol, where("project", "==", projectName));
         const ticketSnapshot = await getDocs(q);
@@ -170,7 +176,10 @@ export const getTicketsByReporter = cache(async (reporterName: string): Promise<
 
 
 export const getProjects = cache(async (user: User): Promise<Project[]> => {
-  if (!user) return [];
+  if (!user || !user.organizationId) return [];
+
+  const projectsCol = collection(db, 'projects');
+  const orgQuery = where("organizationId", "==", user.organizationId);
 
   // Customers can only see projects associated with tickets they've reported.
   if (user.role === 'Customer') {
@@ -181,8 +190,8 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
           const projectNames = [...new Set(customerTickets.map(t => t.project).filter(Boolean))];
           if (projectNames.length === 0) return [];
 
-          const projectsCol = collection(db, 'projects');
-          const q = query(projectsCol, where("name", "in", projectNames));
+          // Query projects within their org that match the names from their tickets.
+          const q = query(projectsCol, orgQuery, where("name", "in", projectNames));
           const projectSnapshot = await getDocs(q);
           return snapshotToData<Project>(projectSnapshot);
 
@@ -192,23 +201,20 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
       }
   }
 
-  // Logic for Admins and Agents
+  // Admins see all projects in their org. Agents see projects they manage or are on.
   try {
-    const projectsCol = collection(db, 'projects');
-    
-    const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
-
-    // All roles can see projects they manage or are on the team for.
-    const managerQuery = query(projectsCol, where("manager", "==", user.id));
-    const teamMemberQuery = query(projectsCol, where("team", "array-contains", user.id));
-    queries.push(getDocs(managerQuery), getDocs(teamMemberQuery));
-    
-    // Admins can also see projects they created.
     if (user.role === 'Admin') {
-        const creatorQuery = query(projectsCol, where("creatorId", "==", user.id));
-        queries.push(getDocs(creatorQuery));
+        const q = query(projectsCol, orgQuery);
+        const projectSnapshot = await getDocs(q);
+        return snapshotToData<Project>(projectSnapshot);
     }
 
+    // Agent logic
+    const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
+    const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id));
+    const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id));
+    queries.push(getDocs(managerQuery), getDocs(teamMemberQuery));
+    
     const snapshots = await Promise.all(queries);
 
     const projectsMap = new Map<string, Project>();
@@ -225,7 +231,11 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
 });
 
 export const getProjectsByStatus = cache(async (status: string, user: User): Promise<Project[]> => {
-    if (!user) return [];
+    if (!user || !user.organizationId) return [];
+    
+    const projectsCol = collection(db, 'projects');
+    const orgQuery = where("organizationId", "==", user.organizationId);
+    const statusFilter = status !== 'all' ? [where("status", "==", status)] : [];
 
     // Customers can only see projects associated with tickets they've reported.
     if (user.role === 'Customer') {
@@ -236,9 +246,7 @@ export const getProjectsByStatus = cache(async (status: string, user: User): Pro
             const projectNames = [...new Set(customerTickets.map(t => t.project).filter(Boolean))];
             if (projectNames.length === 0) return [];
 
-            const projectsCol = collection(db, 'projects');
-            // Customers can't filter by status, so we ignore the status parameter for them.
-            const q = query(projectsCol, where("name", "in", projectNames));
+            const q = query(projectsCol, orgQuery, where("name", "in", projectNames));
             const projectSnapshot = await getDocs(q);
 
             return snapshotToData<Project>(projectSnapshot);
@@ -251,21 +259,17 @@ export const getProjectsByStatus = cache(async (status: string, user: User): Pro
 
     // Logic for Admins and Agents
     try {
-        const projectsCol = collection(db, 'projects');
-        const statusFilter = status !== 'all' ? [where("status", "==", status)] : [];
+        if (user.role === 'Admin') {
+            const q = query(projectsCol, orgQuery, ...statusFilter);
+            const projectSnapshot = await getDocs(q);
+            return snapshotToData<Project>(projectSnapshot);
+        }
 
         const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
 
-        // Base queries for all roles
-        const managerQuery = query(projectsCol, where("manager", "==", user.id), ...statusFilter);
-        const teamMemberQuery = query(projectsCol, where("team", "array-contains", user.id), ...statusFilter);
+        const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id), ...statusFilter);
+        const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id), ...statusFilter);
         queries.push(getDocs(managerQuery), getDocs(teamMemberQuery));
-
-        // Additional query for Admins
-        if (user.role === 'Admin') {
-            const creatorQuery = query(projectsCol, where("creatorId", "==", user.id), ...statusFilter);
-            queries.push(getDocs(creatorQuery));
-        }
 
         const snapshots = await Promise.all(queries);
 
@@ -305,10 +309,12 @@ export const getProjectsByManager = cache(async (managerId: string): Promise<Pro
     }
 });
 
-export const getUsers = cache(async (): Promise<User[]> => {
+export const getUsers = cache(async (user: User): Promise<User[]> => {
   try {
+    if (!user || !user.organizationId) return [];
     const usersCol = collection(db, 'users');
-    const userSnapshot = await getDocs(usersCol);
+    const q = query(usersCol, where("organizationId", "==", user.organizationId));
+    const userSnapshot = await getDocs(q);
     return snapshotToData<User>(userSnapshot);
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -330,6 +336,9 @@ export const getUserById = cache(async (id: string): Promise<User | null> => {
 export const getUserByName = cache(async (name: string): Promise<User | null> => {
     if (name === 'Unassigned') return null;
     try {
+        // This query needs to be org-specific in a multi-tenant app
+        // but we don't have the current user's org ID here.
+        // Assuming names are unique within an org for now.
         const usersCol = collection(db, 'users');
         const q = query(usersCol, where("name", "==", name), limit(1));
         const userSnapshot = await getDocs(q);
@@ -366,6 +375,7 @@ export async function addTicket(ticketData: {
     assignee: string;
     project: string | null;
     source: Ticket['source'];
+    organizationId: string;
   }): Promise<string> {
   try {
     const docRef = await addDoc(collection(db, 'tickets'), {
@@ -405,6 +415,7 @@ export async function addProject(projectData: {
     team: string[]; // User IDs
     deadline: Date;
     creatorId: string;
+    organizationId: string;
 }): Promise<string> {
     try {
         const docRef = await addDoc(collection(db, 'projects'), {

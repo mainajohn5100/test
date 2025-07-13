@@ -35,7 +35,7 @@ export default function DashboardPage() {
         const [ticketsData, projectsData, usersData] = await Promise.all([
           getTickets(user),
           getProjects(user),
-          getUsers()
+          getUsers(user)
         ]);
         setTickets(ticketsData);
         setProjects(projectsData);
@@ -95,7 +95,7 @@ export default function DashboardPage() {
   const ticketsOverviewData = Object.entries(ticketsByStatus).map(([name, value]) => ({ name, value }));
   
   // Process data for AvgResolutionTimeChart
-  const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status === 'Terminated');
+  const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status !== 'Terminated');
   const monthlyResolutionTimes: { [key: number]: { totalDays: number; count: number } } = {};
 
   closedTickets.forEach(ticket => {

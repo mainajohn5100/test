@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from "next/navigation";
@@ -443,11 +444,3 @@ export default function UserProfilePage() {
                 <p className="text-muted-foreground text-center py-4">No activity found for this user.</p>
               )}
             </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-    

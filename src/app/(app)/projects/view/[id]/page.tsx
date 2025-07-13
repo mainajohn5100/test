@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from "next/navigation";
@@ -93,13 +94,13 @@ export default function ViewProjectPage() {
   const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Admin' || u.role === 'Agent'), [users]);
 
   React.useEffect(() => {
-    if (!params.id) return;
+    if (!params.id || !currentUser) return;
     const fetchData = async () => {
       setLoading(true);
       try {
         const [projectData, usersData] = await Promise.all([
             getProjectById(params.id as string),
-            getUsers()
+            getUsers(currentUser)
         ]);
 
         if (projectData) {
@@ -119,7 +120,7 @@ export default function ViewProjectPage() {
       }
     };
     fetchData();
-  }, [params.id]);
+  }, [params.id, currentUser]);
 
   const handleStatusChange = (newStatus: Project['status']) => {
     if (!project) return;
@@ -210,7 +211,7 @@ export default function ViewProjectPage() {
   return (
     <AlertDialog>
       <div className="flex flex-col gap-6">
-        <PageHeader title={project.name} description={manager ? `Managed by ${manager.name}. Due on ${format(new Date(project.deadline), "PP")}.` : `Due on ${format(new Date(project.deadline), "PP")}`}>
+        <PageHeader title={project.name} description={manager ? `Managed by ${manager.name}. Due on ${format(new Date(project.deadline), "PP")}.` : `Due on ${format(new Date(project.deadline), "PP")}.`}>
           <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Projects
@@ -321,109 +322,134 @@ export default function ViewProjectPage() {
                                       {Object.keys(projectStatusVariantMap).map(status => (
                                           <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as any)} disabled={isUpdating}>
                                               {status}
-                                          </DropdownMenuItem>
+                                          DropdownMenuItem>
                                       ))}
-                                  </DropdownMenuContent>
+                                  DropdownMenuContent>
                               )}
                           </DropdownMenu>
                       </div>
-                       <Separator />
-                       <div className="space-y-2">
-                          <span className="text-sm font-medium">Project Manager</span>
-                          {manager && (
-                            <Link href={`/users/${manager.id}`} className="block">
-                              <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md">
-                                  <Avatar className="h-6 w-6">
-                                      <AvatarImage src={manager.avatar} alt={manager.name} />
-                                      <AvatarFallback>{manager.name.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <span>{manager.name}</span>
-                              </div>
-                            </Link>
-                          )}
-                      </div>
-                      <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">Team Members</span>
-                            {canEditTeam && (
-                               <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-                                        <PlusCircle className="h-4 w-4" />
-                                        <span className="sr-only">Add Team Members</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Assign Team Members</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    {assignableUsers.map(u => (
-                                        <DropdownMenuCheckboxItem
-                                            key={u.id}
-                                            checked={project.team.includes(u.id)}
-                                            onCheckedChange={(checked) => handleTeamChange(u.id, checked)}
-                                            disabled={isUpdating || u.id === project.manager}
-                                        >
-                                            {u.name}
-                                        </DropdownMenuCheckboxItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            )}
-                          </div>
-                           <TooltipProvider>
-                              <div className="flex flex-wrap gap-1 pt-1">
-                                  {teamMembers.map(member => (
-                                      <Tooltip key={member.id}>
-                                          <TooltipTrigger asChild>
-                                            <Link href={`/users/${member.id}`}>
-                                              <Avatar className="h-8 w-8">
-                                                  <AvatarImage src={member.avatar} alt={member.name} />
-                                                  <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                              </Avatar>
-                                            </Link>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                              <p>{member.name}</p>
-                                          </TooltipContent>
-                                      </Tooltip>
-                                  ))}
-                              </div>
-                          </TooltipProvider>
-                      </div>
-                      <Separator />
-                       <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Created</span>
-                          <span>{format(new Date(project.createdAt), "MMM d, yyyy")}</span>
-                      </div>
-                       <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Deadline</span>
-                          <span>{format(new Date(project.deadline), "MMM d, yyyy")}</span>
-                      </div>
-                  </CardContent>
-              </Card>
-          </div>
-        </div>
-      </div>
-      <AlertDialogContent>
-          <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this
-              project and remove its data from our servers.
-          </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDeleteProject}
-              disabled={isDeleting}
-          >
-              {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Continue
-          </AlertDialogAction>
-          </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+                       
+                       
+                          
+                              
+                                  
+                                      
+                                          
+                                              
+                                              
+                                                  
+                                              
+                                          
+                                      
+                                  
+                              
+                          
+                      
+                      
+
+                          
+                              
+                                  
+                                      
+                                          
+                                              
+                                              
+                                                  
+                                              
+                                          
+                                      
+                                  
+                              
+                          
+                      
+                      
+                          
+                      
+                       
+
+                      
+                          
+                            
+                                    Add Team Members
+                                    
+                                        
+                                            
+                                                 Add Team Members
+                                             
+                                             
+                                                 {assignableUsers.map(u => (
+                                                    
+                                                        {u.name}
+                                                    
+                                                 ))}
+                                             
+                                         
+                                     
+                                 
+                             
+                          
+                          
+                              
+                                  
+                                      
+                                          
+                                              
+                                                  
+                                                      
+                                                          
+                                                          
+                                                      
+                                                  
+                                              
+                                          
+                                      
+                                  
+                              
+                          
+                      
+                      
+                       
+
+                       
+                          
+                              
+                                  
+                              
+                          
+                      
+                       
+                          
+                              
+                                  
+                              
+                          
+                      
+                  
+              
+          
+        
+      
+        
+            
+                
+                    Are you absolutely sure?
+                    This action cannot be undone. This will permanently delete this
+                    project and remove its data from our servers.
+                
+            
+            
+                
+                    Cancel
+                    
+                        
+                            
+                            
+                        
+                        Continue
+                    
+                
+            
+        
+    
   );
 }

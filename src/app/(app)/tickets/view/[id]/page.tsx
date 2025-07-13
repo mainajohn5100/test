@@ -1,4 +1,5 @@
 
+
 'use client'; 
 
 import { notFound, useRouter, useParams } from "next/navigation";
@@ -58,7 +59,7 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
 
 export default function ViewTicketPage() {
   const router = useRouter();
-  const params = useParams<{ id: string }>();
+  const params = useParams();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const [isPending, startTransition] = React.useTransition();
@@ -69,10 +70,10 @@ export default function ViewTicketPage() {
   const [loading, setLoading] = React.useState(true);
   const [conversations, setConversations] = React.useState<TicketConversation[]>([]);
 
-  const [pageDescription, setPageDescription] = React.useState<React.ReactNode | null>(null);
-  const [currentStatus, setCurrentStatus] = React.useState<string | undefined>(undefined);
-  const [currentPriority, setCurrentPriority] = React.useState<string | undefined>(undefined);
-  const [currentAssignee, setCurrentAssignee] = React.useState<string | undefined>(undefined);
+  const [pageDescription, setPageDescription] = React.useState<React.ReactNode>(null);
+  const [currentStatus, setCurrentStatus] = React.useState<Ticket['status'] | undefined>();
+  const [currentPriority, setCurrentPriority] = React.useState<Ticket['priority'] | undefined>();
+  const [currentAssignee, setCurrentAssignee] = React.useState<string | undefined>();
   const [reply, setReply] = React.useState("");
   const [isSuggestingReply, setIsSuggestingReply] = React.useState(false);
   const [currentTags, setCurrentTags] = React.useState<string[]>([]);
@@ -85,13 +86,14 @@ export default function ViewTicketPage() {
 
 
   const fetchTicketData = React.useCallback(async () => {
-    if (!params.id) return;
+    if (!params.id || !currentUser) return;
     setLoading(true);
     try {
+      const ticketId = Array.isArray(params.id) ? params.id[0] : params.id;
       const [ticketData, usersData, conversationsData] = await Promise.all([
-        getTicketById(params.id as string),
-        getUsers(),
-        getTicketConversations(params.id as string)
+        getTicketById(ticketId),
+        getUsers(currentUser),
+        getTicketConversations(ticketId)
       ]);
 
       if (ticketData) {
@@ -116,7 +118,7 @@ export default function ViewTicketPage() {
     } finally {
       setLoading(false);
     }
-  }, [params.id, toast]);
+  }, [params.id, toast, currentUser]);
 
   React.useEffect(() => {
     fetchTicketData();
@@ -127,16 +129,21 @@ export default function ViewTicketPage() {
     if (ticket && userMap.size > 0) {
       const reporterUser = userMap.get(ticket.reporter);
       const reporterName = reporterUser ? (
-        <Link href={`/users/${reporterUser.id}`} className="font-medium hover:underline">{reporterUser.name}</Link>
+        <span className="font-medium text-foreground">{reporterUser.name}</span>
       ) : (
-        <span className="font-medium">{ticket.reporter}</span>
+        <span className="font-medium text-foreground">{ticket.reporter}</span>
       );
 
       setPageDescription(
-        <>
-          <div>Opened by {reporterName} on {format(new Date(ticket.createdAt), "PPp")}.</div>
-          <div>Last updated on {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}.</div>
-        </>
+        <div className="flex items-center gap-2 text-sm">
+          <span>
+            Opened by {reporterName} on {format(new Date(ticket.createdAt), "PPp")}.
+          </span>
+          <span className="hidden sm:inline-block">•</span>
+          <span className="hidden sm:inline-block">
+            Last updated {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}.
+          </span>
+        </div>
       );
     }
   }, [ticket, userMap]);
@@ -144,12 +151,12 @@ export default function ViewTicketPage() {
   if (loading || !currentUser) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader className="h-8 w-8 animate-spin" />
+          <Loader className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  if (!ticket || !currentStatus || !currentPriority || !currentAssignee) {
+  if (!ticket || !currentStatus || !currentPriority || typeof currentAssignee === 'undefined') {
     notFound();
   }
   
@@ -158,6 +165,7 @@ export default function ViewTicketPage() {
   const reporterEmail = ticket.reporterEmail || reporter?.email;
 
   const handleStatusChange = (newStatus: Ticket['status']) => {
+    if (!ticket) return;
     startTransition(async () => {
         const oldStatus = currentStatus;
         setCurrentStatus(newStatus);
@@ -172,6 +180,7 @@ export default function ViewTicketPage() {
   };
 
   const handlePriorityChange = (newPriority: Ticket['priority']) => {
+    if (!ticket) return;
     startTransition(async () => {
         const oldPriority = currentPriority;
         setCurrentPriority(newPriority);
@@ -234,6 +243,7 @@ export default function ViewTicketPage() {
 };
 
   const updateTags = (newTags: string[]) => {
+    if (!ticket) return;
     startTransition(async () => {
       const oldTags = [...currentTags];
       setCurrentTags(newTags);
@@ -329,360 +339,322 @@ export default function ViewTicketPage() {
           title: "Ticket Deleted",
           description: "The ticket has been successfully deleted.",
         });
-        // Redirect is handled in the action
       }
     });
   };
 
   const handleAddReply = () => {
-    // TipTap returns '<p></p>' for an empty editor
-    if (!reply || reply === '<p></p>') {
-      toast({ title: "Reply is empty", description: "Please enter a reply before sending.", variant: 'destructive' });
-      return;
-    }
+    if (!reply.trim() || !currentUser || !ticket) return;
     startTransition(async () => {
-      const result = await addReplyAction({
-        ticketId: ticket.id,
-        content: reply,
-        authorId: currentUser.id
-      });
-      if(result.success) {
-        toast({ title: "Reply added successfully!" });
-        setReply("");
-        await fetchTicketData(); // Refetch conversations
-      } else {
-        toast({ title: "Error", description: result.error, variant: 'destructive' });
-      }
+        const result = await addReplyAction({
+            ticketId: ticket.id,
+            content: reply,
+            authorId: currentUser.id,
+        });
+
+        if (result.success) {
+            setReply("");
+            await fetchTicketData();
+            toast({ title: "Reply added" });
+        } else {
+            toast({
+                title: "Error",
+                description: result.error,
+                variant: 'destructive'
+            });
+        }
     });
   };
 
+  const canEditTicket = currentUser.role === 'Admin' || currentUser.role === 'Agent';
 
   return (
     <AlertDialog>
       <div className="flex flex-col gap-6">
-        <PageHeader title={ticket.title} description={pageDescription}>
+        <PageHeader 
+          title={ticket.title} 
+          description={pageDescription}
+        >
           <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to List
+              Back to Tickets
           </Button>
         </PageHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Conversation History</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                      {/* Original Post */}
-                       <div className="flex gap-4">
-                        <Avatar>
-                          <AvatarImage src={reporter?.avatar} />
-                          <AvatarFallback>{reporter?.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center">
-                              <span className="font-semibold">{ticket.reporter}</span>
-                              <span className="text-xs text-muted-foreground">{format(new Date(ticket.createdAt), "MMM d, yyyy 'at' p")}</span>
-                          </div>
-                          <div className="prose prose-sm dark:prose-invert max-w-none mt-2 p-3 rounded-md border bg-muted/50" dangerouslySetInnerHTML={{ __html: ticket.description.replace(/\n/g, '<br />') }} />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: ticket.description }} />
+
+                    {ticket.attachments && ticket.attachments.length > 0 && (
+                      <>
+                        <Separator className="my-6" />
+                        <h4 className="font-medium mb-2">Attachments</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {ticket.attachments.map((file) => (
+                              <a href={file.url} target="_blank" rel="noopener noreferrer" key={file.name}>
+                                <Button variant="outline" size="sm">
+                                  {file.type.startsWith('image/') ? <ImageIcon className="mr-2 h-4 w-4"/> : <FileIcon className="mr-2 h-4 w-4"/>}
+                                  {file.name}
+                                </Button>
+                              </a>
+                          ))}
                         </div>
-                      </div>
-                      <Separator />
-                      {/* Replies */}
-                      {conversations.map(convo => {
-                        const author = userMapById.get(convo.authorId);
+                      </>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Conversation</CardTitle>
+                </CardHeader>
+                 <CardContent>
+                    <div className="space-y-6">
+                      {conversations.map((conv) => {
+                        const author = userMapById.get(conv.authorId);
+                        const isCurrentUser = author?.id === currentUser.id;
                         return (
-                          <div key={convo.id} className="flex gap-4">
-                            <Avatar>
-                              <AvatarImage src={author?.avatar} />
-                              <AvatarFallback>{author?.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-semibold">{author?.name}</span>
-                                    <span className="text-xs text-muted-foreground">{format(new Date(convo.createdAt), "MMM d, yyyy 'at' p")}</span>
-                                </div>
-                                <div className="prose prose-sm dark:prose-invert max-w-none mt-2 p-3 rounded-md border bg-muted/50" dangerouslySetInnerHTML={{ __html: convo.content }} />
+                          <div key={conv.id} className={`flex items-start gap-4 ${isCurrentUser ? 'justify-end' : ''}`}>
+                             {!isCurrentUser && author && (
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={author.avatar} />
+                                  <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                              )}
+                            <div className={`flex flex-col max-w-xl ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+                               <div className={`rounded-lg p-3 ${isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                  <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: conv.content }} />
+                               </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    {author?.name || 'Unknown User'} • {formatDistanceToNow(new Date(conv.createdAt), { addSuffix: true })}
+                               </div>
                             </div>
+                            {isCurrentUser && author && (
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={author.avatar} />
+                                  <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                              )}
                           </div>
                         )
                       })}
-                       {conversations.length === 0 && (
-                          <p className="text-sm text-muted-foreground text-center py-4">No replies yet.</p>
-                       )}
-                  </CardContent>
-              </Card>
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Attachments</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      {ticket.attachments && ticket.attachments.length > 0 ? (
-                          <ul className="space-y-2">
-                              {ticket.attachments.map((file, index) => (
-                                  <li key={index}>
-                                      <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 -m-2 rounded-md hover:bg-muted">
-                                          {file.type.startsWith('image/') ? (
-                                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                                          ) : (
-                                              <FileIcon className="h-5 w-5 text-muted-foreground" />
-                                          )}
-                                          <span className="font-medium hover:underline truncate">{file.name}</span>
-                                      </a>
-                                  </li>
-                              ))}
-                          </ul>
-                      ) : (
-                          <p className="text-sm text-muted-foreground">No attachments for this ticket.</p>
+                      {conversations.length === 0 && (
+                        <p className="text-muted-foreground text-center">No conversation yet.</p>
                       )}
-                  </CardContent>
-              </Card>
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Add Reply</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      <TiptapEditor
-                        content={reply}
-                        onChange={setReply}
-                        placeholder="Type your response..."
+                    </div>
+                </CardContent>
+                <CardFooter className="pt-6">
+                  {canEditTicket && (
+                    <div className="w-full space-y-4">
+                      <div className="flex items-center justify-between">
+                          <h4 className="font-medium">Add Reply</h4>
+                          <Button variant="ghost" size="sm" onClick={handleSmartReply} disabled={isSuggestingReply}>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            {isSuggestingReply ? 'Thinking...' : 'Smart Reply'}
+                          </Button>
+                      </div>
+                      <TiptapEditor 
+                          content={reply}
+                          onChange={setReply}
+                          placeholder="Type your reply here..."
                       />
-                  </CardContent>
-                  <CardFooter className="justify-between">
-                      <Button variant="ghost" onClick={handleSmartReply} disabled={isSuggestingReply || isPending}>
-                          {isSuggestingReply ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                          Smart Reply
-                      </Button>
-                      <Button onClick={handleAddReply} disabled={isPending}>
-                          {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
-                          Send Reply
-                      </Button>
-                  </CardFooter>
-              </Card>
+                      <div className="flex justify-end">
+                        <Button onClick={handleAddReply} disabled={isPending || !reply.trim()}>
+                          {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                          Add Reply
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardFooter>
+            </Card>
+
           </div>
+
           <div className="lg:col-span-1 space-y-6">
-              <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-4">
-                      <CardTitle>Ticket Details</CardTitle>
-                      {currentUser?.role === 'Admin' && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="-mr-2 h-8 w-8">
-                                    <span className="sr-only">Open Menu</span>
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Ticket
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-2">
-                      <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">ID</span>
-                          <code>{ticket.id.substring(0, 6)}...</code>
-                      </div>
-                      <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Status</span>
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isPending}>
-                                      <Badge variant={statusVariantMap[currentStatus] || 'default'} className="cursor-pointer">
-                                        {isPending ? <Loader className="h-3 w-3 animate-spin mr-1.5"/> : null}
-                                        {currentStatus}
-                                      </Badge>
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                  {Object.keys(statusVariantMap).map(status => (
-                                      <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as Ticket['status'])} disabled={isPending}>
-                                          {status}
-                                      </DropdownMenuItem>
-                                  ))}
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                      </div>
-                      <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Priority</span>
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isPending}>
-                                      <Badge className={`font-medium ${priorityVariantMap[currentPriority]} cursor-pointer`}>{currentPriority}</Badge>
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                  {Object.keys(priorityVariantMap).map(p => (
-                                      <DropdownMenuItem key={p} onSelect={() => handlePriorityChange(p as Ticket['priority'])} disabled={isPending}>
-                                          {p}
-                                      </DropdownMenuItem>
-                                  ))}
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-                      </div>
-                      {ticket.project && (
-                          <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Project</span>
-                              <span>{ticket.project}</span>
-                          </div>
-                      )}
-                      <Separator />
-                      <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Assignee</span>
-                          {currentUser?.role === 'Admin' ? (
-                              <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" className="p-1 -m-1 h-auto justify-end gap-2" disabled={isPending}>
-                                          {isPending && <Loader className="h-4 w-4 animate-spin" />}
-                                          {assignee ? (
-                                              <div className="flex items-center gap-2">
-                                                  <Avatar className="h-6 w-6">
-                                                      <AvatarImage src={assignee.avatar} alt={assignee.name} />
-                                                      <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                                                  </Avatar>
-                                                  <span>{assignee.name}</span>
-                                              </div>
-                                          ) : (
-                                              <Badge variant="outline" className="cursor-pointer font-medium">
-                                                  {currentAssignee}
-                                              </Badge>
-                                          )}
-                                      </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                      <DropdownMenuLabel>Assign to...</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      {assignableUsers.map(user => (
-                                          <DropdownMenuItem key={user.id} onSelect={() => handleAssigneeChange(user)} disabled={isPending}>
-                                              <div className="flex items-center gap-2">
-                                                  <Avatar className="h-6 w-6">
-                                                      <AvatarImage src={user.avatar} alt={user.name} />
-                                                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                                  </Avatar>
-                                                  <span>{user.name}</span>
-                                              </div>
-                                          </DropdownMenuItem>
-                                      ))}
-                                      {currentAssignee !== 'Unassigned' && (
-                                          <>
-                                              <DropdownMenuSeparator />
-                                              <DropdownMenuItem onSelect={handleUnassign} disabled={isPending}>
-                                                  Unassign
-                                              </DropdownMenuItem>
-                                          </>
-                                      )}
-                                  </DropdownMenuContent>
-                              </DropdownMenu>
-                          ) : assignee ? (
-                            <Link href={`/users/${assignee.id}`} className="block">
-                              <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
-                                  <Avatar className="h-6 w-6">
-                                      <AvatarImage src={assignee.avatar} alt={assignee.name} />
-                                      <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <span>{assignee.name}</span>
-                              </div>
-                            </Link>
-                          ) : (
-                              <span>{currentAssignee}</span>
-                          )}
-                      </div>
-                      <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Reporter</span>
-                            {reporter ? (
-                                <Link href={`/users/${reporter.id}`} className="block">
-                                    <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
-                                        <Avatar className="h-6 w-6">
-                                            <AvatarImage src={reporter.avatar} alt={reporter.name} />
-                                            <AvatarFallback>{reporter.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <span>{reporter.name}</span>
-                                    </div>
-                                </Link>
-                            ) : (
-                                <span>{ticket.reporter}</span>
-                            )}
-                          </div>
-                          {reporterEmail && (
-                            <div className="flex justify-between items-center text-sm text-muted-foreground pl-1">
-                                <Mail className="w-4 h-4 mr-2"/>
-                                <span className="truncate">{reporterEmail}</span>
-                            </div>
-                          )}
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Created</span>
-                          <span>{format(new Date(ticket.createdAt), "MMM d, yyyy")}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Updated</span>
-                          <span>{format(new Date(ticket.updatedAt), "MMM d, yyyy")}</span>
-                      </div>
-                  </CardContent>
-              </Card>
-              <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-4">
-                      <CardTitle>Tags</CardTitle>
-                      <Button variant="ghost" size="sm" onClick={handleSuggestTags} disabled={isSuggestingTags || isPending}>
-                          {isSuggestingTags ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                          Suggest
+            <Card>
+              <CardHeader className="flex-row items-center justify-between pb-2">
+                <CardTitle>Details</CardTitle>
+                {canEditTicket && (
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 -mr-2">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </AlertDialogTrigger>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">ID</span>
+                  <code className="text-sm">{ticket.id.substring(0, 6)}...</code>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Status</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isPending || !canEditTicket}>
+                        <Badge variant={statusVariantMap[currentStatus] || 'default'}>
+                          {isPending && <Loader className="mr-1.5 h-3 w-3 animate-spin" />}
+                          {currentStatus}
+                        </Badge>
                       </Button>
-                  </CardHeader>
-                  <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                          {currentTags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="flex items-center gap-1.5">
-                                {tag}
-                                <XCircle className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
-                              </Badge>
-                          ))}
-                      </div>
-                      {suggestedTags.length > 0 && (
-                        <>
-                          <Separator className="my-4" />
-                          <div className="space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground">Suggestions</p>
-                            <div className="flex flex-wrap gap-2">
-                              {suggestedTags.map(tag => (
-                                <Badge key={tag} variant="outline" className="cursor-pointer" onClick={() => addTag(tag)}>+ {tag}</Badge>
-                              ))}
+                    </DropdownMenuTrigger>
+                    {canEditTicket && (
+                        <DropdownMenuContent align="end">
+                            {Object.keys(statusVariantMap).map(status => (
+                                <DropdownMenuItem key={status} onSelect={() => handleStatusChange(status as any)} disabled={isPending}>
+                                    {status}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Priority</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                       <Button variant="ghost" className="p-0 h-auto justify-end" disabled={isPending || !canEditTicket}>
+                        <Badge className={`${priorityVariantMap[currentPriority]} cursor-pointer`}>
+                            {isPending && <Loader className="mr-1.5 h-3 w-3 animate-spin" />}
+                            {currentPriority}
+                        </Badge>
+                       </Button>
+                    </DropdownMenuTrigger>
+                    {canEditTicket && (
+                      <DropdownMenuContent align="end">
+                        {Object.keys(priorityVariantMap).map(p => (
+                          <DropdownMenuItem key={p} onSelect={() => handlePriorityChange(p as any)} disabled={isPending}>
+                            {p}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Assignee</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="p-0 h-auto justify-end max-w-[150px]" disabled={isPending || !canEditTicket}>
+                            <div className="flex items-center gap-2 truncate">
+                            {assignee && (
+                                <Avatar className="h-6 w-6">
+                                <AvatarImage src={assignee.avatar} />
+                                <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            )}
+                            <span className="truncate">{currentAssignee}</span>
                             </div>
-                          </div>
-                        </>
-                      )}
-                  </CardContent>
-              </Card>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    {canEditTicket && (
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={handleUnassign} disabled={isPending || currentAssignee === 'Unassigned'}>
+                                Unassigned
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {assignableUsers.map(u => (
+                                <DropdownMenuItem key={u.id} onSelect={() => handleAssigneeChange(u)} disabled={isPending}>
+                                    {u.name}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                </div>
+                 <div className="flex justify-between items-start">
+                    <span className="text-muted-foreground pt-1.5">Tags</span>
+                    <div className="flex flex-wrap gap-1 justify-end max-w-[70%]">
+                        {currentTags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="group">
+                                {tag}
+                                {canEditTicket && (
+                                    <button onClick={() => removeTag(tag)} className="ml-1.5 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                        <XCircle className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                                    </button>
+                                )}
+                            </Badge>
+                        ))}
+                         {canEditTicket && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleSuggestTags} disabled={isSuggestingTags}>
+                                       {isSuggestingTags ? <Loader className="h-3 w-3 animate-spin"/> : <Sparkles className="h-3 w-3" />}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                {suggestedTags.length > 0 && (
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Suggested Tags</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        {suggestedTags.map(tag => (
+                                            <DropdownMenuItem key={tag} onSelect={() => addTag(tag)}>
+                                                {tag}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                )}
+                            </DropdownMenu>
+                        )}
+                    </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Customer Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-4">
+                        {reporter && (
+                            <Link href={`/users/${reporter.id}`}>
+                                <Avatar className="h-12 w-12">
+                                    <AvatarImage src={reporter.avatar} />
+                                    <AvatarFallback>{ticket.reporter.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            </Link>
+                        )}
+                        <div>
+                            <p className="font-semibold">{ticket.reporter}</p>
+                            {reporterEmail && (
+                                <a href={`mailto:${reporterEmail}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
+                                    <Mail className="h-3 w-3" />
+                                    {reporterEmail}
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this
-            ticket and remove its data from our servers.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction 
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            onClick={handleDeleteTicket}
-            disabled={isDeleting}
-          >
-            {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Continue
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
+       <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this
+                ticket and remove its data from our servers.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+                onClick={handleDeleteTicket}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isDeleting}
+            >
+                {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Continue
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
     </AlertDialog>
   );
 }
