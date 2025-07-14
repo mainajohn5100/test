@@ -206,7 +206,8 @@ export default function ViewProjectPage() {
   const manager = userMap.get(project.manager);
   const teamMembers = project.team.map(userId => userMap.get(userId)).filter(Boolean) as User[];
   const isManagerOrAdmin = currentUser.role === 'Admin' || project.manager === currentUser.id;
-  const canEditTeam = currentUser.role === 'Admin' || (currentUser.role === 'Agent' && agentCanEditTeam);
+  const canEditTeam = currentUser.id === project.creatorId;
+  const truncatedId = `${project.id.substring(0, 5)}...${project.id.slice(-3)}`;
   
   return (
     <AlertDialog>
@@ -304,7 +305,7 @@ export default function ViewProjectPage() {
                   <CardContent className="space-y-4 pt-2">
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">ID</span>
-                          <code>{project.id.substring(0, 8)}...</code>
+                          <code>{truncatedId}</code>
                       </div>
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Status</span>
@@ -425,3 +426,5 @@ export default function ViewProjectPage() {
   </AlertDialog>
   );
 }
+
+    

@@ -204,15 +204,8 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
       }
   }
 
-  // Admins see all projects in their org. Agents see projects they manage or are on.
+  // Admins and Agents see projects they manage or are on.
   try {
-    if (user.role === 'Admin') {
-        const q = query(projectsCol, orgQuery);
-        const projectSnapshot = await getDocs(q);
-        return snapshotToData<Project>(projectSnapshot);
-    }
-
-    // Agent logic
     const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
     const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id));
     const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id));
@@ -262,12 +255,6 @@ export const getProjectsByStatus = cache(async (status: string, user: User): Pro
 
     // Logic for Admins and Agents
     try {
-        if (user.role === 'Admin') {
-            const q = query(projectsCol, orgQuery, ...statusFilter);
-            const projectSnapshot = await getDocs(q);
-            return snapshotToData<Project>(projectSnapshot);
-        }
-
         const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
 
         const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id), ...statusFilter);
@@ -593,3 +580,5 @@ export async function setAuthUserClaims(uid: string, claims: object): Promise<vo
     // await setClaimsFunction({ uid, claims });
     return Promise.resolve();
 }
+
+    

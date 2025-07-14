@@ -1,5 +1,4 @@
 
-
 'use client'; 
 
 import { notFound, useRouter, useParams } from "next/navigation";
@@ -163,6 +162,7 @@ export default function ViewTicketPage() {
   const assignee = userMap.get(currentAssignee);
   const reporter = userMap.get(ticket.reporter);
   const reporterEmail = ticket.reporterEmail || reporter?.email;
+  const truncatedId = `${ticket.id.substring(0, 5)}...${ticket.id.slice(-3)}`;
 
   const handleStatusChange = (newStatus: Ticket['status']) => {
     if (!ticket) return;
@@ -491,7 +491,7 @@ export default function ViewTicketPage() {
               <CardContent className="space-y-4 pt-4">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">ID</span>
-                  <code className="text-sm">{ticket.id.substring(0, 6)}...</code>
+                  <code className="text-sm">{truncatedId}</code>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Status</span>
@@ -658,3 +658,5 @@ export default function ViewTicketPage() {
     </AlertDialog>
   );
 }
+
+    
