@@ -1,10 +1,12 @@
 
 import { NextResponse } from 'next/server';
-import { addTicket, getUserByEmail } from '@/lib/firestore';
+import { addTicket, getOrganizationById, getUserByEmail } from '@/lib/firestore';
 import { analyzeEmailForSource } from '@/ai/flows/analyze-email-for-source';
 import { analyzeEmailPriority } from '@/ai/flows/analyze-email-priority';
 import { suggestTags } from '@/ai/flows/suggest-tags';
 import { verifier } from '@sendgrid/eventwebhook';
+import { sendEmail } from '@/lib/email';
+import type { Ticket, Organization } from '@/lib/data';
 
 // Helper to parse "Name <email@example.com>" into name and email
 function parseFromAddress(from: string): { name: string, email: string } {
@@ -44,6 +46,7 @@ export async function POST(request: Request) {
     const from = formData.get('from') || '';
     const subject = formData.get('subject') || 'No Subject';
     const textBody = formData.get('text') || '';
+    const htmlBody = formData.get('html') || textBody.replace(/\n/g, '<br>');
 
     const { name: reporterName, email: reporterEmail } = parseFromAddress(from);
     
@@ -76,9 +79,9 @@ export async function POST(request: Request) {
     const tagSuggestions = await suggestTags({ ticketContent: textBody });
 
     // 4. Create the ticket
-    const ticketData = {
+    const ticketData: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'> = {
       title: subject,
-      description: textBody.replace(/\n/g, '<br>'), // Basic HTML conversion for display
+      description: htmlBody,
       reporter: reporterName,
       reporterEmail: reporterEmail,
       tags: tagSuggestions.tags || [],
@@ -90,6 +93,20 @@ export async function POST(request: Request) {
     };
 
     const newTicketId = await addTicket(ticketData);
+
+    // 5. Send auto-reply confirmation email
+    const org = await getOrganizationById(reporterUser.organizationId);
+    if (org?.settings?.emailTemplates?.newTicketAutoReply) {
+      await sendEmail({
+        to: reporterEmail,
+        subject: `Re: ${subject}`,
+        template: org.settings.emailTemplates.newTicketAutoReply,
+        data: {
+          ticket: { ...ticketData, id: newTicketId },
+          user: reporterUser
+        }
+      });
+    }
 
     console.log(`Successfully created ticket ${newTicketId} from email sent by ${reporterEmail}.`);
     

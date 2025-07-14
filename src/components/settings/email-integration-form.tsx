@@ -11,6 +11,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { updateOrganizationSettings } from '@/lib/firestore';
 
 export function EmailIntegrationForm() {
     const { user } = useAuth();
@@ -38,6 +39,17 @@ export function EmailIntegrationForm() {
             console.error('Could not copy text: ', err);
         });
     };
+    
+    const handleSave = async () => {
+        if (!user) return;
+        try {
+            await updateOrganizationSettings(user.organizationId, { supportEmail });
+            toast({ title: "Settings Saved", description: "Your public support email has been updated." });
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+        }
+    };
+
 
     const effectiveSupportEmail = supportEmail || user?.email;
 
@@ -103,6 +115,9 @@ export function EmailIntegrationForm() {
                     <p className="text-sm text-muted-foreground">
                         To complete setup, configure your support inbox (<span className="font-semibold text-foreground">{effectiveSupportEmail}</span>) to automatically forward all incoming mail to this unique address.
                     </p>
+                </div>
+                 <div className="flex justify-end">
+                    <Button onClick={handleSave}>Save Email Settings</Button>
                 </div>
             </CardContent>
         </Card>

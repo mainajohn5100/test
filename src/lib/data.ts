@@ -70,6 +70,23 @@ export type Notification = {
   link: string;
 };
 
+export type EmailTemplate = {
+  newTicketAutoReply: string;
+  statusChange: string;
+  priorityChange: string;
+  newAssignee: string;
+};
+
+export type Organization = {
+  id: string;
+  name: string;
+  createdAt: string;
+  settings?: {
+    supportEmail?: string;
+    emailTemplates?: Partial<EmailTemplate>;
+  }
+};
+
 
 export const users: User[] = [
     { 

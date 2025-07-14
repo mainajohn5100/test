@@ -2,20 +2,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNotification, getTicketById, updateTicket, deleteTicket, getUserById, addConversation, getUserByName } from '@/lib/firestore';
+import { createNotification, getTicketById, updateTicket, deleteTicket, getUserById, addConversation, getUserByName, getOrganizationById } from '@/lib/firestore';
 import type { Ticket, User, TicketConversation } from '@/lib/data';
 import { redirect } from 'next/navigation';
+import { sendEmail } from '@/lib/email';
 
-// For this prototype, we'll simulate sending an email by logging to the console.
-// In a real application, you would integrate a service like SendGrid, Mailgun, etc.
-async function sendEmailNotification(to: string, subject: string, body: string) {
-    console.log("--- SIMULATING EMAIL ---");
-    console.log(`To: ${to}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Body:\n${body}`);
-    console.log("-----------------------");
-    return Promise.resolve();
-}
 
 // Helper to determine notification details based on what changed
 async function getNotificationDetails(
@@ -24,8 +15,7 @@ async function getNotificationDetails(
   oldAssigneeId: string | null,
   newAssignee?: User | null
 ) {
-    const changes = [];
-    let emailDetails: { to: string; subject: string; body: string; } | null = null;
+    let emailDetails: { to: string; subject: string; templateKey: keyof NonNullable<Organization['settings']['emailTemplates']>; } | null = null;
     let notificationDetails: { userId: string; title: string; description: string; } | null = null;
     
     const reporterUser = await getUserByName(ticket.reporter);
@@ -41,18 +31,16 @@ async function getNotificationDetails(
         emailDetails = {
             to: newAssigneeUser.email,
             subject: `[Ticket #${ticket.id.substring(0,6)}] You've been assigned: ${ticket.title}`,
-            body: `Hi ${newAssigneeUser.name},\n\nYou have been assigned a new ticket: "${ticket.title}".\n\nYou can view the ticket details here: /tickets/view/${ticket.id}\n\nThank you.`
+            templateKey: 'newAssignee'
         };
     } 
     // Case 2: Ticket status changes
     else if (updates.status && updates.status !== ticket.status) {
-        changes.push(`status updated to ${updates.status}`);
-        
         if (reporterUser && reporterUser.email) {
              emailDetails = {
                 to: reporterUser.email,
                 subject: `[Ticket #${ticket.id.substring(0,6)}] Status of your ticket has been updated: ${ticket.title}`,
-                body: `Hi ${reporterUser.name},\n\nThe status of your ticket "${ticket.title}" has been updated to "${updates.status}".\n\nYou can view the ticket details here: /tickets/view/${ticket.id}\n\nThank you.`
+                templateKey: 'statusChange'
             };
         }
         
@@ -64,16 +52,13 @@ async function getNotificationDetails(
             };
         }
     }
-    // Case 3: Other updates
-    else {
-        if (updates.priority) changes.push(`priority set to ${updates.priority}`);
-        if (updates.tags) changes.push(`tags were updated`);
-        
-        if (changes.length > 0 && ticket.assignee !== 'Unassigned' && oldAssigneeId) {
-            notificationDetails = {
-                userId: oldAssigneeId,
-                title: `Ticket Updated: "${ticket.title}"`,
-                description: `The following was changed: ${changes.join(', ')}.`
+    // Case 3: Priority Change
+    else if (updates.priority && updates.priority !== ticket.priority) {
+        if (reporterUser && reporterUser.email) {
+            emailDetails = {
+                to: reporterUser.email,
+                subject: `[Ticket #${ticket.id.substring(0,6)}] Priority of your ticket has been updated: ${ticket.title}`,
+                templateKey: 'priorityChange'
             };
         }
     }
@@ -105,11 +90,16 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
             description: `${author.name} has replied to ticket #${ticket.id.substring(0,6)}.`,
             link: `/tickets/view/${ticketId}`,
         });
-        await sendEmailNotification(
-            assigneeUser.email,
-            `[Ticket #${ticket.id.substring(0,6)}] New reply from client: ${ticket.title}`,
-            `Hi ${assigneeUser.name},\n\nA new reply has been added to ticket "${ticket.title}" by ${author.name}.\n\nReply: ${content.replace(/<[^>]*>?/gm, '')}\n\nYou can view the ticket here: /tickets/view/${ticketId}`
-        );
+        
+        const org = await getOrganizationById(ticket.organizationId);
+        if (org?.settings?.emailTemplates?.newAssignee) { // Re-using a template for now
+            await sendEmail({
+                to: assigneeUser.email,
+                subject: `[Ticket #${ticket.id.substring(0,6)}] New reply from client: ${ticket.title}`,
+                template: `A new reply has been added to ticket {{ticket.title}} by {{user.name}}.<br/><br/><strong>Reply:</strong><br/>${content}`,
+                data: { ticket, user: author }
+            });
+        }
       }
     }
 
@@ -117,11 +107,15 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
     if (!isClientReply) {
         const reporterUser = await getUserByName(ticket.reporter);
         if (reporterUser && reporterUser.email) {
-             await sendEmailNotification(
-                reporterUser.email,
-                `[Ticket #${ticket.id.substring(0,6)}] An agent has replied to your ticket: ${ticket.title}`,
-                `Hi ${reporterUser.name},\n\n${author.name} has replied to your ticket "${ticket.title}".\n\nReply: ${content.replace(/<[^>]*>?/gm, '')}\n\nYou can view the ticket here: /tickets/view/${ticketId}`
-            );
+            const org = await getOrganizationById(ticket.organizationId);
+            if (org?.settings?.emailTemplates?.statusChange) { // Re-using a template for now
+                 await sendEmail({
+                    to: reporterUser.email,
+                    subject: `[Ticket #${ticket.id.substring(0,6)}] An agent has replied to your ticket: ${ticket.title}`,
+                    template: `An agent has replied to your ticket {{ticket.title}}.<br/><br/><strong>Reply:</strong><br/>${content}`,
+                    data: { ticket, user: author }
+                });
+            }
         }
     }
 
@@ -146,7 +140,7 @@ export async function updateTicketAction(
     }
 
     await updateTicket(ticketId, updates);
-    const updatedTicket = { ...currentTicket, ...updates };
+    const updatedTicket = { ...currentTicket, ...updates, id: ticketId };
 
     const { notificationDetails, emailDetails } = await getNotificationDetails(
         updatedTicket, 
@@ -165,7 +159,19 @@ export async function updateTicketAction(
     }
 
     if (emailDetails) {
-        await sendEmailNotification(emailDetails.to, emailDetails.subject, emailDetails.body);
+        const org = await getOrganizationById(updatedTicket.organizationId);
+        const template = org?.settings?.emailTemplates?.[emailDetails.templateKey];
+        if (template) {
+            await sendEmail({
+                to: emailDetails.to,
+                subject: emailDetails.subject,
+                template: template,
+                data: {
+                  ticket: updatedTicket,
+                  user: assigneeDetails?.newAssignee || await getUserByName(updatedTicket.reporter)
+                }
+            });
+        }
     }
 
     revalidatePath(`/tickets/view/${ticketId}`);

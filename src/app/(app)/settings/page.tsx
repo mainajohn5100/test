@@ -13,6 +13,7 @@ import { EmailIntegrationForm } from "@/components/settings/email-integration-fo
 import { AccountForm } from "@/components/settings/account-form";
 import { useAuth } from "@/contexts/auth-context";
 import { Input } from "@/components/ui/input";
+import { EmailTemplatesForm } from "@/components/settings/email-templates-form";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -105,7 +106,10 @@ export default function SettingsPage() {
         </TabsContent>
         {user?.role === 'Admin' && (
           <TabsContent value="integrations">
+            <div className="space-y-6">
               <EmailIntegrationForm />
+              <EmailTemplatesForm />
+            </div>
           </TabsContent>
         )}
          {user?.role === 'Admin' && (

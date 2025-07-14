@@ -2,7 +2,7 @@
 
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import type { Ticket, Project, User, Notification, TicketConversation } from './data';
+import type { Ticket, Project, User, Notification, TicketConversation, Organization } from './data';
 import { cache } from 'react';
 import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 
@@ -12,6 +12,9 @@ function processDocData(data: DocumentData) {
     for (const key in data) {
         if (data[key] instanceof Timestamp) {
             processedData[key] = data[key].toDate().toISOString();
+        } else if (typeof data[key] === 'object' && data[key] !== null && !Array.isArray(data[key])) {
+            // Recursively process nested objects, but not arrays
+            processedData[key] = processDocData(data[key]);
         } else {
             processedData[key] = data[key];
         }
@@ -71,16 +74,14 @@ export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
     const ticketsCol = collection(db, 'tickets');
     const orgQuery = where("organizationId", "==", user.organizationId);
     
-    // For clients, show only tickets they reported. For agents, only assigned.
     if (user.role === 'Client') {
-      const q = query(ticketsCol, orgQuery, where("reporter", "==", user.name));
+      const q = query(ticketsCol, orgQuery, where("reporterEmail", "==", user.email));
       const ticketSnapshot = await getDocs(q);
       return snapshotToData<Ticket>(ticketSnapshot);
     }
     
     // Agent or Admin
-    const roleQuery = user.role === 'Agent' ? [where("assignee", "==", user.name)] : [];
-    const ticketQuery = query(ticketsCol, orgQuery, ...roleQuery);
+    const ticketQuery = query(ticketsCol, orgQuery);
     const ticketSnapshot = await getDocs(ticketQuery);
     return snapshotToData<Ticket>(ticketSnapshot);
 
@@ -97,16 +98,13 @@ export const getTicketsByStatus = cache(async (status: string, user: User): Prom
     const orgQuery = where("organizationId", "==", user.organizationId);
     const statusQuery = status !== 'all' ? [where("status", "==", status)] : [];
     
-    // For clients, show only tickets they reported.
     if (user.role === 'Client') {
-      const q = query(ticketsCol, orgQuery, where("reporter", "==", user.name), ...statusQuery);
+      const q = query(ticketsCol, orgQuery, where("reporterEmail", "==", user.email), ...statusQuery);
       const ticketSnapshot = await getDocs(q);
       return snapshotToData<Ticket>(ticketSnapshot);
     }
-
-    const roleQuery = user.role === 'Agent' ? [where("assignee", "==", user.name)] : [];
     
-    const q = query(ticketsCol, orgQuery, ...statusQuery, ...roleQuery);
+    const q = query(ticketsCol, orgQuery, ...statusQuery);
     const ticketSnapshot = await getDocs(q);
     return snapshotToData<Ticket>(ticketSnapshot);
   } catch (error) {
@@ -193,7 +191,6 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
           const projectNames = [...new Set(clientTickets.map(t => t.project).filter(Boolean))];
           if (projectNames.length === 0) return [];
 
-          // Query projects within their org that match the names from their tickets.
           const q = query(projectsCol, orgQuery, where("name", "in", projectNames));
           const projectSnapshot = await getDocs(q);
           return snapshotToData<Project>(projectSnapshot);
@@ -204,19 +201,19 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
       }
   }
 
-  // Admins and Agents see projects they manage or are on.
+  // Admins and Agents see projects they manage or are on the team for.
   try {
-    const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
     const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id));
     const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id));
-    queries.push(getDocs(managerQuery), getDocs(teamMemberQuery));
-    
-    const snapshots = await Promise.all(queries);
+
+    const [managerSnap, teamSnap] = await Promise.all([
+        getDocs(managerQuery),
+        getDocs(teamMemberQuery)
+    ]);
 
     const projectsMap = new Map<string, Project>();
-    snapshots.forEach(snapshot => {
-        snapshotToData<Project>(snapshot).forEach(p => projectsMap.set(p.id, p));
-    });
+    snapshotToData<Project>(managerSnap).forEach(p => projectsMap.set(p.id, p));
+    snapshotToData<Project>(teamSnap).forEach(p => projectsMap.set(p.id, p));
     
     return Array.from(projectsMap.values());
 
@@ -255,18 +252,17 @@ export const getProjectsByStatus = cache(async (status: string, user: User): Pro
 
     // Logic for Admins and Agents
     try {
-        const queries: Promise<QuerySnapshot<DocumentData, DocumentData>>[] = [];
-
         const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id), ...statusFilter);
         const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id), ...statusFilter);
-        queries.push(getDocs(managerQuery), getDocs(teamMemberQuery));
-
-        const snapshots = await Promise.all(queries);
+        
+        const [managerSnap, teamSnap] = await Promise.all([
+            getDocs(managerQuery),
+            getDocs(teamMemberQuery)
+        ]);
 
         const projectsMap = new Map<string, Project>();
-        snapshots.forEach(snapshot => {
-            snapshotToData<Project>(snapshot).forEach(p => projectsMap.set(p.id, p));
-        });
+        snapshotToData<Project>(managerSnap).forEach(p => projectsMap.set(p.id, p));
+        snapshotToData<Project>(teamSnap).forEach(p => projectsMap.set(p.id, p));
         
         return Array.from(projectsMap.values());
 
@@ -326,9 +322,6 @@ export const getUserById = cache(async (id: string): Promise<User | null> => {
 export const getUserByName = cache(async (name: string): Promise<User | null> => {
     if (name === 'Unassigned') return null;
     try {
-        // This query needs to be org-specific in a multi-tenant app
-        // but we don't have the current user's org ID here.
-        // Assuming names are unique within an org for now.
         const usersCol = collection(db, 'users');
         const q = query(usersCol, where("name", "==", name), limit(1));
         const userSnapshot = await getDocs(q);
@@ -359,8 +352,6 @@ export const getUserByEmail = cache(async (email: string): Promise<User | null> 
 
 export async function createUserInAuth(email: string, password: string):Promise<string> {
     try {
-        // We must be signed out to create a new user this way on the client.
-        // In a real app, this should be an admin-only server action.
         const tempAuth = auth;
         const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
         return userCredential.user.uid;
@@ -400,18 +391,7 @@ export async function updateUser(userId: string, userData: Partial<Omit<User, 'i
     }
 }
 
-export async function addTicket(ticketData: {
-    title: string;
-    description: string;
-    reporter: string;
-    reporterEmail?: string;
-    tags: string[];
-    priority: "Low" | "Medium" | "High" | "Urgent";
-    assignee: string;
-    project: string | null;
-    source: Ticket['source'];
-    organizationId: string;
-  }): Promise<string> {
+export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
   try {
     const docRef = await addDoc(collection(db, 'tickets'), {
       ...ticketData,
@@ -555,14 +535,13 @@ export async function markAllUserNotificationsAsRead(userId: string): Promise<vo
 
 
 // Functions for Organization and Auth Claims
-// IMPORTANT: In a production app, setAuthUserClaims should be a trusted server-side operation (e.g., Firebase Function)
-// as it grants permissions. It is simulated here for prototype purposes.
 
 export async function createOrganization(name: string): Promise<string> {
     try {
         const docRef = await addDoc(collection(db, 'organizations'), {
             name,
             createdAt: serverTimestamp(),
+            settings: {}
         });
         return docRef.id;
     } catch (error) {
@@ -571,14 +550,36 @@ export async function createOrganization(name: string): Promise<string> {
     }
 }
 
+export const getOrganizationById = cache(async (id: string): Promise<Organization | null> => {
+    try {
+        const orgRef = doc(db, 'organizations', id);
+        const orgSnap = await getDoc(orgRef);
+        return docToData<Organization>(orgSnap);
+    } catch (error) {
+        console.error("Error fetching organization by ID:", error);
+        return null;
+    }
+});
+
+export async function updateOrganizationSettings(orgId: string, settings: Organization['settings']): Promise<void> {
+    try {
+        const orgRef = doc(db, 'organizations', orgId);
+        // Use dot notation to update nested fields
+        const updates: { [key: string]: any } = {};
+        if (settings?.supportEmail) updates['settings.supportEmail'] = settings.supportEmail;
+        if (settings?.emailTemplates) updates['settings.emailTemplates'] = settings.emailTemplates;
+        
+        if(Object.keys(updates).length > 0) {
+          await updateDoc(orgRef, updates);
+        }
+    } catch (error) {
+        console.error("Error updating organization settings:", error);
+        throw new Error("Failed to update organization settings.");
+    }
+}
+
 export async function setAuthUserClaims(uid: string, claims: object): Promise<void> {
     console.log(`[SIMULATED] Setting custom claims for user ${uid}:`, claims);
     console.log("In a production environment, this would be a call to a secure Firebase Function.");
-    // This is where you would call a Firebase Function to set claims using the Admin SDK.
-    // Example:
-    // const setClaimsFunction = httpsCallable(functions, 'setCustomClaims');
-    // await setClaimsFunction({ uid, claims });
     return Promise.resolve();
 }
-
-    
