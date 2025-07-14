@@ -1,4 +1,5 @@
 
+
 'use client'; 
 
 import { notFound, useRouter, useParams } from "next/navigation";
@@ -549,7 +550,7 @@ export default function ViewTicketPage() {
                                 <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                             )}
-                            <span className="truncate">{currentAssignee}</span>
+                            <span className="truncate text-sm">{currentAssignee}</span>
                             </div>
                         </Button>
                     </DropdownMenuTrigger>
@@ -610,25 +611,23 @@ export default function ViewTicketPage() {
                 <CardHeader>
                     <CardTitle>Client Details</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex items-center gap-4">
-                        {reporter && (
-                            <Link href={`/users/${reporter.id}`}>
-                                <Avatar className="h-12 w-12">
-                                    <AvatarImage src={reporter.avatar} />
-                                    <AvatarFallback>{ticket.reporter.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                            </Link>
+                <CardContent className="flex items-center gap-4">
+                    {reporter && (
+                        <Link href={`/users/${reporter.id}`}>
+                            <Avatar className="h-12 w-12">
+                                <AvatarImage src={reporter.avatar} />
+                                <AvatarFallback>{ticket.reporter.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        </Link>
+                    )}
+                    <div>
+                        <p className="font-semibold text-sm">{ticket.reporter}</p>
+                        {reporterEmail && (
+                            <a href={`mailto:${reporterEmail}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
+                                <Mail className="h-3 w-3" />
+                                {reporterEmail}
+                            </a>
                         )}
-                        <div>
-                            <p className="font-semibold">{ticket.reporter}</p>
-                            {reporterEmail && (
-                                <a href={`mailto:${reporterEmail}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
-                                    <Mail className="h-3 w-3" />
-                                    {reporterEmail}
-                                </a>
-                            )}
-                        </div>
                     </div>
                 </CardContent>
             </Card>

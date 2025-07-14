@@ -1,9 +1,11 @@
 
+
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder'
+import Placeholder from '@tiptap/extension-placeholder';
+import Link from '@tiptap/extension-link';
 import {
   Bold,
   Strikethrough,
@@ -12,9 +14,11 @@ import {
   ListOrdered,
   Heading2,
   Quote,
+  Link2,
 } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from './ui/separator';
+import { useCallback } from 'react';
 
 interface TiptapEditorProps {
   content: string;
@@ -28,7 +32,11 @@ export function TiptapEditor({ content, onChange, placeholder }: TiptapEditorPro
       StarterKit.configure(),
       Placeholder.configure({
         placeholder: placeholder || 'Type something...',
-      })
+      }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+      }),
     ],
     content: content,
     editorProps: {
@@ -41,13 +49,28 @@ export function TiptapEditor({ content, onChange, placeholder }: TiptapEditorPro
     },
   });
 
+  const setLink = useCallback(() => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('URL', previousUrl);
+
+    if (url === null) {
+      return;
+    }
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-1 rounded-md border p-1">
+      <div className="flex flex-wrap items-center gap-1 rounded-md border p-1">
         <Toggle
           size="sm"
           pressed={editor.isActive('bold')}
@@ -103,6 +126,13 @@ export function TiptapEditor({ content, onChange, placeholder }: TiptapEditorPro
           }
         >
           <Quote className="h-4 w-4" />
+        </Toggle>
+        <Toggle
+          size="sm"
+          pressed={editor.isActive('link')}
+          onPressedChange={setLink}
+        >
+          <Link2 className="h-4 w-4" />
         </Toggle>
       </div>
       <EditorContent editor={editor} />

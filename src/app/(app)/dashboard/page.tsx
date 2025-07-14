@@ -40,25 +40,27 @@ export default function DashboardPage() {
         setTickets(ticketsData);
         setProjects(projectsData);
         setUsers(usersData);
+        setLoading(false);
         
+        // Fetch greeting in the background without blocking the UI
         try {
             const openTickets = ticketsData.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length;
             const newTicketsToday = ticketsData.filter(t => isToday(new Date(t.createdAt))).length;
             
-            const greetingResponse = await generateDashboardGreeting({
+            generateDashboardGreeting({
                 totalTickets: ticketsData.length,
                 openTickets: openTickets,
                 newTicketsToday: newTicketsToday,
                 totalProjects: projectsData.length
+            }).then(greetingResponse => {
+                setGreeting(greetingResponse.greeting);
+            }).catch(e => {
+                console.error("AI Greeting failed:", e);
+                // Fallback greeting remains
             });
-            setGreeting(greetingResponse.greeting);
         } catch (e) {
-            console.error("AI Greeting failed:", e);
-            // Fallback greeting
-            setGreeting("Here's a snapshot of your helpdesk activity.");
+            console.error("AI Greeting failed to initiate:", e);
         }
-
-        setLoading(false);
       };
       fetchData();
     }

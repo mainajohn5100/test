@@ -61,7 +61,7 @@ export function EmailTemplatesForm() {
       <CardHeader>
         <CardTitle>Email Templates</CardTitle>
         <CardDescription>
-          Customize the content of automated emails sent to clients. Use placeholders like `{{ticket.title}}` or `{{user.name}}`.
+          Customize the content of automated emails sent to clients. Use placeholders like 'ticket.title' or 'user.name' enclosed with double curly braces to personalize the email.
         </CardDescription>
       </CardHeader>
       <CardContent>
