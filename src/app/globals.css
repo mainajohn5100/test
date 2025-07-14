@@ -53,9 +53,9 @@
   }
  
   .dark {
-    --background: 0 0% 9.4%;
+    --background: 0 0% 9.4%; /* #181818 */
     --foreground: 210 40% 98%;
-    --card: 0 0% 11.8%;
+    --card: 0 0% 11.8%; /* #1e1e1e */
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
@@ -65,7 +65,7 @@
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent-hsl: 210 4% 19.2%;
+    --accent-hsl: 217 33% 19%; /* #2f3133 */
     --accent: var(--accent-hsl);
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
@@ -104,7 +104,7 @@
   }
 
   .ProseMirror {
-    @apply min-h-[150px] max-h-[300px] overflow-y-auto w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
+    @apply min-h-[150px] max-h-[300px] overflow-y-auto w-full rounded-md border border-[#bfdefd] bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
   }
 
   .ProseMirror:focus {
