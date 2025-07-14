@@ -51,6 +51,7 @@ export function TicketTableToolbar({
               <SelectItem value="createdAt_asc">Oldest First</SelectItem>
               <SelectItem value="priority_desc">Priority (High-Low)</SelectItem>
               <SelectItem value="priority_asc">Priority (Low-High)</SelectItem>
+              <SelectItem value="status_asc">Status</SelectItem>
             </SelectContent>
           </Select>
       </div>

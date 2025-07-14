@@ -14,6 +14,22 @@ interface TicketClientProps {
   initialSearchTerm?: string;
 }
 
+const statusOrder: { [key in Ticket['status']]: number } = {
+  'New': 0,
+  'Active': 1,
+  'Pending': 2,
+  'On Hold': 3,
+  'Closed': 4,
+  'Terminated': 5,
+};
+
+const priorityOrder: { [key in Ticket['priority']]: number } = { 
+  'Low': 0, 
+  'Medium': 1, 
+  'High': 2, 
+  'Urgent': 3 
+};
+
 export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [sortBy, setSortBy] = useState('updatedAt_desc');
@@ -49,9 +65,11 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
         valA = new Date(a[key as 'createdAt' | 'updatedAt']).getTime();
         valB = new Date(b[key as 'createdAt' | 'updatedAt']).getTime();
       } else if (key === 'priority') {
-        const priorityOrder: { [key in Ticket['priority']]: number } = { 'Low': 0, 'Medium': 1, 'High': 2, 'Urgent': 3 };
         valA = priorityOrder[a.priority];
         valB = priorityOrder[b.priority];
+      } else if (key === 'status') {
+        valA = statusOrder[a.status];
+        valB = statusOrder[b.status];
       } else {
         return 0;
       }

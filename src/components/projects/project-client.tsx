@@ -23,6 +23,13 @@ const projectStatusVariantMap: { [key: string]: string } = {
   'New': 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100',
 };
 
+const statusOrder: { [key in Project['status']]: number } = {
+  'Active': 0,
+  'New': 1,
+  'On Hold': 2,
+  'Completed': 3,
+};
+
 export function ProjectClient({ projects }: ProjectClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -42,6 +49,7 @@ export function ProjectClient({ projects }: ProjectClientProps) {
       if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       if (sortBy === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       if (sortBy === 'deadline') return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      if (sortBy === 'status') return statusOrder[a.status] - statusOrder[b.status];
       return 0;
     });
 
@@ -70,6 +78,7 @@ export function ProjectClient({ projects }: ProjectClientProps) {
                 <SelectItem value="newest">Newest</SelectItem>
                 <SelectItem value="oldest">Oldest</SelectItem>
                 <SelectItem value="deadline">By Deadline</SelectItem>
+                <SelectItem value="status">By Status</SelectItem>
             </SelectContent>
           </Select>
         </div>
