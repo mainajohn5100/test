@@ -480,6 +480,23 @@ export async function createNotification(notificationData: Omit<Notification, 'i
   }
 }
 
+export async function getNotifications(userId: string): Promise<Notification[]> {
+    try {
+        const notificationsCol = collection(db, 'notifications');
+        const q = query(
+            notificationsCol,
+            where("userId", "==", userId),
+            orderBy('createdAt', 'desc'),
+            limit(50) // Prevent fetching thousands of notifications
+        );
+        const snapshot = await getDocs(q);
+        return snapshotToData<Notification>(snapshot);
+    } catch (error) {
+        console.error("Error fetching notifications:", error);
+        return [];
+    }
+}
+
 
 export async function updateNotificationReadStatus(notificationId: string, read: boolean): Promise<void> {
     try {
@@ -581,10 +598,14 @@ export async function addTaskToProject(projectId: string, taskData: Omit<Task, '
 export async function updateTaskInProject(projectId: string, taskId: string, updates: Partial<Task>) {
     try {
         const taskRef = doc(db, 'projects', projectId, 'tasks', taskId);
-        const cleanData = { ...updates };
+        const cleanData: { [key: string]: any } = { ...updates };
+        
         if (updates.dueDate) {
-            cleanData.dueDate = Timestamp.fromDate(new Date(updates.dueDate)).toISOString();
+            cleanData.dueDate = Timestamp.fromDate(new Date(updates.dueDate));
+        } else if (updates.dueDate === null) {
+            cleanData.dueDate = null;
         }
+
         await updateDoc(taskRef, cleanData);
     } catch (error) {
         console.error("Error updating task in project:", error);

@@ -155,7 +155,7 @@ export function TaskItem({ task, projectId, assignableUsers, userMap, canModifyT
                     <Calendar 
                         mode="single" 
                         selected={task.dueDate ? new Date(task.dueDate) : undefined}
-                        onSelect={(date) => handleUpdate({dueDate: date?.toISOString() ?? null})}
+                        onSelect={(date) => handleUpdate({dueDate: date ? date.toISOString() : null})}
                     />
                 </PopoverContent>
             </Popover>

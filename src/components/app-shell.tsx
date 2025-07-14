@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Maximize, Minimize, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw } from "lucide-react";
+import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,14 +36,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useTheme } from "next-themes";
-import { onSnapshot, collection, query, where, Timestamp } from "firebase/firestore";
 import type { Notification } from "@/lib/data";
 import { formatDistanceToNow } from "date-fns";
 import { useSettings } from "@/contexts/settings-context";
-import { markAllUserNotificationsAsRead, updateNotificationReadStatus } from "@/lib/firestore";
+import { markAllUserNotificationsAsRead, updateNotificationReadStatus, getNotifications } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "./ui/scroll-area";
+import { onSnapshot, query, collection, where, Timestamp } from "firebase/firestore";
 
 const getNotificationIcon = (title: string) => {
     if (title.toLowerCase().includes('ticket')) {
@@ -60,8 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { setTheme } = useTheme();
   const { toast } = useToast();
-  const [isFullScreen, setIsFullScreen] = React.useState(false);
-  const { showFullScreenButton, inAppNotifications } = useSettings();
+  const { inAppNotifications } = useSettings();
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = React.useState(true);
   const [globalSearchTerm, setGlobalSearchTerm] = React.useState('');
@@ -74,7 +73,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchNotifications = React.useCallback(async () => {
+    if (!currentUser?.id) return;
+    setLoadingNotifications(true);
+    try {
+        const fetchedNotifications = await getNotifications(currentUser.id);
+        setNotifications(fetchedNotifications);
+    } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+        toast({
+            title: "Error",
+            description: "Could not fetch notifications.",
+            variant: "destructive"
+        });
+    } finally {
+        setLoadingNotifications(false);
+    }
+  }, [currentUser?.id, toast]);
 
+  // Real-time listener
   React.useEffect(() => {
     if (!currentUser?.id || !inAppNotifications) {
       setLoadingNotifications(false);
@@ -141,24 +158,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         console.error("Error signing out: ", error);
     }
   };
-  
-  const handleFullScreen = () => {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
-    }
-  };
-  
-  React.useEffect(() => {
-    const onFullScreenChange = () => {
-        setIsFullScreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', onFullScreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullScreenChange);
-  }, []);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
@@ -282,12 +281,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 onKeyDown={handleGlobalSearch}
               />
             </div>
-            {showFullScreenButton && (
-                <Button variant="ghost" size="icon" className="rounded-full" onClick={handleFullScreen}>
-                    {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-                    <span className="sr-only">Toggle Full screen</span>
-                </Button>
-            )}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full relative">
@@ -307,7 +300,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                               Mark all as read
                            </Button>
                         )}
-                        <Button variant="ghost" size="icon" onClick={() => {}} className="h-6 w-6" disabled>
+                        <Button variant="ghost" size="icon" onClick={fetchNotifications} className="h-6 w-6">
                             <RefreshCw className={cn("h-4 w-4", loadingNotifications && "animate-spin")} />
                         </Button>
                       </div>
