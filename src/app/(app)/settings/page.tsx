@@ -65,7 +65,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
               <CardDescription>
-                Manage how you receive notifications from the application.
+                Manage how you receive notifications from the application. These settings are local to your browser.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -117,9 +117,9 @@ export default function SettingsPage() {
             <div className="space-y-6">
               <Card>
                   <CardHeader>
-                      <CardTitle>Panel Access</CardTitle>
+                      <CardTitle>Access & Permissions</CardTitle>
                       <CardDescription>
-                          Globally enable or disable access for different user roles.
+                          Globally enable or disable access and permissions for different user roles. These settings affect all users in your organization.
                       </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -177,7 +177,7 @@ export default function SettingsPage() {
                                   Agent Can Add Team Members
                               </Label>
                               <p className="text-sm text-muted-foreground">
-                                  Allow agents to add or remove team members from projects.
+                                  Allow agents who are project creators to add or remove team members from projects.
                               </p>
                           </div>
                           <Switch

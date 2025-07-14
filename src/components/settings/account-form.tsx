@@ -124,7 +124,7 @@ export function AccountForm() {
                                 Public Activity
                                 </Label>
                                 <p className="text-sm text-muted-foreground">
-                                Allow others to see your tickets and projects.
+                                Allow others to see your tickets and projects on your profile.
                                 </p>
                             </div>
                             <Switch
@@ -141,12 +141,13 @@ export function AccountForm() {
                                 Inactivity Timeout
                                 </Label>
                                 <p className="text-sm text-muted-foreground">
-                                Automatically log out after a period of inactivity.
+                                Automatically log out after a period of inactivity. This is an organization-wide setting.
                                 </p>
                             </div>
                              <Select 
                                 value={String(inactivityTimeout)} 
                                 onValueChange={(value) => setInactivityTimeout(Number(value))}
+                                disabled={user.role !== 'Admin'}
                             >
                                 <SelectTrigger className="w-48">
                                     <SelectValue placeholder="Select timeout" />
@@ -166,5 +167,3 @@ export function AccountForm() {
         </div>
     );
 }
-
-    

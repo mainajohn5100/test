@@ -2,7 +2,11 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import type { Organization } from '@/lib/data';
+import { useAuth } from './auth-context';
+import { getOrganizationById, updateOrganizationSettings } from '@/lib/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const INACTIVITY_TIMEOUT_OPTIONS = [
     { value: 1, label: '1 minute' },
@@ -17,49 +21,48 @@ const INACTIVITY_TIMEOUT_OPTIONS = [
 
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
-interface SettingsContextType {
+// Merging local settings with DB settings for a comprehensive context
+interface SettingsContextType extends Omit<Required<Organization>['settings'], 'emailTemplates'> {
   showFullScreenButton: boolean;
   setShowFullScreenButton: (show: boolean) => void;
   inAppNotifications: boolean;
   setInAppNotifications: (enabled: boolean) => void;
   emailNotifications: boolean;
   setEmailNotifications: (enabled: boolean) => void;
-  agentPanelEnabled: boolean;
-  setAgentPanelEnabled: (enabled: boolean) => void;
-  clientPanelEnabled: boolean;
-  setClientPanelEnabled: (enabled: boolean) => void;
-  clientCanSelectProject: boolean;
-  setClientCanSelectProject: (enabled: boolean) => void;
-  agentCanEditTeam: boolean;
-  setAgentCanEditTeam: (enabled: boolean) => void;
-  excludeClosedTickets: boolean;
-  setExcludeClosedTickets: (enabled: boolean) => void;
-  inactivityTimeout: number;
-  setInactivityTimeout: (minutes: number) => void;
+  INACTIVITY_TIMEOUT_OPTIONS: typeof INACTIVITY_TIMEOUT_OPTIONS;
+  loading: boolean;
   supportEmail: string;
   setSupportEmail: (email: string) => void;
-  INACTIVITY_TIMEOUT_OPTIONS: typeof INACTIVITY_TIMEOUT_OPTIONS;
-  loadingScreenStyle: LoadingScreenStyle;
+  setAgentPanelEnabled: (enabled: boolean) => void;
+  setClientPanelEnabled: (enabled: boolean) => void;
+  setClientCanSelectProject: (enabled: boolean) => void;
+  setAgentCanEditTeam: (enabled: boolean) => void;
+  setExcludeClosedTickets: (enabled: boolean) => void;
+  setInactivityTimeout: (minutes: number) => void;
   setLoadingScreenStyle: (style: LoadingScreenStyle) => void;
-  loading: boolean;
 }
+
+const defaultSettings = {
+    agentPanelEnabled: true,
+    clientPanelEnabled: true,
+    clientCanSelectProject: true,
+    agentCanEditTeam: false,
+    excludeClosedTickets: false,
+    inactivityTimeout: 15,
+    loadingScreenStyle: 'spinner' as LoadingScreenStyle,
+    supportEmail: '',
+};
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-// Helper function to safely get item from localStorage, only on client-side
+// Helper function to safely get item from localStorage for local-only settings
 const getItemFromStorage = (key: string, defaultValue: any) => {
-    if (typeof window === 'undefined') {
-        return defaultValue;
-    }
+    if (typeof window === 'undefined') return defaultValue;
     const item = localStorage.getItem(key);
     if (item === null) return defaultValue;
     try {
-        if (item === 'true' || item === 'false') {
-            return item === 'true';
-        }
-        if (!isNaN(Number(item))) {
-            return Number(item);
-        }
+        if (item === 'true' || item === 'false') return item === 'true';
+        if (!isNaN(Number(item))) return Number(item);
         return item;
     } catch {
         return defaultValue;
@@ -67,40 +70,65 @@ const getItemFromStorage = (key: string, defaultValue: any) => {
 };
 
 export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
+    const { user, loading: authLoading } = useAuth();
+    const { toast } = useToast();
+    const [settings, setSettings] = useState<Organization['settings']>(defaultSettings);
     const [loading, setLoading] = useState(true);
-    // Initialize state with default values, which will be used for server-side rendering
+
+    // Local-only settings that are not part of the organization document
     const [showFullScreenButton, _setShowFullScreenButton] = useState(true);
     const [inAppNotifications, _setInAppNotifications] = useState(true);
     const [emailNotifications, _setEmailNotifications] = useState(false);
-    const [agentPanelEnabled, _setAgentPanelEnabled] = useState(true);
-    const [clientPanelEnabled, _setClientPanelEnabled] = useState(true);
-    const [clientCanSelectProject, _setClientCanSelectProject] = useState(true);
-    const [agentCanEditTeam, _setAgentCanEditTeam] = useState(true);
-    const [excludeClosedTickets, _setExcludeClosedTickets] = useState(false);
-    const [inactivityTimeout, _setInactivityTimeout] = useState(2); // Default to 2 minutes
-    const [supportEmail, _setSupportEmail] = useState('');
-    const [loadingScreenStyle, _setLoadingScreenStyle] = useState<LoadingScreenStyle>('spinner');
 
-
-    // Use useEffect to load settings from localStorage on the client-side
     useEffect(() => {
         _setShowFullScreenButton(getItemFromStorage('show-fullscreen-button', true));
         _setInAppNotifications(getItemFromStorage('in-app-notifications', true));
         _setEmailNotifications(getItemFromStorage('email-notifications', false));
-        _setAgentPanelEnabled(getItemFromStorage('agent-panel-enabled', true));
-        _setClientPanelEnabled(getItemFromStorage('client-panel-enabled', true));
-        _setClientCanSelectProject(getItemFromStorage('client-can-select-project', true));
-        _setAgentCanEditTeam(getItemFromStorage('agent-can-edit-team', true));
-        _setExcludeClosedTickets(getItemFromStorage('exclude-closed-tickets', false));
-        _setInactivityTimeout(getItemFromStorage('inactivity-timeout', 2));
-        _setSupportEmail(getItemFromStorage('support-email', ''));
-        _setLoadingScreenStyle(getItemFromStorage('loading-screen-style', 'spinner'));
-
-
-        setLoading(false);
     }, []);
+    
+    useEffect(() => {
+        if (authLoading) return;
+        if (user?.organizationId) {
+            setLoading(true);
+            getOrganizationById(user.organizationId)
+                .then(org => {
+                    if (org && org.settings) {
+                        setSettings({ ...defaultSettings, ...org.settings });
+                    } else {
+                        setSettings(defaultSettings);
+                    }
+                })
+                .catch(error => {
+                    console.error("Failed to fetch organization settings:", error);
+                    toast({ title: "Error", description: "Could not load organization settings.", variant: "destructive" });
+                })
+                .finally(() => setLoading(false));
+        } else {
+            setLoading(false);
+        }
+    }, [user, authLoading, toast]);
+    
+    const updateSetting = useCallback(async (update: Partial<Organization['settings']>) => {
+        if (!user?.organizationId) {
+            toast({ title: "Error", description: "You must be authenticated to change settings.", variant: "destructive" });
+            return;
+        }
+        
+        const oldSettings = { ...settings };
+        // Optimistic update
+        setSettings(prev => ({ ...prev, ...update }));
 
-    const setItem = (key: string, value: string) => {
+        try {
+            await updateOrganizationSettings(user.organizationId, update);
+        } catch (error) {
+            console.error("Failed to update setting:", error);
+            setSettings(oldSettings); // Revert on failure
+            toast({ title: "Error", description: "Failed to save setting.", variant: "destructive" });
+        }
+    }, [user, toast, settings]);
+
+
+    const setLocalStorageItem = (key: string, value: string) => {
         if (typeof window !== 'undefined') {
             localStorage.setItem(key, value);
         }
@@ -108,85 +136,47 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
     const setShowFullScreenButton = (show: boolean) => {
         _setShowFullScreenButton(show);
-        setItem('show-fullscreen-button', String(show));
+        setLocalStorageItem('show-fullscreen-button', String(show));
     };
 
     const setInAppNotifications = (enabled: boolean) => {
         _setInAppNotifications(enabled);
-        setItem('in-app-notifications', String(enabled));
+        setLocalStorageItem('in-app-notifications', String(enabled));
     };
 
     const setEmailNotifications = (enabled: boolean) => {
         _setEmailNotifications(enabled);
-        setItem('email-notifications', String(enabled));
+        setLocalStorageItem('email-notifications', String(enabled));
     };
 
-    const setAgentPanelEnabled = (enabled: boolean) => {
-        _setAgentPanelEnabled(enabled);
-        setItem('agent-panel-enabled', String(enabled));
-    };
-
-    const setClientPanelEnabled = (enabled: boolean) => {
-        _setClientPanelEnabled(enabled);
-        setItem('client-panel-enabled', String(enabled));
-    };
-
-    const setClientCanSelectProject = (enabled: boolean) => {
-        _setClientCanSelectProject(enabled);
-        setItem('client-can-select-project', String(enabled));
-    };
-
-    const setAgentCanEditTeam = (enabled: boolean) => {
-        _setAgentCanEditTeam(enabled);
-        setItem('agent-can-edit-team', String(enabled));
-    };
-    
-    const setExcludeClosedTickets = (enabled: boolean) => {
-        _setExcludeClosedTickets(enabled);
-        setItem('exclude-closed-tickets', String(enabled));
-    };
-    
-    const setInactivityTimeout = (minutes: number) => {
-        _setInactivityTimeout(minutes);
-        setItem('inactivity-timeout', String(minutes));
-    };
-    
-    const setSupportEmail = (email: string) => {
-        _setSupportEmail(email);
-        setItem('support-email', email);
-    };
-
-    const setLoadingScreenStyle = (style: LoadingScreenStyle) => {
-        _setLoadingScreenStyle(style);
-        setItem('loading-screen-style', style);
-    };
-
-
-    const value = { 
-        showFullScreenButton, 
+    const value: SettingsContextType = {
+        showFullScreenButton,
         setShowFullScreenButton,
         inAppNotifications,
         setInAppNotifications,
         emailNotifications,
         setEmailNotifications,
-        agentPanelEnabled,
-        setAgentPanelEnabled,
-        clientPanelEnabled,
-        setClientPanelEnabled,
-        clientCanSelectProject,
-        setClientCanSelectProject,
-        agentCanEditTeam,
-        setAgentCanEditTeam,
-        excludeClosedTickets,
-        setExcludeClosedTickets,
-        inactivityTimeout,
-        setInactivityTimeout,
-        supportEmail,
-        setSupportEmail,
+        agentPanelEnabled: settings?.agentPanelEnabled ?? defaultSettings.agentPanelEnabled,
+        clientPanelEnabled: settings?.clientPanelEnabled ?? defaultSettings.clientPanelEnabled,
+        clientCanSelectProject: settings?.clientCanSelectProject ?? defaultSettings.clientCanSelectProject,
+        agentCanEditTeam: settings?.agentCanEditTeam ?? defaultSettings.agentCanEditTeam,
+        excludeClosedTickets: settings?.excludeClosedTickets ?? defaultSettings.excludeClosedTickets,
+        inactivityTimeout: settings?.inactivityTimeout ?? defaultSettings.inactivityTimeout,
+        loadingScreenStyle: settings?.loadingScreenStyle ?? defaultSettings.loadingScreenStyle,
+        supportEmail: settings?.supportEmail ?? defaultSettings.supportEmail,
+        setAgentPanelEnabled: (enabled: boolean) => updateSetting({ agentPanelEnabled: enabled }),
+        setClientPanelEnabled: (enabled: boolean) => updateSetting({ clientPanelEnabled: enabled }),
+        setClientCanSelectProject: (enabled: boolean) => updateSetting({ clientCanSelectProject: enabled }),
+        setAgentCanEditTeam: (enabled: boolean) => updateSetting({ agentCanEditTeam: enabled }),
+        setExcludeClosedTickets: (enabled: boolean) => updateSetting({ excludeClosedTickets: enabled }),
+        setInactivityTimeout: (minutes: number) => updateSetting({ inactivityTimeout: minutes }),
+        setLoadingScreenStyle: (style: LoadingScreenStyle) => updateSetting({ loadingScreenStyle: style }),
+        setSupportEmail: (email: string) => {
+            // This is a special case since it's saved via a button, not a direct toggle
+            setSettings(prev => ({...prev, supportEmail: email}));
+        },
         INACTIVITY_TIMEOUT_OPTIONS,
-        loadingScreenStyle,
-        setLoadingScreenStyle,
-        loading
+        loading: loading || authLoading,
     };
 
     return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

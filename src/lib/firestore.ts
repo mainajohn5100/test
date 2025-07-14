@@ -1,5 +1,6 @@
 
 
+
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization } from './data';
@@ -561,13 +562,13 @@ export const getOrganizationById = cache(async (id: string): Promise<Organizatio
     }
 });
 
-export async function updateOrganizationSettings(orgId: string, settings: Organization['settings']): Promise<void> {
+export async function updateOrganizationSettings(orgId: string, settingsUpdate: Partial<Organization['settings']>): Promise<void> {
     try {
         const orgRef = doc(db, 'organizations', orgId);
-        // Use dot notation to update nested fields
         const updates: { [key: string]: any } = {};
-        if (settings?.supportEmail) updates['settings.supportEmail'] = settings.supportEmail;
-        if (settings?.emailTemplates) updates['settings.emailTemplates'] = settings.emailTemplates;
+        for (const key in settingsUpdate) {
+            updates[`settings.${key}`] = (settingsUpdate as any)[key];
+        }
         
         if(Object.keys(updates).length > 0) {
           await updateDoc(orgRef, updates);

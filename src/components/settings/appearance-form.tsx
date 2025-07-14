@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -22,7 +23,7 @@ import { cn } from '@/lib/utils'
 import { useSettings } from '@/contexts/settings-context'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import type { LoadingScreenStyle } from '@/contexts/settings-context'
+import type { LoadingScreenStyle } from '@/lib/data'
 
 const appearanceFormSchema = z.object({
   theme: z.enum(['light', 'dark', 'system'], {
@@ -179,7 +180,7 @@ export function AppearanceForm() {
         <FormItem className="space-y-1">
             <FormLabel>Theme</FormLabel>
             <FormDescription>
-                Select a color theme for the dashboard.
+                Select a color theme for the dashboard. This is a local setting.
             </FormDescription>
             <div className="flex flex-wrap gap-4 pt-2">
                 {colorThemes.map((theme) => (
@@ -209,7 +210,7 @@ export function AppearanceForm() {
             <FormItem className="space-y-1">
               <FormLabel>Loading Screen</FormLabel>
               <FormDescription>
-                Choose the style for loading states across the application.
+                Choose the style for loading states across the application. This is an organization-wide setting.
               </FormDescription>
               <FormMessage />
               <RadioGroup
@@ -273,7 +274,7 @@ export function AppearanceForm() {
                   Show Full Screen Button
                 </FormLabel>
                 <FormDescription>
-                  Display the toggle in the application header.
+                  Display the toggle in the application header (local setting).
                 </FormDescription>
               </div>
               <Switch
@@ -288,7 +289,7 @@ export function AppearanceForm() {
                         Exclude Closed Tickets
                     </FormLabel>
                     <p className="text-sm text-muted-foreground">
-                        Hide closed and terminated tickets from default views.
+                        Hide closed and terminated tickets from default views (organization-wide).
                     </p>
                 </div>
                 <Switch

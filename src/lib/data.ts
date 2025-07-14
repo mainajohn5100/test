@@ -77,11 +77,20 @@ export type EmailTemplate = {
   newAssignee: string;
 };
 
+export type LoadingScreenStyle = 'spinner' | 'skeleton';
+
 export type Organization = {
   id: string;
   name: string;
   createdAt: string;
   settings?: {
+    agentPanelEnabled?: boolean;
+    clientPanelEnabled?: boolean;
+    clientCanSelectProject?: boolean;
+    agentCanEditTeam?: boolean;
+    excludeClosedTickets?: boolean;
+    inactivityTimeout?: number;
+    loadingScreenStyle?: LoadingScreenStyle;
     supportEmail?: string;
     emailTemplates?: Partial<EmailTemplate>;
   }
