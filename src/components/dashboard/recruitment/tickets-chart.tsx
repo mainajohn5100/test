@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Legend, Bar } from "recharts";
 import type { Ticket } from "@/lib/data";
