@@ -12,7 +12,7 @@ import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
 import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
 import { getTickets, getProjects, getUsers } from "@/lib/firestore";
-import { format, getMonth, differenceInDays, isToday } from 'date-fns';
+import { format, getMonth, differenceInHours, isToday } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
@@ -98,32 +98,32 @@ export default function DashboardPage() {
   
   // Process data for AvgResolutionTimeChart
   const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status !== 'Terminated');
-  const monthlyResolutionTimes: { [key: number]: { totalDays: number; count: number } } = {};
+  const monthlyResolutionTimes: { [key: number]: { totalHours: number; count: number } } = {};
 
   closedTickets.forEach(ticket => {
     const createdAt = new Date(ticket.createdAt);
     const resolvedAt = new Date(ticket.updatedAt);
-    const resolutionDays = differenceInDays(resolvedAt, createdAt);
+    const resolutionHours = differenceInHours(resolvedAt, createdAt);
     const month = getMonth(resolvedAt);
     
     if (!monthlyResolutionTimes[month]) {
-      monthlyResolutionTimes[month] = { totalDays: 0, count: 0 };
+      monthlyResolutionTimes[month] = { totalHours: 0, count: 0 };
     }
-    monthlyResolutionTimes[month].totalDays += resolutionDays;
+    monthlyResolutionTimes[month].totalHours += resolutionHours;
     monthlyResolutionTimes[month].count++;
   });
 
   const avgResolutionTimeData = Array.from({ length: 12 }).map((_, i) => {
     const monthName = format(new Date(2000, i, 1), 'MMM');
     if (monthlyResolutionTimes[i] && monthlyResolutionTimes[i].count > 0) {
-      const avg = monthlyResolutionTimes[i].totalDays / monthlyResolutionTimes[i].count;
-      return { name: monthName, days: parseFloat(avg.toFixed(1)) };
+      const avg = monthlyResolutionTimes[i].totalHours / monthlyResolutionTimes[i].count;
+      return { name: monthName, hours: parseFloat(avg.toFixed(1)) };
     }
-    return { name: monthName, days: null };
+    return { name: monthName, hours: null };
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <PageHeader title={`Welcome, ${user.name}!`} description={greeting}>
         <div className="flex items-center gap-2">
             <Link href="/tickets/new" passHref>
@@ -137,11 +137,11 @@ export default function DashboardPage() {
       
       <StatsCards tickets={displayedTickets} projects={projects} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           <RecentTickets tickets={displayedTickets} userMap={userMapByName} />
         </div>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <TicketsOverviewChart data={ticketsOverviewData} />
           <AvgResolutionTimeChart data={avgResolutionTimeData} />
         </div>

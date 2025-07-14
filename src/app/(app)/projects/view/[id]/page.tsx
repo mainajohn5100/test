@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader, MoreVertical, Trash2, PlusCircle } from "lucide-react";
+import { ArrowLeft, Loader, MoreVertical, Trash2, PlusCircle, CheckCircle2, Circle } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -48,13 +48,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getProjectById, getTicketsByProject, getUsers } from "@/lib/firestore";
-import type { Project, Ticket, User } from "@/lib/data";
+import type { Project, Ticket, User, Task } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { updateProjectAction, deleteProjectAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/contexts/settings-context";
+import { Progress } from "@/components/ui/progress";
 
 
 const projectStatusVariantMap: { [key: string]: string } = {
@@ -73,6 +74,15 @@ const ticketStatusVariantMap: { [key: string]: "default" | "secondary" | "destru
   'Terminated': 'destructive',
 };
 
+// Dummy data for tasks
+const dummyTasks: Task[] = [
+    { id: 'task-1', title: 'Design new homepage mockups', status: 'completed', assignedTo: 'usr_2', dueDate: '2024-06-15' },
+    { id: 'task-2', title: 'Develop user authentication flow', status: 'in-progress', assignedTo: 'usr_3', dueDate: '2024-06-20' },
+    { id: 'task-3', title: 'Setup staging environment', status: 'in-progress', assignedTo: 'usr_1', dueDate: '2024-06-10' },
+    { id: 'task-4', title: 'Write API documentation', status: 'todo', assignedTo: 'usr_3', dueDate: '2024-07-01' },
+    { id: 'task-5', title: 'User acceptance testing', status: 'todo', assignedTo: 'usr_2', dueDate: '2024-07-10' },
+];
+
 export default function ViewProjectPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -86,12 +96,15 @@ export default function ViewProjectPage() {
   const [users, setUsers] = React.useState<User[]>([]);
   const [associatedTickets, setAssociatedTickets] = React.useState<Ticket[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [tasks, setTasks] = React.useState<Task[]>(dummyTasks); // Using dummy data for now
 
   const [currentStatus, setCurrentStatus] = React.useState<string | undefined>();
   const [ticketsEnabled, setTicketsEnabled] = React.useState(false);
   
   const userMap = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
   const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Admin' || u.role === 'Agent'), [users]);
+  const completedTasks = React.useMemo(() => tasks.filter(t => t.status === 'completed').length, [tasks]);
+  const taskProgress = React.useMemo(() => tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0, [completedTasks, tasks]);
 
   React.useEffect(() => {
     if (!params.id || !currentUser) return;
@@ -212,7 +225,7 @@ export default function ViewProjectPage() {
   
   return (
     <AlertDialog>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <PageHeader title={project.name} description={manager ? `Managed by ${manager.name}. Due on ${format(new Date(project.deadline), "PP")}.` : `Due on ${format(new Date(project.deadline), "PP")}.`}>
           <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -220,8 +233,8 @@ export default function ViewProjectPage() {
           </Button>
         </PageHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 space-y-4">
             <Card>
               <CardHeader>
                   <CardTitle>Project Summary</CardTitle>
@@ -230,6 +243,54 @@ export default function ViewProjectPage() {
                   <p className="text-muted-foreground whitespace-pre-wrap">{project.description || "No description was provided for this project."}</p>
               </CardContent>
             </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Project Tasks</CardTitle>
+                    <CardDescription>A list of tasks associated with this project.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Task Progress</span>
+                            <span>{completedTasks}/{tasks.length} Completed</span>
+                        </div>
+                        <Progress value={taskProgress} />
+                    </div>
+                    <div className="space-y-4">
+                        {tasks.map(task => {
+                            const assignee = userMap.get(task.assignedTo);
+                            return (
+                                <div key={task.id} className="flex items-center">
+                                    {task.status === 'completed' ? (
+                                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                    ) : (
+                                        <Circle className="h-5 w-5 text-muted-foreground" />
+                                    )}
+                                    <div className="ml-4 flex-1">
+                                        <p className="font-medium">{task.title}</p>
+                                        <p className="text-sm text-muted-foreground">Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}</p>
+                                    </div>
+                                    {assignee && (
+                                        <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                                <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                            <p>{assignee.name}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </CardContent>
+             </Card>
             <Card>
               <CardHeader>
                 <CardTitle>Associated Tickets</CardTitle>
@@ -267,7 +328,7 @@ export default function ViewProjectPage() {
               </CardContent>
             </Card>
           </div>
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4">
               <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-4">
                       <CardTitle>Project Details</CardTitle>

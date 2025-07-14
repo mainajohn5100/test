@@ -1,9 +1,10 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root, .theme-default {
+  :root {
     --background: 210 100% 98%;
     --foreground: 222.2 84% 4.9%;
 
@@ -51,7 +52,7 @@
     --sidebar-ring: 210 100% 50%;
   }
  
-  .dark, .dark .theme-default {
+  .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -87,106 +88,6 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 210 100% 50%;
-  }
-
-  /* Violet Theme */
-  .theme-violet {
-    --background: 217 100% 98%;
-    --primary: 217 96% 63%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217 60% 94%;
-    --accent: 295 94% 76%;
-    --ring: 217 96% 63%;
-  }
-
-  .dark .theme-violet {
-    --background: 224 71% 10%;
-    --foreground: 210 40% 98%;
-    --card: 224 71% 12%;
-    --popover: 224 71% 10%;
-    --primary: 217 96% 63%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 224 71% 15%;
-    --muted: 224 71% 15%;
-    --accent: 295 94% 76%;
-    --border: 224 71% 18%;
-    --input: 224 71% 18%;
-    --ring: 217 96% 73%;
-  }
-
-  /* Orange Theme */
-  .theme-orange {
-    --background: 30 100% 98%;
-    --primary: 358 81% 63%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 60% 94%;
-    --accent: 43 92% 57%;
-    --ring: 358 81% 63%;
-  }
-
-  .dark .theme-orange {
-    --background: 20 50% 8%;
-    --foreground: 30 30% 95%;
-    --card: 20 50% 10%;
-    --popover: 20 50% 8%;
-    --primary: 358 81% 63%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 20 50% 14%;
-    --muted: 20 50% 14%;
-    --accent: 43 92% 57%;
-    --border: 20 50% 18%;
-    --input: 20 50% 18%;
-    --ring: 358 81% 73%;
-  }
-
-  /* Teal Theme */
-  .theme-teal {
-    --background: 180 100% 98%;
-    --primary: 238 78% 61%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 180 60% 94%;
-    --accent: 179 65% 66%;
-    --ring: 238 78% 61%;
-  }
-  
-  .dark .theme-teal {
-    --background: 210 30% 10%;
-    --foreground: 180 30% 95%;
-    --card: 210 30% 12%;
-    --popover: 210 30% 10%;
-    --primary: 238 78% 61%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 30% 16%;
-    --muted: 210 30% 16%;
-    --accent: 179 65% 66%;
-    --border: 210 30% 20%;
-    --input: 210 30% 20%;
-    --ring: 238 78% 71%;
-  }
-
-  /* Blue Theme */
-  .theme-blue {
-    --background: 210 100% 98%;
-    --primary: 213 94% 49%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 60% 94%;
-    --accent: 210 89% 80%;
-    --ring: 213 94% 49%;
-  }
-
-  .dark .theme-blue {
-    --background: 215 60% 8%;
-    --foreground: 210 30% 95%;
-    --card: 215 60% 10%;
-    --popover: 215 60% 8%;
-    --primary: 213 94% 49%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 60% 14%;
-    --muted: 215 60% 14%;
-    --accent: 210 89% 80%;
-    --border: 215 60% 18%;
-    --input: 215 60% 18%;
-    --ring: 213 94% 59%;
   }
 }
  
@@ -232,19 +133,4 @@
   .ProseMirror a {
     @apply text-primary underline;
   }
-}
-
-@layer utilities {
-    .bg-accent {
-        background-color: hsl(var(--accent));
-    }
-    .text-accent-foreground {
-        color: hsl(var(--accent-foreground));
-    }
-    .border-accent {
-        border-color: hsl(var(--accent));
-    }
-    .ring-ring {
-        --tw-ring-color: hsl(var(--accent));
-    }
 }

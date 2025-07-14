@@ -5,7 +5,7 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "rec
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface AvgResolutionTimeChartProps {
-    data: { name: string; days: number | null }[];
+    data: { name: string; hours: number | null }[];
 }
 
 export function AvgResolutionTimeChart({ data }: AvgResolutionTimeChartProps) {
@@ -30,7 +30,7 @@ export function AvgResolutionTimeChart({ data }: AvgResolutionTimeChartProps) {
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `${value}d`}
+              tickFormatter={(value) => `${value}h`}
             />
             <Tooltip
               contentStyle={{
@@ -40,10 +40,10 @@ export function AvgResolutionTimeChart({ data }: AvgResolutionTimeChartProps) {
               }}
               formatter={(value: number, name, props) => {
                   if (value === null) return [null, null];
-                  return [`${value.toFixed(1)} days`, "Avg. Time"]
+                  return [`${value.toFixed(1)} hours`, "Avg. Time"]
               }}
             />
-            <Line type="monotone" dataKey="days" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} connectNulls />
+            <Line type="monotone" dataKey="hours" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

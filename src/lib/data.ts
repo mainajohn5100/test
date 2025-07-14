@@ -61,6 +61,14 @@ export type Project = {
   organizationId: string;
 }
 
+export type Task = {
+  id: string;
+  title: string;
+  status: 'todo' | 'in-progress' | 'completed';
+  assignedTo: string; // User ID
+  dueDate: string;
+};
+
 export type Notification = {
   id: string;
   userId: string;

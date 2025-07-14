@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useTheme } from 'next-themes'
-import { Moon, Sun, Loader, Image } from 'lucide-react'
+import { Moon, Sun, Loader } from 'lucide-react'
 import * as React from 'react'
 
 import {
@@ -19,7 +19,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { cn } from '@/lib/utils'
 import { useSettings } from '@/contexts/settings-context'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
@@ -34,14 +33,6 @@ const appearanceFormSchema = z.object({
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 
-const colorThemes = [
-    { name: 'default', label: 'Default', gradient: 'linear-gradient(to right, #BDE0FE, #cdb4db)' },
-    { name: 'violet', label: 'Violet', gradient: 'linear-gradient(to right, #f187fb, #439cfb)' },
-    { name: 'orange', label: 'Orange', gradient: 'linear-gradient(to right, #ea5459, #f7ba2c)' },
-    { name: 'teal', label: 'Teal', gradient: 'linear-gradient(to right, #6fe3e1, #5257e5)' },
-    { name: 'blue', label: 'Blue', gradient: 'linear-gradient(to right, #9fccfa, #0974f1)' },
-]
-
 export function AppearanceForm() {
   const { setTheme, theme: mode } = useTheme()
   const { 
@@ -52,21 +43,6 @@ export function AppearanceForm() {
     excludeClosedTickets,
     setExcludeClosedTickets
   } = useSettings();
-  const [appTheme, setAppTheme] = React.useState('default')
-
-  React.useEffect(() => {
-    const savedTheme = localStorage.getItem('app-theme') || 'default'
-    handleThemeChange(savedTheme)
-  }, [])
-
-  const handleThemeChange = (name: string) => {
-    setAppTheme(name)
-    localStorage.setItem('app-theme', name)
-    
-    const htmlEl = document.documentElement
-    colorThemes.forEach(theme => htmlEl.classList.remove(`theme-${theme.name}`))
-    htmlEl.classList.add(`theme-${name}`)
-  }
 
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
@@ -176,32 +152,6 @@ export function AppearanceForm() {
             </FormItem>
           )}
         />
-        <Separator />
-        <FormItem className="space-y-1">
-            <FormLabel>Theme</FormLabel>
-            <FormDescription>
-                Select a color theme for the dashboard. This is a local setting.
-            </FormDescription>
-            <div className="flex flex-wrap gap-4 pt-2">
-                {colorThemes.map((theme) => (
-                    <div key={theme.name} className="flex flex-col items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => handleThemeChange(theme.name)}
-                            className={cn(
-                                'h-12 w-12 rounded-md border-2 transition-all',
-                                appTheme === theme.name
-                                ? 'ring-2 ring-ring ring-offset-2'
-                                : 'border-muted'
-                            )}
-                            style={{ backgroundImage: theme.gradient }}
-                            aria-label={`Select ${theme.label} theme`}
-                        />
-                        <span className="text-xs text-muted-foreground">{theme.label}</span>
-                    </div>
-                ))}
-            </div>
-        </FormItem>
         <Separator />
         <FormField
           control={form.control}

@@ -22,6 +22,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useSettings } from "@/contexts/settings-context";
+import { format } from "date-fns";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   'New': 'secondary',
@@ -78,8 +79,8 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
             <TableRow>
               <TableHead>Title</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Priority</TableHead>
               <TableHead>Assignee</TableHead>
+              <TableHead>Created</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -101,7 +102,6 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
                 <TableCell>
                   <Badge variant={statusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
                 </TableCell>
-                <TableCell>{ticket.priority}</TableCell>
                 <TableCell>
                     <div className="flex items-center gap-2 max-w-[150px] truncate">
                         {assignee ? (
@@ -116,6 +116,9 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
                             <span className="truncate">{ticket.assignee}</span>
                         )}
                     </div>
+                </TableCell>
+                <TableCell>
+                    <div className="text-sm text-muted-foreground">{format(new Date(ticket.createdAt), "dd MMM, yyyy")}</div>
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                     <TicketTableRowActions ticket={ticket} />

@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -135,12 +135,12 @@ export default function ViewTicketPage() {
       );
 
       setPageDescription(
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
           <span>
             Opened by {reporterName} on {format(new Date(ticket.createdAt), "PPp")}.
           </span>
           <span className="hidden sm:inline-block">•</span>
-          <span className="hidden sm:inline-block">
+          <span>
             Last updated {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}.
           </span>
         </div>
@@ -371,7 +371,7 @@ export default function ViewTicketPage() {
 
   return (
     <AlertDialog>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <PageHeader 
           title={ticket.title} 
           description={pageDescription}
@@ -382,8 +382,8 @@ export default function ViewTicketPage() {
           </Button>
         </PageHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 space-y-4">
             <Card>
                 <CardHeader>
                     <CardTitle>Description</CardTitle>
@@ -477,7 +477,7 @@ export default function ViewTicketPage() {
 
           </div>
 
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4">
             <Card>
               <CardHeader className="flex-row items-center justify-between pb-2">
                 <CardTitle>Details</CardTitle>
@@ -614,13 +614,13 @@ export default function ViewTicketPage() {
                 <CardContent className="flex items-center gap-4">
                     {reporter && (
                         <Link href={`/users/${reporter.id}`}>
-                            <Avatar className="h-12 w-12">
+                            <Avatar className="h-10 w-10">
                                 <AvatarImage src={reporter.avatar} />
                                 <AvatarFallback>{ticket.reporter.charAt(0)}</AvatarFallback>
                             </Avatar>
                         </Link>
                     )}
-                    <div>
+                    <div className="flex-1">
                         <p className="font-semibold text-sm">{ticket.reporter}</p>
                         {reporterEmail && (
                             <a href={`mailto:${reporterEmail}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
