@@ -35,31 +35,32 @@ export function ProjectTasks({ projectId, initialTasks, assignableUsers, canModi
     <Card>
       <Accordion type="single" collapsible defaultValue="item-1">
         <AccordionItem value="item-1" className="border-b-0">
-          <div className="flex items-center px-6 pt-4">
-             <AccordionTrigger className="flex-1 py-0">
-                <div className="flex flex-col">
-                  <CardTitle>Project Tasks</CardTitle>
-                  <CardDescription className="pt-1">A list of tasks associated with this project.</CardDescription>
-                </div>
-            </AccordionTrigger>
-            {canModifyTasks && (
-                <AddTaskDialog
-                    projectId={projectId}
-                    assignableUsers={assignableUsers}
-                    onTaskAdded={() => {
-                        setAddDialogOpen(false);
-                        onTasksUpdate();
-                    }}
-                    open={isAddDialogOpen}
-                    setOpen={setAddDialogOpen}
-                >
-                    <Button size="icon" variant="ghost">
-                        <Plus className="h-5 w-5" />
-                    </Button>
-                </AddTaskDialog>
-            )}
+          <div className="flex items-center px-6 pt-6">
+            <div className="flex-1">
+                <CardTitle>Project Tasks</CardTitle>
+                <CardDescription className="pt-1">A list of tasks associated with this project.</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+                {canModifyTasks && (
+                    <AddTaskDialog
+                        projectId={projectId}
+                        assignableUsers={assignableUsers}
+                        onTaskAdded={() => {
+                            setAddDialogOpen(false);
+                            onTasksUpdate();
+                        }}
+                        open={isAddDialogOpen}
+                        setOpen={setAddDialogOpen}
+                    >
+                        <Button size="icon" variant="ghost">
+                            <Plus className="h-5 w-5" />
+                        </Button>
+                    </AddTaskDialog>
+                )}
+                 <AccordionTrigger className="p-2 hover:no-underline" />
+            </div>
           </div>
-          <CardContent className="px-6 pt-4 pb-6">
+          <CardContent className="px-6 pb-6">
              <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Task Progress</span>
@@ -68,7 +69,7 @@ export function ProjectTasks({ projectId, initialTasks, assignableUsers, canModi
                 <Progress value={taskProgress} />
             </div>
             <AccordionContent>
-              <div className="space-y-2 pt-4">
+              <div className="space-y-2">
                 {tasks.length > 0 ? (
                   tasks.map(task => (
                     <TaskItem 

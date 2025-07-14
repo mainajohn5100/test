@@ -370,7 +370,7 @@ export default function ViewProjectPage() {
                             {canEditProject && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button size="icon" variant="outline" className="h-7 w-7">
+                                        <Button size="icon" variant="outline" className="h-7 w-7 rounded-full">
                                             <Plus className="h-4 w-4"/>
                                             <span className="sr-only">Add Team Members</span>
                                         </Button>
