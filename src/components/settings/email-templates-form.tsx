@@ -4,7 +4,6 @@
 import React, { useEffect, useTransition } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -121,7 +120,6 @@ export function EmailTemplatesForm() {
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
-            
           <div className="flex justify-end">
             <Button type="submit" disabled={isPending || !isDirty}>
               {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
