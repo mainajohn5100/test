@@ -67,7 +67,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                             <Badge
                               variant="outline"
                               className={cn(
-                                "mb-1 text-xs font-normal capitalize opacity-80",
+                                "mb-1 capitalize opacity-60 px-1.5 py-0 text-[10px] font-normal",
                                 sourceVariantMap[ticket.source] || 'text-gray-700 border-gray-500/50 bg-gray-500/10'
                               )}
                             >
