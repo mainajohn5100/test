@@ -40,12 +40,6 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    
-    --recruitment-chart-1: 249 89% 70%;
-    --recruitment-chart-2: 83 89% 70%;
-    --recruitment-chart-3: 45 89% 70%;
-    --recruitment-chart-4: 197 89% 70%;
-    --recruitment-chart-5: 317 89% 70%;
 
     --sidebar-background: 210 100% 82.2%;
     --sidebar-foreground: 222.2 84% 4.9%;
@@ -84,12 +78,6 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-
-    --recruitment-chart-1: 249 89% 70%;
-    --recruitment-chart-2: 83 89% 70%;
-    --recruitment-chart-3: 45 89% 70%;
-    --recruitment-chart-4: 197 89% 70%;
-    --recruitment-chart-5: 317 89% 70%;
 
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
@@ -200,30 +188,6 @@
     --input: 215 60% 18%;
     --ring: 213 94% 59%;
   }
-
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr) 1.5fr;
-    grid-template-rows: repeat(2, 1fr) 6fr repeat(5, 1fr);
-    grid-column-gap: 16px;
-    grid-row-gap: 16px;
-    }
-    
-    .grid-div1 { grid-area: 1 / 1 / 3 / 2; }
-    .grid-div2 { grid-area: 1 / 2 / 3 / 3; }
-    .grid-div3 { grid-area: 1 / 3 / 3 / 4; }
-    .grid-div4 { grid-area: 1 / 4 / 3 / 5; }
-    .grid-div5 { grid-area: 3 / 1 / 4 / 3; }
-    .grid-div6 { grid-area: 3 / 3 / 4 / 5; }
-    .grid-div7 { grid-area: 1 / 5 / 4 / 6; }
-    .grid-div8 { grid-area: 5 / 1 / 7 / 2; }
-    .grid-div9 { grid-area: 5 / 2 / 7 / 3; }
-    .grid-div10 { grid-area: 5 / 3 / 7 / 4; }
-    .grid-div11 { grid-area: 7 / 1 / 9 / 2; }
-    .grid-div12 { grid-area: 7 / 2 / 9 / 3; }
-    .grid-div13 { grid-area: 7 / 3 / 9 / 4; }
-    .grid-div14 { grid-area: 4 / 4 / 9 / 5; }
-    .grid-div15 { grid-area: 4 / 5 / 9 / 6; }
 }
  
 @layer base {
