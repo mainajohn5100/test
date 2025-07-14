@@ -66,60 +66,60 @@ export function EmailTemplatesForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
-                <AccordionItem value="item-1">
-                    <AccordionTrigger>New Ticket Auto-Reply</AccordionTrigger>
-                    <AccordionContent>
-                        <p className="text-sm text-muted-foreground pb-2">Sent to a client when a new ticket is created via email.</p>
-                        <Controller
-                            name="newTicketAutoReply"
-                            control={control}
-                            render={({ field }) => (
-                                <Textarea {...field} rows={6} className="font-mono text-xs"/>
-                            )}
-                        />
-                    </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-2">
-                    <AccordionTrigger>Status Change Notification</AccordionTrigger>
-                    <AccordionContent>
-                        <p className="text-sm text-muted-foreground pb-2">Sent to a client when their ticket's status is updated.</p>
-                        <Controller
-                            name="statusChange"
-                            control={control}
-                            render={({ field }) => (
-                                <Textarea {...field} rows={6} className="font-mono text-xs"/>
-                            )}
-                        />
-                    </AccordionContent>
-                </AccordionItem>
-                 <AccordionItem value="item-3">
-                    <AccordionTrigger>Priority Change Notification</AccordionTrigger>
-                    <AccordionContent>
-                        <p className="text-sm text-muted-foreground pb-2">Sent to a client when their ticket's priority is updated.</p>
-                        <Controller
-                            name="priorityChange"
-                            control={control}
-                            render={({ field }) => (
-                                <Textarea {...field} rows={6} className="font-mono text-xs"/>
-                            )}
-                        />
-                    </AccordionContent>
-                </AccordionItem>
-                 <AccordionItem value="item-4">
-                    <AccordionTrigger>New Assignee Notification</AccordionTrigger>
-                    <AccordionContent>
-                        <p className="text-sm text-muted-foreground pb-2">Sent to an agent when they are assigned a new ticket.</p>
-                        <Controller
-                            name="newAssignee"
-                            control={control}
-                            render={({ field }) => (
-                                <Textarea {...field} rows={6} className="font-mono text-xs"/>
-                            )}
-                        />
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
+          <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+            <AccordionItem value="item-1">
+              <AccordionTrigger>New Ticket Auto-Reply</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground pb-2">Sent to a client when a new ticket is created via email.</p>
+                <Controller
+                  name="newTicketAutoReply"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea {...field} rows={6} className="font-mono text-xs"/>
+                  )}
+                />
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-2">
+              <AccordionTrigger>Status Change Notification</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground pb-2">Sent to a client when their ticket's status is updated.</p>
+                <Controller
+                  name="statusChange"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea {...field} rows={6} className="font-mono text-xs"/>
+                  )}
+                />
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-3">
+              <AccordionTrigger>Priority Change Notification</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground pb-2">Sent to a client when their ticket's priority is updated.</p>
+                <Controller
+                  name="priorityChange"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea {...field} rows={6} className="font-mono text-xs"/>
+                  )}
+                />
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-4">
+              <AccordionTrigger>New Assignee Notification</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground pb-2">Sent to an agent when they are assigned a new ticket.</p>
+                <Controller
+                  name="newAssignee"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea {...field} rows={6} className="font-mono text-xs"/>
+                  )}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
           <div className="flex justify-end">
             <Button type="submit" disabled={isPending || !isDirty}>
               {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
