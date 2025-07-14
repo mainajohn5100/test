@@ -59,6 +59,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                 {tickets.length > 0 ? (
                 tickets.map((ticket) => {
                     const assignee = userMap.get(ticket.assignee);
+                    const truncatedId = `${ticket.id.substring(0, 5)}...${ticket.id.slice(-3)}`;
                     return (
                     <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer">
                         <TableCell>
@@ -66,14 +67,14 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                             <Badge
                               variant="outline"
                               className={cn(
-                                "mb-1 text-xs font-medium capitalize",
+                                "mb-1 text-xs font-normal capitalize opacity-80",
                                 sourceVariantMap[ticket.source] || 'text-gray-700 border-gray-500/50 bg-gray-500/10'
                               )}
                             >
                               {ticket.source}
                             </Badge>
                           )}
-                          <div className="font-medium truncate">{ticket.id.substring(0, 6)}...</div>
+                          <div className="font-medium text-sm truncate">{truncatedId}</div>
                         </TableCell>
                         <TableCell>{ticket.title}</TableCell>
                         <TableCell>

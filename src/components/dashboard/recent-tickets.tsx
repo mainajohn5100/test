@@ -23,6 +23,7 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useSettings } from "@/contexts/settings-context";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   'New': 'secondary',
@@ -32,6 +33,14 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
   'Closed': 'secondary',
   'Terminated': 'destructive',
 };
+
+const priorityVariantMap: { [key: string]: string } = {
+    'Low': 'text-green-700 border-green-500/50 bg-green-500/10 hover:bg-green-500/20',
+    'Medium': 'text-yellow-700 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20',
+    'High': 'text-orange-700 border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20',
+    'Urgent': 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20',
+};
+
 
 interface RecentTicketsProps {
     tickets: Ticket[];
@@ -79,6 +88,7 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
             <TableRow>
               <TableHead>Title</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Priority</TableHead>
               <TableHead>Assignee</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -101,6 +111,14 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
                 </TableCell>
                 <TableCell>
                   <Badge variant={statusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
+                </TableCell>
+                 <TableCell>
+                    <Badge
+                        variant="outline"
+                        className={cn("font-medium capitalize", priorityVariantMap[ticket.priority])}
+                    >
+                        {ticket.priority}
+                    </Badge>
                 </TableCell>
                 <TableCell>
                     <div className="flex items-center gap-2 max-w-[150px] truncate">
@@ -126,7 +144,7 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
               </TableRow>
             )}) : (
                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                     No recent tickets found.
                     </TableCell>
                 </TableRow>
