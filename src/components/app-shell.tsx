@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw } from "lucide-react";
+import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,10 +60,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { setTheme } = useTheme();
   const { toast } = useToast();
-  const { inAppNotifications } = useSettings();
+  const { inAppNotifications, showFullScreenButton } = useSettings();
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = React.useState(true);
   const [globalSearchTerm, setGlobalSearchTerm] = React.useState('');
+  const [isFullScreen, setIsFullScreen] = React.useState(false);
   
   const unreadCount = React.useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
@@ -189,6 +190,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleFullScreenChange = () => {
+    setIsFullScreen(!!document.fullscreenElement);
+  };
+  
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+  };
+
+  React.useEffect(() => {
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
+  }, []);
+
   return (
     <SidebarProvider>
       <Sidebar variant="sidebar" collapsible="icon" side="left">
@@ -270,7 +290,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
             <SidebarTrigger className="hidden md:block" />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
@@ -281,6 +301,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 onKeyDown={handleGlobalSearch}
               />
             </div>
+             {showFullScreenButton && (
+                <Button variant="ghost" size="icon" onClick={toggleFullScreen}>
+                    {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                    <span className="sr-only">Toggle Fullscreen</span>
+                </Button>
+            )}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full relative">
