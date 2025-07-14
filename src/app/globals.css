@@ -40,6 +40,12 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    --recruitment-chart-1: 249 89% 70%;
+    --recruitment-chart-2: 83 89% 70%;
+    --recruitment-chart-3: 45 89% 70%;
+    --recruitment-chart-4: 197 89% 70%;
+    --recruitment-chart-5: 317 89% 70%;
 
     --sidebar-background: 210 100% 82.2%;
     --sidebar-foreground: 222.2 84% 4.9%;
@@ -78,6 +84,12 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    --recruitment-chart-1: 249 89% 70%;
+    --recruitment-chart-2: 83 89% 70%;
+    --recruitment-chart-3: 45 89% 70%;
+    --recruitment-chart-4: 197 89% 70%;
+    --recruitment-chart-5: 317 89% 70%;
 
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;

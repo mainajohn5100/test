@@ -8,7 +8,7 @@ import { StatsCards } from "@/components/dashboard/stats-cards";
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
 import { TicketsOverviewChart } from "@/components/dashboard/tickets-overview-chart";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader } from "lucide-react";
+import { PlusCircle, Loader, LayoutGrid, Layout } from "lucide-react";
 import Link from "next/link";
 import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
 import { getTickets, getProjects, getUsers } from "@/lib/firestore";
@@ -125,12 +125,20 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={`Welcome, ${user.name}!`} description={greeting}>
-        <Link href="/tickets/new" passHref>
-          <Button>
-            <PlusCircle />
-            New Ticket
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+            <Link href="/dashboard/recruitment" passHref>
+              <Button variant="outline">
+                  <LayoutGrid />
+                  Detailed View
+              </Button>
+            </Link>
+            <Link href="/tickets/new" passHref>
+            <Button>
+                <PlusCircle />
+                New Ticket
+            </Button>
+            </Link>
+        </div>
       </PageHeader>
       
       <StatsCards tickets={displayedTickets} projects={projects} />

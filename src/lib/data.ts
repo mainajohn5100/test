@@ -1,4 +1,5 @@
 
+
 export type Attachment = {
   name: string;
   url: string;
@@ -58,7 +59,27 @@ export type Project = {
   creatorId: string;
   ticketsEnabled?: boolean;
   organizationId: string;
+  budget?: number;
 }
+
+export type Task = {
+  id: string;
+  title: string;
+  category: string;
+  status: 'Pending' | 'In Progress' | 'Completed';
+  progress: number;
+  dueDate: string;
+  organizationId: string;
+};
+
+export type Schedule = {
+  id: string;
+  title: string;
+  category: string;
+  time: string;
+  organizationId: string;
+};
+
 
 export type Notification = {
   id: string;
@@ -245,9 +266,23 @@ export const tickets: Ticket[] = [
 ];
 
 export const projects: Project[] = [
-  { id: 'proj_1', name: 'Website Redesign', description: 'A complete overhaul of the public-facing website with a new design system and CMS.', status: 'Active', manager: 'usr_1', team: ['usr_2', 'usr_3'], deadline: '2024-07-30', createdAt: '2024-01-15', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1' },
-  { id: 'proj_2', name: 'API V2', description: 'Development of the next version of our public API with new endpoints and improved performance.', status: 'Active', manager: 'usr_1', team: ['usr_1', 'usr_2'], deadline: '2024-06-15', createdAt: '2024-02-01', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1' },
-  { id: 'proj_3', name: 'Reporting Module', description: 'A new module for generating and exporting custom reports for our enterprise clients.', status: 'On Hold', manager: 'usr_3', team: ['usr_3'], deadline: '2024-08-20', createdAt: '2024-03-10', creatorId: 'usr_1', ticketsEnabled: false, organizationId: 'org_1' },
-  { id: 'proj_4', name: 'Mobile App Q3', description: 'Adding new features to the mobile app for the third quarter, including offline support.', status: 'Completed', manager: 'usr_2', team: ['usr_2'], deadline: '2024-03-31', createdAt: '2023-12-01', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1' },
-  { id: 'proj_5', name: 'New Project', description: 'A placeholder for a new and exciting upcoming project.', status: 'New', manager: 'usr_2', team: ['usr_1', 'usr_3'], deadline: '2025-07-08', createdAt: '2024-05-20', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1' },
+  { id: 'proj_1', name: 'Website Redesign', description: 'A complete overhaul of the public-facing website with a new design system and CMS.', status: 'Active', manager: 'usr_1', team: ['usr_2', 'usr_3'], deadline: '2024-07-30', createdAt: '2024-01-15', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1', budget: 75000 },
+  { id: 'proj_2', name: 'API V2', description: 'Development of the next version of our public API with new endpoints and improved performance.', status: 'Active', manager: 'usr_1', team: ['usr_1', 'usr_2'], deadline: '2024-06-15', createdAt: '2024-02-01', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1', budget: 120000 },
+  { id: 'proj_3', name: 'Reporting Module', description: 'A new module for generating and exporting custom reports for our enterprise clients.', status: 'On Hold', manager: 'usr_3', team: ['usr_3'], deadline: '2024-08-20', createdAt: '2024-03-10', creatorId: 'usr_1', ticketsEnabled: false, organizationId: 'org_1', budget: 45000 },
+  { id: 'proj_4', name: 'Mobile App Q3', description: 'Adding new features to the mobile app for the third quarter, including offline support.', status: 'Completed', manager: 'usr_2', team: ['usr_2'], deadline: '2024-03-31', createdAt: '2023-12-01', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1', budget: 95000 },
+  { id: 'proj_5', name: 'New Project', description: 'A placeholder for a new and exciting upcoming project.', status: 'New', manager: 'usr_2', team: ['usr_1', 'usr_3'], deadline: '2025-07-08', createdAt: '2024-05-20', creatorId: 'usr_1', ticketsEnabled: true, organizationId: 'org_1', budget: 50000 },
+];
+
+export const tasks: Task[] = [
+    { id: 'task_1', title: 'Resume Screening', category: 'Evaluation', progress: 40, dueDate: '2024-05-27', organizationId: 'org_1', status: 'In Progress' },
+    { id: 'task_2', title: 'Interview Scheduling', category: 'Engagement', progress: 60, dueDate: '2024-05-20', organizationId: 'org_1', status: 'In Progress' },
+    { id: 'task_3', title: 'Candidate Communication', category: 'Relationship', progress: 30, dueDate: '2024-05-23', organizationId: 'org_1', status: 'In Progress' },
+    { id: 'task_4', title: 'Offer Management', category: 'Selection', progress: 80, dueDate: '2024-05-25', organizationId: 'org_1', status: 'Completed' }
+];
+
+export const schedule: Schedule[] = [
+    { id: 'sch_1', title: 'Marketing Strategy Presentation', category: 'Marketing', time: '1:00 PM', organizationId: 'org_1' },
+    { id: 'sch_2', title: 'HR Policy Update Session', category: 'Human Resources', time: '2:30 PM', organizationId: 'org_1' },
+    { id: 'sch_3', title: 'Customer Feedback Analysis', category: 'Customer Support', time: '4:00 PM', organizationId: 'org_1' },
+    { id: 'sch_4', title: 'Financial Reporting Session', category: 'Finance', time: '5:30 PM', organizationId: 'org_1' }
 ];
