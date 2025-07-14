@@ -11,19 +11,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { Eye, EyeOff, Loader } from 'lucide-react';
+import { Eye, EyeOff, Loader, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Helper to handle Firebase errors and provide user-friendly messages
 const getFirebaseAuthErrorMessage = (error: any) => {
-    if (error.code === 'auth/api-key-not-valid') {
-        return "The provided Firebase API Key is invalid. Please double-check the value in your .env file and restart your development server.";
-    }
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
         return 'Invalid email or password. Please try again.';
     }
     if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         return 'Sign-in process was cancelled.';
+    }
+    if (error.code === 'auth/invalid-api-key') {
+        return 'Invalid Firebase API Key. Please check your environment variables.'
     }
     return error.message || 'An unexpected error occurred. Please try again.';
 }
@@ -35,9 +36,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
   const handleEmailLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!isFirebaseConfigured) return;
+    
     setLoading(true);
 
     try {
@@ -71,10 +76,19 @@ export default function LoginPage() {
           <CardDescription>Enter your credentials to access your account.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+            {!isFirebaseConfigured && (
+              <Alert variant="destructive">
+                <TriangleAlert className="h-4 w-4" />
+                <AlertTitle>Configuration Error</AlertTitle>
+                <AlertDescription>
+                  Your Firebase environment variables are not set. Please copy them from your Firebase project settings into your `.env` file.
+                </AlertDescription>
+              </Alert>
+            )}
              <form onSubmit={handleEmailLogin} className="space-y-4">
                 <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
+                <Input id="email" name="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading || !isFirebaseConfigured} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
@@ -86,7 +100,7 @@ export default function LoginPage() {
                             required 
                             value={password} 
                             onChange={(e) => setPassword(e.target.value)} 
-                            disabled={loading} 
+                            disabled={loading || !isFirebaseConfigured} 
                             className="pr-10"
                         />
                         <Button 
@@ -95,12 +109,13 @@ export default function LoginPage() {
                             size="icon"
                             className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
                             onClick={() => setShowPassword(!showPassword)}
+                            disabled={!isFirebaseConfigured}
                         >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
                     </div>
                 </div>
-                <Button className="w-full" type="submit" disabled={loading}>
+                <Button className="w-full" type="submit" disabled={loading || !isFirebaseConfigured}>
                 {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
                 </Button>

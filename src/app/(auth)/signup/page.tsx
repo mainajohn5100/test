@@ -15,8 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Eye, EyeOff, Loader } from 'lucide-react';
+import { Eye, EyeOff, Loader, TriangleAlert } from 'lucide-react';
 import { Logo } from '@/components/icons';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
@@ -25,6 +26,8 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -37,6 +40,8 @@ export default function SignupPage() {
   });
 
   const onSubmit = (values: SignupFormValues) => {
+    if (!isFirebaseConfigured) return;
+
     startTransition(true);
     signupAction(values)
       .then((result) => {
@@ -79,6 +84,15 @@ export default function SignupPage() {
           <CardDescription>Get started by creating your account and organization.</CardDescription>
         </CardHeader>
         <CardContent>
+          {!isFirebaseConfigured && (
+            <Alert variant="destructive" className="mb-4">
+              <TriangleAlert className="h-4 w-4" />
+              <AlertTitle>Configuration Error</AlertTitle>
+              <AlertDescription>
+                Your Firebase environment variables are not set. Please copy them from your Firebase project settings into your `.env` file to enable signup.
+              </AlertDescription>
+            </Alert>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -88,7 +102,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Your Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Jane Doe" {...field} disabled={isPending} />
+                      <Input placeholder="e.g., Jane Doe" {...field} disabled={isPending || !isFirebaseConfigured} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -101,7 +115,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Organization Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Acme Inc." {...field} disabled={isPending} />
+                      <Input placeholder="e.g., Acme Inc." {...field} disabled={isPending || !isFirebaseConfigured} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -114,7 +128,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@company.com" {...field} disabled={isPending} />
+                      <Input type="email" placeholder="you@company.com" {...field} disabled={isPending || !isFirebaseConfigured} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,7 +145,7 @@ export default function SignupPage() {
                             <Input
                                 type={showPassword ? 'text' : 'password'}
                                 {...field}
-                                disabled={isPending}
+                                disabled={isPending || !isFirebaseConfigured}
                                 className="pr-10"
                             />
                             <Button
@@ -140,7 +154,7 @@ export default function SignupPage() {
                                 size="icon"
                                 className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
                                 onClick={() => setShowPassword(!showPassword)}
-                                disabled={isPending}
+                                disabled={isPending || !isFirebaseConfigured}
                             >
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
@@ -150,7 +164,7 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
-              <Button className="w-full" type="submit" disabled={isPending}>
+              <Button className="w-full" type="submit" disabled={isPending || !isFirebaseConfigured}>
                 {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                 Sign Up & Create Organization
               </Button>
