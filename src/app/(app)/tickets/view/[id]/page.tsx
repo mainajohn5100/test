@@ -428,7 +428,7 @@ export default function ViewTicketPage() {
                                 </Avatar>
                               )}
                             <div className={`flex flex-col max-w-xl ${isCurrentUser ? 'items-end' : 'items-start'}`}>
-                               <div className={`rounded-lg p-3 ${isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                               <div className={`rounded-lg p-3 ${isCurrentUser ? 'bg-primary text-primary-foreground dark:text-foreground' : 'bg-muted'}`}>
                                   <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: conv.content }} />
                                </div>
                                 <div className="text-xs text-muted-foreground mt-1">

@@ -386,16 +386,23 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
 }
 
 export async function addConversation(ticketId: string, conversationData: Omit<TicketConversation, 'id' | 'createdAt'>): Promise<string> {
+    const batch = writeBatch(db);
+    
+    // Create the conversation document
+    const conversationCol = collection(db, 'tickets', ticketId, 'conversations');
+    const conversationDocRef = doc(conversationCol); // Create a new doc with a generated ID
+    batch.set(conversationDocRef, {
+        ...conversationData,
+        createdAt: serverTimestamp(),
+    });
+
+    // Update the parent ticket's updatedAt timestamp
+    const ticketRef = doc(db, 'tickets', ticketId);
+    batch.update(ticketRef, { updatedAt: serverTimestamp() });
+
     try {
-        const conversationCol = collection(db, 'tickets', ticketId, 'conversations');
-        const docRef = await addDoc(conversationCol, {
-            ...conversationData,
-            createdAt: serverTimestamp(),
-        });
-        // Also update the parent ticket's updatedAt timestamp
-        const ticketRef = doc(db, 'tickets', ticketId);
-        await updateDoc(ticketRef, { updatedAt: serverTimestamp() });
-        return docRef.id;
+        await batch.commit();
+        return conversationDocRef.id;
     } catch (error) {
         console.error("Error adding conversation:", error);
         throw new Error("Failed to add conversation.");
