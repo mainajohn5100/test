@@ -46,13 +46,13 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
             <Table>
             <TableHeader>
                 <TableRow>
-                <TableHead className="w-[150px]">Ticket ID</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Assignee</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[150px] p-2 md:p-4">Ticket ID</TableHead>
+                <TableHead className="p-2 md:p-4">Title</TableHead>
+                <TableHead className="p-2 md:p-4">Status</TableHead>
+                <TableHead className="p-2 md:p-4">Priority</TableHead>
+                <TableHead className="p-2 md:p-4">Assignee</TableHead>
+                <TableHead className="p-2 md:p-4">Last Updated</TableHead>
+                <TableHead className="w-[50px] p-2 md:p-4"></TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -61,23 +61,23 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                     const assignee = userMap.get(ticket.assignee);
                     const truncatedId = `${ticket.id.substring(0, 5)}...${ticket.id.slice(-3)}`;
                     return (
-                    <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer">
-                        <TableCell>
+                    <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer text-xs md:text-sm">
+                        <TableCell className="p-2 md:p-4">
                           {ticket.source && (
                             <Badge
                               variant="outline"
                               className={cn(
-                                "mb-1 capitalize opacity-60 px-1.5 py-0 text-[10px] font-normal",
+                                "mb-1 capitalize opacity-60 px-1 py-0 text-[9px] font-normal",
                                 sourceVariantMap[ticket.source] || 'text-gray-700 border-gray-500/50 bg-gray-500/10'
                               )}
                             >
                               {ticket.source}
                             </Badge>
                           )}
-                          <div className="font-medium text-sm truncate">{truncatedId}</div>
+                          <div className="font-medium truncate">{truncatedId}</div>
                         </TableCell>
-                        <TableCell>{ticket.title}</TableCell>
-                        <TableCell>
+                        <TableCell className="p-2 md:p-4">{ticket.title}</TableCell>
+                        <TableCell className="p-2 md:p-4">
                           <Badge
                             variant="outline"
                             className={cn(
@@ -92,7 +92,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                             {ticket.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="p-2 md:p-4">
                             <Badge
                                 variant="outline"
                                 className={cn(
@@ -106,7 +106,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                                 {ticket.priority}
                             </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="p-2 md:p-4">
                         {assignee ? (
                             <Link href={`/users/${assignee.id}`} onClick={(e) => e.stopPropagation()} className="relative z-10">
                                 <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
@@ -121,10 +121,10 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                             <span>{ticket.assignee}</span>
                         )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="p-2 md:p-4">
                             {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="p-2 md:p-4" onClick={(e) => e.stopPropagation()}>
                           <TicketTableRowActions ticket={ticket} />
                         </TableCell>
                     </TableRow>
@@ -143,3 +143,4 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
     </div>
   );
 }
+
