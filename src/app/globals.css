@@ -200,6 +200,30 @@
     --input: 215 60% 18%;
     --ring: 213 94% 59%;
   }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) 1.5fr;
+    grid-template-rows: repeat(2, 1fr) 6fr repeat(5, 1fr);
+    grid-column-gap: 16px;
+    grid-row-gap: 16px;
+    }
+    
+    .grid-div1 { grid-area: 1 / 1 / 3 / 2; }
+    .grid-div2 { grid-area: 1 / 2 / 3 / 3; }
+    .grid-div3 { grid-area: 1 / 3 / 3 / 4; }
+    .grid-div4 { grid-area: 1 / 4 / 3 / 5; }
+    .grid-div5 { grid-area: 3 / 1 / 4 / 3; }
+    .grid-div6 { grid-area: 3 / 3 / 4 / 5; }
+    .grid-div7 { grid-area: 1 / 5 / 4 / 6; }
+    .grid-div8 { grid-area: 5 / 1 / 7 / 2; }
+    .grid-div9 { grid-area: 5 / 2 / 7 / 3; }
+    .grid-div10 { grid-area: 5 / 3 / 7 / 4; }
+    .grid-div11 { grid-area: 7 / 1 / 9 / 2; }
+    .grid-div12 { grid-area: 7 / 2 / 9 / 3; }
+    .grid-div13 { grid-area: 7 / 3 / 9 / 4; }
+    .grid-div14 { grid-area: 4 / 4 / 9 / 5; }
+    .grid-div15 { grid-area: 4 / 5 / 9 / 6; }
 }
  
 @layer base {

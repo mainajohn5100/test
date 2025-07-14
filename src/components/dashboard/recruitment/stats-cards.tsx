@@ -21,9 +21,9 @@ export function StatsCards({ tickets }: StatsCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full">
       {statItems.map((stat, index) => (
-        <Card key={index} className={`rounded-2xl border-none ${stat.color}`}>
+        <Card key={index} className={`rounded-2xl border-none ${stat.color} flex flex-col justify-center`}>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">{stat.title}</p>
             <p className={`text-4xl font-bold ${stat.textColor}`}>{stat.value}</p>

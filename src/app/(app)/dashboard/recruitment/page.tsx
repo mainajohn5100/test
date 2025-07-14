@@ -79,25 +79,27 @@ export default function RecruitmentDashboardPage() {
         </div>
       </PageHeader>
       
-      <StatsCards tickets={tickets} />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 space-y-6">
-            <TicketsChart tickets={tickets} />
-            <ProjectList projects={projects} />
+      <div className="dashboard-grid h-[800px]">
+        <div className="grid-div1">
+          <StatsCards tickets={tickets} />
         </div>
-        <div className="lg:col-span-2 space-y-6">
-            <TicketsByStatusChart tickets={tickets} />
-            <TicketSourcesChart tickets={tickets} />
+        <div className="grid-div2">
+          <TicketsChart tickets={tickets} />
         </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3">
-            <TasksList tasks={tasksData} />
+        <div className="grid-div3">
+          <ProjectList projects={projects} />
         </div>
-        <div className="lg:col-span-2">
-            <ScheduleList schedule={scheduleData} />
+        <div className="grid-div4">
+          <TasksList tasks={tasksData} />
+        </div>
+        <div className="grid-div5">
+          <ScheduleList schedule={scheduleData} />
+        </div>
+        <div className="grid-div6">
+          <TicketsByStatusChart tickets={tickets} />
+        </div>
+        <div className="grid-div7">
+          <TicketSourcesChart tickets={tickets} />
         </div>
       </div>
     </div>
