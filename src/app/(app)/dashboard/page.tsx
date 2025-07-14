@@ -12,7 +12,7 @@ import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
 import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
 import { getTickets, getProjects, getUsers } from "@/lib/firestore";
-import { format, getMonth, differenceInHours, isToday } from 'date-fns';
+import { format, differenceInHours, isToday, eachDayOfInterval, subDays } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
@@ -42,7 +42,6 @@ export default function DashboardPage() {
         setUsers(usersData);
         setLoading(false);
         
-        // Fetch greeting in the background without blocking the UI
         try {
             const openTickets = ticketsData.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length;
             const newTicketsToday = ticketsData.filter(t => isToday(new Date(t.createdAt))).length;
@@ -56,7 +55,6 @@ export default function DashboardPage() {
                 setGreeting(greetingResponse.greeting);
             }).catch(e => {
                 console.error("AI Greeting failed:", e);
-                // Fallback greeting remains
             });
         } catch (e) {
             console.error("AI Greeting failed to initiate:", e);
@@ -84,11 +82,9 @@ export default function DashboardPage() {
     );
   }
   
-  // Create a map for quick user lookup.
   const userMap = new Map(users.map(u => [u.id, u.name]));
   const userMapByName = new Map(users.map(u => [u.name, u]));
 
-  // Process data for TicketsOverviewChart
   const ticketsByStatus = displayedTickets.reduce((acc, ticket) => {
     acc[ticket.status] = (acc[ticket.status] || 0) + 1;
     return acc;
@@ -96,30 +92,36 @@ export default function DashboardPage() {
 
   const ticketsOverviewData = Object.entries(ticketsByStatus).map(([name, value]) => ({ name, value }));
   
-  // Process data for AvgResolutionTimeChart
-  const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status !== 'Terminated');
-  const monthlyResolutionTimes: { [key: number]: { totalHours: number; count: number } } = {};
-
-  closedTickets.forEach(ticket => {
-    const createdAt = new Date(ticket.createdAt);
-    const resolvedAt = new Date(ticket.updatedAt);
-    const resolutionHours = differenceInHours(resolvedAt, createdAt);
-    const month = getMonth(resolvedAt);
-    
-    if (!monthlyResolutionTimes[month]) {
-      monthlyResolutionTimes[month] = { totalHours: 0, count: 0 };
-    }
-    monthlyResolutionTimes[month].totalHours += resolutionHours;
-    monthlyResolutionTimes[month].count++;
+  const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status === 'Terminated');
+  const dailyResolutionTimes: { [key: string]: { totalHours: number; count: number } } = {};
+  
+  const last30Days = eachDayOfInterval({
+      start: subDays(new Date(), 29),
+      end: new Date()
   });
 
-  const avgResolutionTimeData = Array.from({ length: 12 }).map((_, i) => {
-    const monthName = format(new Date(2000, i, 1), 'MMM');
-    if (monthlyResolutionTimes[i] && monthlyResolutionTimes[i].count > 0) {
-      const avg = monthlyResolutionTimes[i].totalHours / monthlyResolutionTimes[i].count;
-      return { name: monthName, hours: parseFloat(avg.toFixed(1)) };
+  closedTickets.forEach(ticket => {
+    const resolvedAt = new Date(ticket.updatedAt);
+    const dayKey = format(resolvedAt, 'MMM d');
+    if (last30Days.some(d => format(d, 'MMM d') === dayKey)) {
+        const createdAt = new Date(ticket.createdAt);
+        const resolutionHours = differenceInHours(resolvedAt, createdAt);
+        
+        if (!dailyResolutionTimes[dayKey]) {
+            dailyResolutionTimes[dayKey] = { totalHours: 0, count: 0 };
+        }
+        dailyResolutionTimes[dayKey].totalHours += resolutionHours;
+        dailyResolutionTimes[dayKey].count++;
     }
-    return { name: monthName, hours: null };
+  });
+
+  const avgResolutionTimeData = last30Days.map(day => {
+    const dayKey = format(day, 'MMM d');
+    if (dailyResolutionTimes[dayKey] && dailyResolutionTimes[dayKey].count > 0) {
+      const avg = dailyResolutionTimes[dayKey].totalHours / dailyResolutionTimes[dayKey].count;
+      return { name: dayKey, hours: parseFloat(avg.toFixed(1)) };
+    }
+    return { name: dayKey, hours: null };
   });
 
   return (

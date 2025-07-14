@@ -25,13 +25,13 @@ import { useSettings } from "@/contexts/settings-context";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
-  'New': 'secondary',
-  'Active': 'default',
-  'Pending': 'outline',
-  'On Hold': 'outline',
-  'Closed': 'secondary',
-  'Terminated': 'destructive',
+const statusVariantMap: { [key: string]: string } = {
+  'New': 'text-blue-700 border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20',
+  'Pending': 'text-yellow-700 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20',
+  'On Hold': 'text-orange-700 border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20',
+  'Active': 'text-green-700 border-green-500/50 bg-green-500/10 hover:bg-green-500/20',
+  'Closed': 'text-gray-700 border-gray-500/50 bg-gray-500/10 hover:bg-gray-500/20',
+  'Terminated': 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20'
 };
 
 const priorityVariantMap: { [key: string]: string } = {
@@ -110,7 +110,7 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={statusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
+                  <Badge variant="outline" className={cn("font-medium capitalize", statusVariantMap[ticket.status] || 'text-gray-700 border-gray-500/50 bg-gray-500/10')}>{ticket.status}</Badge>
                 </TableCell>
                  <TableCell>
                     <Badge

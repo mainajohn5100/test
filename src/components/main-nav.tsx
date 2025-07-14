@@ -142,7 +142,7 @@ export function MainNav() {
     });
 
   return (
-    <nav className="flex flex-col p-4 space-y-2">
+    <nav className="flex flex-col p-4 space-y-1.5">
       <Accordion type="multiple" className="w-full" defaultValue={['item-0', 'item-1', 'item-2', 'item-3', 'item-4', 'item-5']}>
         {accessibleMenuItems.map((item, index) =>
           item.subItems && item.subItems.length > 0 ? (
