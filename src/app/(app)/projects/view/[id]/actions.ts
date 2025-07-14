@@ -2,9 +2,20 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNotification, getProjectById, updateProject, deleteProject } from '@/lib/firestore';
-import type { Project } from '@/lib/data';
+import { 
+  createNotification, 
+  getProjectById, 
+  updateProject, 
+  deleteProject,
+  addTaskToProject,
+  updateTaskInProject,
+  deleteTaskFromProject,
+  getUserById,
+} from '@/lib/firestore';
+import type { Project, Task } from '@/lib/data';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
+import { taskSchema } from '@/components/projects/tasks/schema';
 
 export async function updateProjectAction(
   projectId: string,
@@ -79,4 +90,66 @@ export async function deleteProjectAction(projectId: string) {
     };
   }
   redirect('/projects/all');
+}
+
+
+async function canModifyTasks(projectId: string, currentUserId: string): Promise<boolean> {
+  const project = await getProjectById(projectId);
+  const currentUser = await getUserById(currentUserId);
+
+  if (!project || !currentUser) return false;
+
+  const isCreator = project.creatorId === currentUserId;
+  const isAdmin = currentUser.role === 'Admin';
+  const isAgent = currentUser.role === 'Agent';
+
+  return isCreator || isAdmin || isAgent;
+}
+
+export async function addTaskAction(projectId: string, currentUserId: string, values: z.infer<typeof taskSchema>) {
+  if (!(await canModifyTasks(projectId, currentUserId))) {
+    return { success: false, error: "You don't have permission to add tasks to this project." };
+  }
+  
+  try {
+    const validated = taskSchema.safeParse(values);
+    if (!validated.success) return { success: false, error: "Invalid task data." };
+
+    await addTaskToProject(projectId, validated.data);
+    revalidatePath(`/projects/view/${projectId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in addTaskAction:", error);
+    return { success: false, error: "Failed to add task." };
+  }
+}
+
+export async function updateTaskAction(projectId: string, taskId: string, currentUserId: string, updates: Partial<Task>) {
+  if (!(await canModifyTasks(projectId, currentUserId))) {
+    return { success: false, error: "You don't have permission to update tasks in this project." };
+  }
+
+  try {
+    await updateTaskInProject(projectId, taskId, updates);
+    revalidatePath(`/projects/view/${projectId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in updateTaskAction:", error);
+    return { success: false, error: "Failed to update task." };
+  }
+}
+
+export async function deleteTaskAction(projectId: string, taskId: string, currentUserId: string) {
+  if (!(await canModifyTasks(projectId, currentUserId))) {
+    return { success: false, error: "You don't have permission to delete tasks from this project." };
+  }
+
+  try {
+    await deleteTaskFromProject(projectId, taskId);
+    revalidatePath(`/projects/view/${projectId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in deleteTaskAction:", error);
+    return { success: false, error: "Failed to delete task." };
+  }
 }

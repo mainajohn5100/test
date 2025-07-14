@@ -20,6 +20,7 @@ export async function createProjectAction(values: z.infer<typeof projectSchema>)
     manager: values.manager,
     team: values.team || [],
     deadline: values.deadline,
+    budget: values.budget,
     creatorId: values.creatorId,
     organizationId: creator.organizationId,
   };

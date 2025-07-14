@@ -1,9 +1,8 @@
 
 
-
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import type { Ticket, Project, User, Notification, TicketConversation, Organization } from './data';
+import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task } from './data';
 import { cache } from 'react';
 import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 
@@ -138,12 +137,16 @@ export const getTicketConversations = cache(async (ticketId: string): Promise<Ti
 });
 
 
-export const getTicketsByProject = cache(async (projectName: string): Promise<Ticket[]> => {
+export const getTicketsByProject = cache(async (projectId: string): Promise<Ticket[]> => {
     try {
-        // This function may need org context if project names are not unique across orgs.
-        // For now, assuming project names are unique enough for this context.
+        // This query is tricky if project names aren't unique. Let's assume they are for now,
+        // or better yet, we should query by project ID if possible.
+        // For now, let's get the project name from the ID first.
+        const project = await getProjectById(projectId);
+        if (!project) return [];
+
         const ticketsCol = collection(db, 'tickets');
-        const q = query(ticketsCol, where("project", "==", projectName));
+        const q = query(ticketsCol, where("project", "==", project.name));
         const ticketSnapshot = await getDocs(q);
         return snapshotToData<Ticket>(ticketSnapshot);
     } catch (error) {
@@ -182,80 +185,33 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
 
   const projectsCol = collection(db, 'projects');
   const orgQuery = where("organizationId", "==", user.organizationId);
+  const userRole = user.role;
 
-  // Clients can only see projects associated with tickets they've reported.
-  if (user.role === 'Client') {
-      try {
-          const clientTickets = await getTicketsByReporter(user.name);
-          if (clientTickets.length === 0) return [];
-          
-          const projectNames = [...new Set(clientTickets.map(t => t.project).filter(Boolean))];
-          if (projectNames.length === 0) return [];
-
-          const q = query(projectsCol, orgQuery, where("name", "in", projectNames));
-          const projectSnapshot = await getDocs(q);
-          return snapshotToData<Project>(projectSnapshot);
-
-      } catch (error) {
-          console.error("Error fetching projects for client:", error);
-          return [];
-      }
-  }
-
-  // Admins and Agents see projects they manage or are on the team for.
   try {
-    const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id));
-    const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id));
+    if (userRole === 'Client') {
+      const clientTickets = await getTicketsByReporter(user.name);
+      if (clientTickets.length === 0) return [];
+      
+      const projectNames = [...new Set(clientTickets.map(t => t.project).filter(Boolean))];
+      if (projectNames.length === 0) return [];
 
-    const [managerSnap, teamSnap] = await Promise.all([
-        getDocs(managerQuery),
-        getDocs(teamMemberQuery)
-    ]);
-
-    const projectsMap = new Map<string, Project>();
-    snapshotToData<Project>(managerSnap).forEach(p => projectsMap.set(p.id, p));
-    snapshotToData<Project>(teamSnap).forEach(p => projectsMap.set(p.id, p));
-    
-    return Array.from(projectsMap.values());
-
-  } catch (error) {
-    console.error("Error fetching projects:", error);
-    return [];
-  }
-});
-
-export const getProjectsByStatus = cache(async (status: string, user: User): Promise<Project[]> => {
-    if (!user || !user.organizationId) return [];
-    
-    const projectsCol = collection(db, 'projects');
-    const orgQuery = where("organizationId", "==", user.organizationId);
-    const statusFilter = status !== 'all' ? [where("status", "==", status)] : [];
-
-    // Clients can only see projects associated with tickets they've reported.
-    if (user.role === 'Client') {
-        try {
-            const clientTickets = await getTicketsByReporter(user.name);
-            if (clientTickets.length === 0) return [];
-            
-            const projectNames = [...new Set(clientTickets.map(t => t.project).filter(Boolean))];
-            if (projectNames.length === 0) return [];
-
-            const q = query(projectsCol, orgQuery, where("name", "in", projectNames));
-            const projectSnapshot = await getDocs(q);
-
-            return snapshotToData<Project>(projectSnapshot);
-
-        } catch (error) {
-            console.error("Error fetching projects for client:", error);
-            return [];
-        }
+      const q = query(projectsCol, orgQuery, where("name", "in", projectNames));
+      const projectSnapshot = await getDocs(q);
+      return snapshotToData<Project>(projectSnapshot);
     }
 
-    // Logic for Admins and Agents
-    try {
-        const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id), ...statusFilter);
-        const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id), ...statusFilter);
-        
+    // For Admins, fetch all projects in the organization
+    if (userRole === 'Admin') {
+        const q = query(projectsCol, orgQuery);
+        const projectSnapshot = await getDocs(q);
+        return snapshotToData<Project>(projectSnapshot);
+    }
+
+    // For Agents, fetch projects they manage or are on the team for.
+    if (userRole === 'Agent') {
+        const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id));
+        const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id));
+
         const [managerSnap, teamSnap] = await Promise.all([
             getDocs(managerQuery),
             getDocs(teamMemberQuery)
@@ -266,11 +222,22 @@ export const getProjectsByStatus = cache(async (status: string, user: User): Pro
         snapshotToData<Project>(teamSnap).forEach(p => projectsMap.set(p.id, p));
         
         return Array.from(projectsMap.values());
-
-    } catch (error) {
-        console.error(`Error fetching projects with status "${status}":`, error);
-        return [];
     }
+    
+    return [];
+
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    return [];
+  }
+});
+
+export const getProjectsByStatus = cache(async (status: string, user: User): Promise<Project[]> => {
+    const allProjects = await getProjects(user); // Reuse the main project fetching logic
+    if (status === 'all') {
+        return allProjects;
+    }
+    return allProjects.filter(p => p.status === status);
 });
 
 export const getProjectById = cache(async (id: string): Promise<Project | null> => {
@@ -292,6 +259,17 @@ export const getProjectsByManager = cache(async (managerId: string): Promise<Pro
         return snapshotToData<Project>(projectSnapshot);
     } catch (error) {
         console.error("Error fetching projects by manager:", error);
+        return [];
+    }
+});
+
+export const getTasksByProject = cache(async (projectId: string): Promise<Task[]> => {
+    try {
+        const tasksCol = collection(db, 'projects', projectId, 'tasks');
+        const tasksSnapshot = await getDocs(tasksCol);
+        return snapshotToData<Task>(tasksSnapshot);
+    } catch (error) {
+        console.error("Error fetching tasks for project:", error);
         return [];
     }
 });
@@ -430,6 +408,7 @@ export async function addProject(projectData: {
     manager: string; // User ID
     team: string[]; // User IDs
     deadline: Date;
+    budget?: number;
     creatorId: string;
     organizationId: string;
 }): Promise<string> {
@@ -583,4 +562,42 @@ export async function setAuthUserClaims(uid: string, claims: object): Promise<vo
     console.log(`[SIMULATED] Setting custom claims for user ${uid}:`, claims);
     console.log("In a production environment, this would be a call to a secure Firebase Function.");
     return Promise.resolve();
+}
+
+// Project Task Functions
+export async function addTaskToProject(projectId: string, taskData: Omit<Task, 'id'>) {
+    try {
+        const tasksCol = collection(db, 'projects', projectId, 'tasks');
+        await addDoc(tasksCol, {
+            ...taskData,
+            dueDate: taskData.dueDate ? Timestamp.fromDate(new Date(taskData.dueDate)) : null
+        });
+    } catch (error) {
+        console.error("Error adding task to project:", error);
+        throw new Error("Failed to add task.");
+    }
+}
+
+export async function updateTaskInProject(projectId: string, taskId: string, updates: Partial<Task>) {
+    try {
+        const taskRef = doc(db, 'projects', projectId, 'tasks', taskId);
+        const cleanData = { ...updates };
+        if (updates.dueDate) {
+            cleanData.dueDate = Timestamp.fromDate(new Date(updates.dueDate)).toISOString();
+        }
+        await updateDoc(taskRef, cleanData);
+    } catch (error) {
+        console.error("Error updating task in project:", error);
+        throw new Error("Failed to update task.");
+    }
+}
+
+export async function deleteTaskFromProject(projectId: string, taskId: string) {
+    try {
+        const taskRef = doc(db, 'projects', projectId, 'tasks', taskId);
+        await deleteDoc(taskRef);
+    } catch (error) {
+        console.error("Error deleting task from project:", error);
+        throw new Error("Failed to delete task.");
+    }
 }

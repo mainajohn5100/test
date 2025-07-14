@@ -7,7 +7,7 @@ import type { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon, Loader, Send } from "lucide-react";
+import { CalendarIcon, Loader, Send, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { PageHeader } from "@/components/page-header";
@@ -66,6 +66,7 @@ export default function CreateProjectPage() {
       name: "",
       description: "",
       team: [],
+      budget: 0,
       creatorId: user?.id || "",
     },
   });
@@ -143,22 +144,18 @@ export default function CreateProjectPage() {
                 )}
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
+                 <FormField
                   control={form.control}
-                  name="manager"
+                  name="budget"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Project Manager</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel>Budget</FormLabel>
+                       <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Assign a manager" />
-                          </SelectTrigger>
+                          <Input type="number" placeholder="50000" className="pl-9" {...field} onChange={event => field.onChange(+event.target.value)} />
                         </FormControl>
-                        <SelectContent>
-                          {users.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -205,49 +202,71 @@ export default function CreateProjectPage() {
                     )}
                     />
               </div>
-              <FormField
-                control={form.control}
-                name="team"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team Members (Optional)</FormLabel>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="manager"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Manager</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <Button variant="outline" className="w-full justify-start font-normal text-left h-auto min-h-10 py-2">
-                            <span className="truncate">
-                              {selectedTeamMembers.length > 0
-                                ? selectedTeamMembers.map(u => u.name).join(', ')
-                                : "Select team members"}
-                            </span>
-                          </Button>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Assign a manager" />
+                          </SelectTrigger>
                         </FormControl>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                        <DropdownMenuLabel>Assign Team Members</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {users.map(user => (
-                          <DropdownMenuCheckboxItem
-                            key={user.id}
-                            checked={field.value?.includes(user.id)}
-                            onCheckedChange={(checked) => {
-                              const currentTeam = field.value || [];
-                              if (checked) {
-                                field.onChange([...currentTeam, user.id]);
-                              } else {
-                                field.onChange(currentTeam.filter(id => id !== user.id));
-                              }
-                            }}
-                          >
-                            {user.name}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        <SelectContent>
+                          {users.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="team"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Team Members (Optional)</FormLabel>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <FormControl>
+                            <Button variant="outline" className="w-full justify-start font-normal text-left h-auto min-h-10 py-2">
+                              <span className="truncate">
+                                {selectedTeamMembers.length > 0
+                                  ? selectedTeamMembers.map(u => u.name).join(', ')
+                                  : "Select team members"}
+                              </span>
+                            </Button>
+                          </FormControl>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                          <DropdownMenuLabel>Assign Team Members</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {users.map(user => (
+                            <DropdownMenuCheckboxItem
+                              key={user.id}
+                              checked={field.value?.includes(user.id)}
+                              onCheckedChange={(checked) => {
+                                const currentTeam = field.value || [];
+                                if (checked) {
+                                  field.onChange([...currentTeam, user.id]);
+                                } else {
+                                  field.onChange(currentTeam.filter(id => id !== user.id));
+                                }
+                              }}
+                            >
+                              {user.name}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
           <div className="flex justify-end">
