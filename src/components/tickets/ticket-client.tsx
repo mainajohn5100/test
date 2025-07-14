@@ -66,8 +66,8 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
 
 
   return (
-    <Card>
-      <CardContent className="pt-6 overflow-x-auto">
+    <Card className="overflow-x-auto">
+      <CardContent className="pt-6">
         <div className="space-y-4">
           <TicketTableToolbar 
             searchTerm={searchTerm}
