@@ -1,4 +1,3 @@
-
 //ticket-table.tsx
 "use client";
 
@@ -41,106 +40,103 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
 
   return (
-    <div className="w-full overflow-hidden">
-        <div className="border rounded-md">
-            <Table>
-            <TableHeader>
-                <TableRow>
-                <TableHead className="w-[150px] p-2 md:p-4">Ticket ID</TableHead>
-                <TableHead className="p-2 md:p-4">Title</TableHead>
-                <TableHead className="p-2 md:p-4">Status</TableHead>
-                <TableHead className="p-2 md:p-4">Priority</TableHead>
-                <TableHead className="p-2 md:p-4">Assignee</TableHead>
-                <TableHead className="p-2 md:p-4">Last Updated</TableHead>
-                <TableHead className="w-[50px] p-2 md:p-4"></TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {tickets.length > 0 ? (
-                tickets.map((ticket) => {
-                    const assignee = userMap.get(ticket.assignee);
-                    const truncatedId = `${ticket.id.substring(0, 5)}...${ticket.id.slice(-3)}`;
-                    return (
-                    <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer text-xs md:text-sm">
-                        <TableCell className="p-2 md:p-4">
-                          {ticket.source && (
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "mb-1 capitalize opacity-60 px-1 py-0 text-[9px] font-normal",
-                                sourceVariantMap[ticket.source] || 'text-gray-700 border-gray-500/50 bg-gray-500/10'
-                              )}
-                            >
-                              {ticket.source}
-                            </Badge>
+    <div className="border rounded-md">
+        <Table>
+        <TableHeader>
+            <TableRow>
+            <TableHead className="w-[150px] p-2 md:p-4">Ticket ID</TableHead>
+            <TableHead className="p-2 md:p-4">Title</TableHead>
+            <TableHead className="p-2 md:p-4">Status</TableHead>
+            <TableHead className="p-2 md:p-4">Priority</TableHead>
+            <TableHead className="p-2 md:p-4">Assignee</TableHead>
+            <TableHead className="p-2 md:p-4">Last Updated</TableHead>
+            <TableHead className="w-[50px] p-2 md:p-4"></TableHead>
+            </TableRow>
+        </TableHeader>
+        <TableBody>
+            {tickets.length > 0 ? (
+            tickets.map((ticket) => {
+                const assignee = userMap.get(ticket.assignee);
+                const truncatedId = `${ticket.id.substring(0, 5)}...${ticket.id.slice(-3)}`;
+                return (
+                <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer text-xs md:text-sm">
+                    <TableCell className="p-2 md:p-4">
+                      {ticket.source && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "mb-1 capitalize opacity-60 px-1 py-0 text-[9px] font-normal",
+                            sourceVariantMap[ticket.source] || 'text-gray-700 border-gray-500/50 bg-gray-500/10'
                           )}
-                          <div className="font-medium truncate">{truncatedId}</div>
-                        </TableCell>
-                        <TableCell className="p-2 md:p-4">{ticket.title}</TableCell>
-                        <TableCell className="p-2 md:p-4">
-                          <Badge
+                        >
+                          {ticket.source}
+                        </Badge>
+                      )}
+                      <div className="font-medium truncate">{truncatedId}</div>
+                    </TableCell>
+                    <TableCell className="p-2 md:p-4">{ticket.title}</TableCell>
+                    <TableCell className="p-2 md:p-4">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                            "font-medium capitalize",
+                            ticket.status === 'New' && 'text-blue-700 border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20',
+                            ticket.status === 'Pending' && 'text-yellow-700 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20',
+                            ticket.status === 'On Hold' && 'text-orange-700 border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20',
+                            ticket.status === 'Active' && 'text-green-700 border-green-500/50 bg-green-500/10 hover:bg-green-500/20',
+                            ticket.status === 'Closed' && 'text-gray-700 border-gray-500/50 bg-gray-500/10 hover:bg-gray-500/20',
+                            ticket.status === 'Terminated' && 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20'
+                        )}>
+                        {ticket.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="p-2 md:p-4">
+                        <Badge
                             variant="outline"
                             className={cn(
-                                "font-medium capitalize",
-                                ticket.status === 'New' && 'text-blue-700 border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20',
-                                ticket.status === 'Pending' && 'text-yellow-700 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20',
-                                ticket.status === 'On Hold' && 'text-orange-700 border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20',
-                                ticket.status === 'Active' && 'text-green-700 border-green-500/50 bg-green-500/10 hover:bg-green-500/20',
-                                ticket.status === 'Closed' && 'text-gray-700 border-gray-500/50 bg-gray-500/10 hover:bg-gray-500/20',
-                                ticket.status === 'Terminated' && 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20'
-                            )}>
-                            {ticket.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="p-2 md:p-4">
-                            <Badge
-                                variant="outline"
-                                className={cn(
-                                "font-medium capitalize",
-                                ticket.priority === 'Urgent' && 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20',
-                                ticket.priority === 'High' && 'text-orange-700 border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20',
-                                ticket.priority === 'Medium' && 'text-yellow-700 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20',
-                                ticket.priority === 'Low' && 'text-green-700 border-green-500/50 bg-green-500/10 hover:bg-green-500/20'
-                                )}
-                            >
-                                {ticket.priority}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="p-2 md:p-4">
-                        {assignee ? (
-                            <Link href={`/users/${assignee.id}`} onClick={(e) => e.stopPropagation()} className="relative z-10">
-                                <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src={assignee.avatar} alt={assignee.name} />
-                                        <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="hover:underline">{assignee.name}</span>
-                                </div>
-                            </Link>
-                        ) : (
-                            <span>{ticket.assignee}</span>
-                        )}
-                        </TableCell>
-                        <TableCell className="p-2 md:p-4">
-                            {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell className="p-2 md:p-4" onClick={(e) => e.stopPropagation()}>
-                          <TicketTableRowActions ticket={ticket} />
-                        </TableCell>
-                    </TableRow>
-                    );
-                })
-                ) : (
-                <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                    No tickets found.
+                            "font-medium capitalize",
+                            ticket.priority === 'Urgent' && 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20',
+                            ticket.priority === 'High' && 'text-orange-700 border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20',
+                            ticket.priority === 'Medium' && 'text-yellow-700 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20',
+                            ticket.priority === 'Low' && 'text-green-700 border-green-500/50 bg-green-500/10 hover:bg-green-500/20'
+                            )}
+                        >
+                            {ticket.priority}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="p-2 md:p-4">
+                    {assignee ? (
+                        <Link href={`/users/${assignee.id}`} onClick={(e) => e.stopPropagation()} className="relative z-10">
+                            <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                                    <AvatarFallback>{assignee.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="hover:underline">{assignee.name}</span>
+                            </div>
+                        </Link>
+                    ) : (
+                        <span>{ticket.assignee}</span>
+                    )}
+                    </TableCell>
+                    <TableCell className="p-2 md:p-4">
+                        {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell className="p-2 md:p-4" onClick={(e) => e.stopPropagation()}>
+                      <TicketTableRowActions ticket={ticket} />
                     </TableCell>
                 </TableRow>
-                )}
-            </TableBody>
-            </Table>
-        </div>
+                );
+            })
+            ) : (
+            <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                No tickets found.
+                </TableCell>
+            </TableRow>
+            )}
+        </TableBody>
+        </Table>
     </div>
   );
 }
-
