@@ -429,7 +429,7 @@ export default function ViewTicketPage() {
                               )}
                             <div className={`flex flex-col max-w-xl ${isCurrentUser ? 'items-end' : 'items-start'}`}>
                                <div className={`rounded-lg p-3 text-sm md:text-base ${isCurrentUser ? 'bg-primary text-primary-foreground dark:bg-[#4c07de] dark:text-white' : 'bg-muted'}`}>
-                                  <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: conv.content }} />
+                                  <div className="prose prose-sm dark:prose-invert max-w-none break-words" dangerouslySetInnerHTML={{ __html: conv.content }} />
                                </div>
                                 <div className="text-xs text-muted-foreground mt-1">
                                     {author?.name || 'Unknown User'} • {formatDistanceToNow(new Date(conv.createdAt), { addSuffix: true })}
@@ -659,4 +659,5 @@ export default function ViewTicketPage() {
 }
 
     
+
 
