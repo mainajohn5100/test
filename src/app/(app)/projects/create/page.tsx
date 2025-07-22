@@ -7,7 +7,7 @@ import type { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon, Loader, Send, DollarSign } from "lucide-react";
+import { CalendarIcon, Loader, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { PageHeader } from "@/components/page-header";
@@ -151,9 +151,9 @@ export default function CreateProjectPage() {
                     <FormItem>
                       <FormLabel>Budget</FormLabel>
                        <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Kes</span>
                         <FormControl>
-                          <Input type="number" placeholder="50000" className="pl-9" {...field} onChange={event => field.onChange(+event.target.value)} />
+                          <Input type="number" placeholder="50000" className="pl-10" {...field} onChange={event => field.onChange(+event.target.value)} />
                         </FormControl>
                       </div>
                       <FormMessage />

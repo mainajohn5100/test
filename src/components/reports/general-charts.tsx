@@ -28,7 +28,7 @@ export function GeneralReportDashboard({ tickets, projects, users }: { tickets: 
     const openTickets = tickets.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length;
     const newTicketsToday = tickets.filter(t => new Date(t.createdAt) > subDays(new Date(), 1)).length;
     const totalProjects = projects.length;
-    const totalAgents = users.filter(u => u.role === 'Agent' || u.role === 'Admin').length;
+    // const totalAgents = users.filter(u => u.role === 'Agent' || u.role === 'Admin').length;
 
     const ticketsByStatus = tickets.reduce((acc, ticket) => {
         acc[ticket.status] = (acc[ticket.status] || 0) + 1;
@@ -58,7 +58,7 @@ export function GeneralReportDashboard({ tickets, projects, users }: { tickets: 
                 <TicketsByProjectChart tickets={tickets} projects={projects} />
             </div>
             <div className="col-span-1 space-y-6">
-                <AgentOverviewCard totalAgents={totalAgents} ticketStatusData={agentTicketStatusData} />
+                <AgentOverviewCard totalTickets={totalTickets} ticketStatusData={agentTicketStatusData} />
                 <TicketsByPriorityChart tickets={tickets} />
             </div>
         </div>
@@ -96,18 +96,18 @@ function PerformanceSummaryCard({ totalTickets, openTickets, newTicketsToday, to
     );
 }
 
-function AgentOverviewCard({ totalAgents, ticketStatusData }: { totalAgents: number, ticketStatusData: any[] }) {
+function AgentOverviewCard({ totalTickets, ticketStatusData }: { totalTickets: number, ticketStatusData: any[] }) {
     const total = ticketStatusData.reduce((sum, item) => sum + item.value, 0);
 
     return (
         <Card>
             <CardHeader className="flex flex-row justify-between items-center">
-                <CardTitle>Agent Overview</CardTitle>
+                <CardTitle>Tickets Overview</CardTitle>
                 <MoreVertical className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
                 <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold">{totalAgents}</p>
+                    <p className="text-3xl font-bold">{totalTickets}</p>
                     <p className="text-sm text-muted-foreground">Total Agents</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Current Ticket Distribution</p>

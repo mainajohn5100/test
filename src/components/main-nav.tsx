@@ -18,11 +18,13 @@ import {
   Users,
   Settings,
   PlusCircle,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import type { User } from "@/lib/data";
 import { useSidebar } from "./ui/sidebar";
+import { useSettings } from "@/contexts/settings-context";
 
 type NavItem = {
     label: string;
@@ -30,6 +32,7 @@ type NavItem = {
     href?: string;
     roles: User['role'][];
     subItems?: Omit<NavItem, 'icon' | 'roles'>[];
+    setting?: string;
 };
 
 const allTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
@@ -59,12 +62,6 @@ const menuItems: NavItem[] = [
     ],
   },
   {
-    label: "Reports",
-    href: "/reports",
-    icon: BarChart2,
-    roles: ['Admin'],
-  },
-  {
     label: "Projects",
     icon: Briefcase,
     roles: ['Admin', 'Agent', 'Client'],
@@ -76,6 +73,19 @@ const menuItems: NavItem[] = [
       { label: "Completed", href: "/projects/completed" },
       { label: "Create Project", href: "/projects/create" },
     ],
+    setting: "projectsEnabled",
+  },
+   {
+    label: "Channels",
+    href: "/channels",
+    icon: Link2,
+    roles: ['Admin'],
+  },
+  {
+    label: "Analytics",
+    href: "/analytics",
+    icon: BarChart2,
+    roles: ['Admin'],
   },
   {
     label: "User Accounts",
@@ -103,6 +113,7 @@ const clientProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
 export function MainNav() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { projectsEnabled } = useSettings();
   const { isMobile, setOpenMobile } = useSidebar();
 
   const handleLinkClick = () => {
@@ -116,7 +127,11 @@ export function MainNav() {
   }
   
   const accessibleMenuItems = menuItems
-    .filter(item => item.roles.includes(user.role))
+    .filter(item => {
+        if (!item.roles.includes(user.role)) return false;
+        if (item.setting === 'projectsEnabled' && !projectsEnabled) return false;
+        return true;
+    })
     .map(item => {
       if (!item.subItems) return item;
 
@@ -142,13 +157,13 @@ export function MainNav() {
     });
 
   return (
-    <nav className="flex flex-col p-4 space-y-1.5">
-      <Accordion type="multiple" className="w-full" defaultValue={['item-0', 'item-1', 'item-2', 'item-3', 'item-4', 'item-5']}>
+    <nav className="flex flex-col p-4 space-y-32">
+      <Accordion type="multiple" className="w-full">
         {accessibleMenuItems.map((item, index) =>
           item.subItems && item.subItems.length > 0 ? (
             <AccordionItem value={`item-${index}`} key={index} className="border-b-0">
-              <AccordionTrigger className="py-2 px-3 rounded-md hover:bg-sidebar-accent hover:no-underline text-sm font-medium group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3">
-                <div className="flex items-center gap-3">
+              <AccordionTrigger className="py-2 px-3 rounded-md hover:bg-sidebar-accent hover:no-underline text-sm font-medium group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10">
+                <div className="flex items-center gap-5">
                   <item.icon className="h-5 w-5" />
                   <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                 </div>
@@ -177,7 +192,7 @@ export function MainNav() {
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 text-sm font-medium py-2 px-3 h-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3",
+                  "w-full justify-start gap-3 text-sm font-medium py-2 px-3 h-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10",
                   pathname === item.href && "bg-sidebar-accent"
                 )}
               >

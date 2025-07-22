@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -11,58 +10,108 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
 import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
-import { getTickets, getProjects, getUsers } from "@/lib/firestore";
-import { format, differenceInHours, isToday, eachDayOfInterval, subDays } from 'date-fns';
+import { getProjects, getUsers, getRecentNotifications } from "@/lib/firestore";
+import { format, differenceInHours, isToday, eachDayOfInterval, subDays, isValid } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
 import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 import { generateDashboardGreeting } from '@/ai/flows/generate-dashboard-greeting';
+import { summarizeNewMessage } from '@/ai/flows/summarize-new-message';
+import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { excludeClosedTickets, loadingScreenStyle } = useSettings();
+  const { toast } = useToast();
+  const { excludeClosedTickets, loadingScreenStyle, aiGreetingsEnabled } = useSettings();
   const [loading, setLoading] = React.useState(true);
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
   const [greeting, setGreeting] = React.useState("Here's a snapshot of your helpdesk activity.");
+  const greetingGeneratedRef = React.useRef(false);
 
   React.useEffect(() => {
     if (user) {
-      const fetchData = async () => {
-        setLoading(true);
-        const [ticketsData, projectsData, usersData] = await Promise.all([
-          getTickets(user),
-          getProjects(user),
-          getUsers(user)
-        ]);
-        setTickets(ticketsData);
-        setProjects(projectsData);
-        setUsers(usersData);
-        setLoading(false);
-        
-        try {
-            const openTickets = ticketsData.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length;
-            const newTicketsToday = ticketsData.filter(t => isToday(new Date(t.createdAt))).length;
-            
-            generateDashboardGreeting({
-                totalTickets: ticketsData.length,
-                openTickets: openTickets,
-                newTicketsToday: newTicketsToday,
-                totalProjects: projectsData.length
-            }).then(greetingResponse => {
-                setGreeting(greetingResponse.greeting);
-            }).catch(e => {
-                console.error("AI Greeting failed:", e);
-            });
-        } catch (e) {
-            console.error("AI Greeting failed to initiate:", e);
-        }
+      const fetchStaticData = async () => {
+          try {
+              const [projectsData, usersData] = await Promise.all([
+                  getProjects(user),
+                  getUsers(user),
+              ]);
+              setProjects(projectsData);
+              setUsers(usersData);
+          } catch (e) {
+              console.error("Failed to fetch static data:", e);
+              toast({ title: "Error", description: "Could not load dashboard data.", variant: "destructive" });
+          }
       };
-      fetchData();
+      
+      fetchStaticData();
+
+      const ticketsCol = collection(db, 'tickets');
+      const queries = [where("organizationId", "==", user.organizationId)];
+      
+      if (user.role === 'Agent') {
+        queries.push(where("assignee", "==", user.name));
+      } else if (user.role === 'Client') {
+        queries.push(where("reporterEmail", "==", user.email));
+      }
+      
+      const q = query(ticketsCol, ...queries);
+
+      const unsubscribe = onSnapshot(q, async (snapshot) => {
+        const ticketsData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            // Manually convert timestamps to ISO strings for consistency
+            const createdAt = (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString();
+            const updatedAt = (data.updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString();
+            return { id: doc.id, ...data, createdAt, updatedAt } as Ticket;
+        });
+
+        setTickets(ticketsData);
+        setLoading(false);
+
+        if (!greetingGeneratedRef.current && projects.length > 0 && aiGreetingsEnabled) {
+            greetingGeneratedRef.current = true;
+            try {
+                const notificationsData = await getRecentNotifications(user.id, 1);
+                let recentMessageSummary: string | undefined = undefined;
+                const recentNotification = notificationsData[0];
+                if (recentNotification && !recentNotification.read && recentNotification.type === 'new_reply') {
+                    const summaryResult = await summarizeNewMessage({
+                        from: recentNotification.metadata?.from || 'Someone',
+                        message: recentNotification.description,
+                        ticketTitle: recentNotification.metadata?.ticketTitle || 'a ticket',
+                    });
+                    recentMessageSummary = summaryResult.summary;
+                }
+
+                generateDashboardGreeting({
+                    totalTickets: ticketsData.length,
+                    openTickets: ticketsData.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length,
+                    newTicketsToday: ticketsData.filter(t => t.createdAt && isToday(new Date(t.createdAt))).length,
+                    totalProjects: projects.length,
+                    recentMessageSummary: recentMessageSummary,
+                }).then(greetingResponse => {
+                    setGreeting(greetingResponse.greeting);
+                }).catch(e => console.error("AI Greeting failed:", e));
+
+            } catch (e) {
+                console.error("Failed to generate greeting:", e);
+            }
+        }
+      }, error => {
+        console.error("Error fetching real-time tickets: ", error);
+        toast({ title: "Error", description: "Could not fetch tickets in real-time.", variant: "destructive" });
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
     }
-  }, [user]);
+  }, [user, toast, projects, aiGreetingsEnabled]);
   
   const displayedTickets = React.useMemo(() => {
     if (excludeClosedTickets) {
@@ -101,10 +150,16 @@ export default function DashboardPage() {
   });
 
   closedTickets.forEach(ticket => {
+    if (!ticket.updatedAt || !ticket.createdAt) return;
+
     const resolvedAt = new Date(ticket.updatedAt);
+    const createdAt = new Date(ticket.createdAt);
+
+    if (!isValid(resolvedAt) || !isValid(createdAt)) return;
+
     const dayKey = format(resolvedAt, 'MMM d');
+
     if (last30Days.some(d => format(d, 'MMM d') === dayKey)) {
-        const createdAt = new Date(ticket.createdAt);
         const resolutionHours = differenceInHours(resolvedAt, createdAt);
         
         if (!dailyResolutionTimes[dayKey]) {

@@ -4,9 +4,10 @@ import { addTicket, getOrganizationById, getUserByEmail } from '@/lib/firestore'
 import { analyzeEmailForSource } from '@/ai/flows/analyze-email-for-source';
 import { analyzeEmailPriority } from '@/ai/flows/analyze-email-priority';
 import { suggestTags } from '@/ai/flows/suggest-tags';
-import { verifier } from '@sendgrid/eventwebhook';
 import { sendEmail } from '@/lib/email';
-import type { Ticket, Organization } from '@/lib/data';
+import type { Ticket } from '@/lib/data';
+import type { NextApiRequest } from 'next';
+import { Resend } from 'resend';
 
 // Helper to parse "Name <email@example.com>" into name and email
 function parseFromAddress(from: string): { name: string, email: string } {
@@ -19,34 +20,18 @@ function parseFromAddress(from: string): { name: string, email: string } {
 
 export async function POST(request: Request) {
   try {
-    const signingKey = process.env.SENDGRID_WEBHOOK_SIGNING_KEY;
-    if (!signingKey) {
-        console.error("SENDGRID_WEBHOOK_SIGNING_KEY is not set in environment variables.");
-        return NextResponse.json({ error: 'Webhook signing key is not configured.' }, { status: 500 });
-    }
-
-    const signature = request.headers.get('x-twilio-email-event-webhook-signature');
-    const timestamp = request.headers.get('x-twilio-email-event-webhook-timestamp');
-    const body = await request.text();
-
-    if (!signature || !timestamp) {
-        return NextResponse.json({ error: 'Missing SendGrid signature headers.' }, { status: 400 });
-    }
+    // Resend doesn't use signing keys by default, but you could implement your own
+    // shared secret in the webhook URL if needed.
+    // E.g., /api/inbound-email?secret=YOUR_SECRET_HERE
+    // For now, we trust the incoming request is from Resend.
     
-    // Verify the webhook signature to ensure it's from SendGrid
-    const isValid = verifier.verifyEvent(body, signature, timestamp, signingKey);
-    if (!isValid) {
-        console.warn("Received a request with an invalid SendGrid signature.");
-        return NextResponse.json({ error: 'Invalid signature.' }, { status: 401 });
-    }
-    
-    // SendGrid sends the payload as multipart/form-data, so we need to parse it.
-    // Since we already consumed the body as text for verification, we re-create a request to parse form data.
-    const formData = new URLSearchParams(body);
-    const from = formData.get('from') || '';
-    const subject = formData.get('subject') || 'No Subject';
-    const textBody = formData.get('text') || '';
-    const htmlBody = formData.get('html') || textBody.replace(/\n/g, '<br>');
+    // Resend sends the payload as JSON
+    const payload = await request.json();
+
+    const from = payload.from || '';
+    const subject = payload.subject || 'No Subject';
+    const textBody = payload.text || '';
+    const htmlBody = payload.html || textBody.replace(/\n/g, '<br>');
 
     const { name: reporterName, email: reporterEmail } = parseFromAddress(from);
     
@@ -90,6 +75,8 @@ export async function POST(request: Request) {
       project: null,
       source: sourceAnalysis.source,
       organizationId: reporterUser.organizationId,
+      statusLastSetBy: 'System',
+      priorityLastSetBy: 'System',
     };
 
     const newTicketId = await addTicket(ticketData);
@@ -110,11 +97,11 @@ export async function POST(request: Request) {
 
     console.log(`Successfully created ticket ${newTicketId} from email sent by ${reporterEmail}.`);
     
-    // SendGrid requires a 200 OK response to stop retrying.
+    // Resend requires a 200 OK response to stop retrying.
     return NextResponse.json({ success: true, ticketId: newTicketId });
 
   } catch (error) {
-    console.error('Error processing SendGrid inbound email:', error);
+    console.error('Error processing Resend inbound email:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: 'Failed to process inbound email.', details: errorMessage }, { status: 500 });
   }

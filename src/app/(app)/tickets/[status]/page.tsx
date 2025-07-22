@@ -1,20 +1,36 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { PageHeader } from "@/components/page-header";
 import { TicketClient } from "@/components/tickets/ticket-client";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
-import { getTicketsByStatus, getUsers } from "@/lib/firestore";
+import { getUsers } from "@/lib/firestore";
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, User } from '@/lib/data';
+import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-const statusMap: { [key: string]: { dbValue: string; title: string } } = {
+interface StatusConfig {
+  dbValue: string;
+  title: string;
+}
+
+interface PageParams {
+  status: string;
+}
+
+interface TicketsPageProps {
+  params: PageParams;
+}
+
+const statusMap: Record<string, StatusConfig> = {
   'all': { dbValue: 'all', title: 'All Tickets' },
   'new-status': { dbValue: 'New', title: 'New Tickets' },
   'active': { dbValue: 'Active', title: 'Active Tickets' },
@@ -24,36 +40,75 @@ const statusMap: { [key: string]: { dbValue: string; title: string } } = {
   'terminated': { dbValue: 'Terminated', title: 'Terminated Tickets' },
 };
 
-export default function TicketsPage({ params }: { params: { status: string } }) {
+export default function TicketsPage({ params }: TicketsPageProps): JSX.Element {
   const { user } = useAuth();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const initialSearchTerm = searchParams.get('search') || '';
+
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [tickets, setTickets] = React.useState<Ticket[]>([]);
+  const [users, setUsers] = React.useState<User[]>([]);
+
+  const statusFilter: string = params.status || 'all';
+  const statusConfig: StatusConfig | undefined = statusMap[statusFilter];
+  const pageTitle: string = statusConfig ? statusConfig.title : statusMap['all'].title;
+  const dbStatus: string = statusConfig ? statusConfig.dbValue : 'all';
   
-  const [loading, setLoading] = useState(true);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-
-  const statusFilter = params.status || 'all';
-  const statusConfig = statusMap[statusFilter];
-
-  const pageTitle = statusConfig ? statusConfig.title : statusMap['all'].title;
-  const dbStatus = statusConfig ? statusConfig.dbValue : 'all';
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (user) {
-      const fetchData = async () => {
-        setLoading(true);
-        const [ticketsData, usersData] = await Promise.all([
-            getTicketsByStatus(dbStatus, user),
-            getUsers(user)
-        ]);
-        setTickets(ticketsData);
-        setUsers(usersData);
-        setLoading(false);
+      // Fetch non-realtime data
+      const fetchUsers = async () => {
+        try {
+          const usersData = await getUsers(user);
+          setUsers(usersData);
+        } catch (error) {
+          console.error("Failed to fetch users", error);
+          toast({ title: "Error", description: "Could not load users.", variant: "destructive" });
+        }
       };
-      fetchData();
+      fetchUsers();
+
+      // Setup real-time listener for tickets
+      setLoading(true);
+      const ticketsCol = collection(db, 'tickets');
+      const queries = [where("organizationId", "==", user.organizationId)];
+      
+      if (dbStatus !== 'all') {
+        queries.push(where("status", "==", dbStatus));
+      }
+      
+      if (user.role === 'Client') {
+        queries.push(where("reporterEmail", "==", user.email));
+      } else if (user.role === 'Agent') {
+        queries.push(where("assignee", "==", user.name));
+      }
+      
+      const q = query(ticketsCol, ...queries);
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const ticketsData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id,
+                ...data,
+                createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+                updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+            } as Ticket;
+        });
+        setTickets(ticketsData);
+        setLoading(false);
+      }, (error) => {
+        console.error(`Error fetching real-time tickets with status "${dbStatus}":`, error);
+        toast({ title: "Error", description: `Could not fetch tickets for status: ${dbStatus}.`, variant: "destructive" });
+        setLoading(false);
+      });
+      
+      // Cleanup listener on component unmount or when dependencies change
+      return () => unsubscribe();
     }
-  }, [user, dbStatus]);
+  }, [user, dbStatus, toast]);
+
 
   if (loading || !user) {
     return (
@@ -62,10 +117,10 @@ export default function TicketsPage({ params }: { params: { status: string } }) 
       </div>
     );
   }
-
+  
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={pageTitle} description="Browse and manage all tickets.">
+      <PageHeader title={pageTitle} description="View, manage, and filter your tickets.">
         <Link href="/tickets/new" passHref>
           <Button>
             <PlusCircle />
@@ -73,7 +128,12 @@ export default function TicketsPage({ params }: { params: { status: string } }) 
           </Button>
         </Link>
       </PageHeader>
-      <TicketClient tickets={tickets} users={users} initialSearchTerm={initialSearchTerm} />
+      
+      <TicketClient 
+        tickets={tickets}
+        users={users}
+        initialSearchTerm={initialSearchTerm}
+      />
     </div>
   );
 }

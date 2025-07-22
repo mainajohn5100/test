@@ -6,8 +6,18 @@ import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tool
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BarChart as BarChartIcon, LineChart as LineChartIcon } from "lucide-react"
+import type { Ticket } from "@/lib/data"
 
 const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
+const statusOrder: { [key in Ticket['status']]: number } = {
+  'New': 0,
+  'Active': 1,
+  'Pending': 2,
+  'On Hold': 3,
+  'Closed': 4,
+  'Terminated': 5,
+};
 
 interface TicketsOverviewChartProps {
     data: { name: string; value: number }[];
@@ -15,6 +25,14 @@ interface TicketsOverviewChartProps {
 
 export function TicketsOverviewChart({ data }: TicketsOverviewChartProps) {
   const [chartType, setChartType] = React.useState<"bar" | "line">("bar");
+  
+  const sortedData = React.useMemo(() => {
+    return [...data].sort((a, b) => {
+        const aOrder = statusOrder[a.name as Ticket['status']] ?? 99;
+        const bOrder = statusOrder[b.name as Ticket['status']] ?? 99;
+        return aOrder - bOrder;
+    });
+  }, [data]);
 
   return (
     <Card>
@@ -44,11 +62,11 @@ export function TicketsOverviewChart({ data }: TicketsOverviewChartProps) {
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={250}>
             {chartType === 'bar' ? (
-                <BarChart data={data}>
+                <BarChart data={sortedData}>
                     <XAxis
                       dataKey="name"
                       stroke="#888888"
-                      fontSize={12}
+                      fontSize={10}
                       tickLine={false}
                       axisLine={false}
                       type="category"
@@ -68,13 +86,13 @@ export function TicketsOverviewChart({ data }: TicketsOverviewChartProps) {
                       }}
                     />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                       {data.map((entry, index) => (
+                       {sortedData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                        ))}
                     </Bar> 
                 </BarChart>
             ) : (
-                <LineChart data={data}>
+                <LineChart data={sortedData}>
                     <XAxis
                       dataKey="name"
                       stroke="#888888"

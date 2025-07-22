@@ -19,11 +19,7 @@ import { useSettings } from '@/contexts/settings-context';
 
 export function AccountForm() {
     const { user, loading, refreshUser } = useAuth();
-    const { 
-        inactivityTimeout, 
-        setInactivityTimeout, 
-        INACTIVITY_TIMEOUT_OPTIONS 
-    } = useSettings();
+    const settings = useSettings();
     const { toast } = useToast();
     const [isEditDialogOpen, setEditDialogOpen] = React.useState(false);
     const [isUpdatingPrivacy, startPrivacyTransition] = React.useTransition();
@@ -48,7 +44,7 @@ export function AccountForm() {
         });
     };
 
-    if (loading) {
+    if (loading || settings.loading) {
         return (
             <Card>
                 <CardHeader>
@@ -145,15 +141,15 @@ export function AccountForm() {
                                 </p>
                             </div>
                              <Select 
-                                value={String(inactivityTimeout)} 
-                                onValueChange={(value) => setInactivityTimeout(Number(value))}
+                                value={String(settings.inactivityTimeout)} 
+                                onValueChange={(value) => settings.setInactivityTimeout(Number(value))}
                                 disabled={user.role !== 'Admin'}
                             >
                                 <SelectTrigger className="w-48">
                                     <SelectValue placeholder="Select timeout" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {INACTIVITY_TIMEOUT_OPTIONS.map(option => (
+                                    {settings.INACTIVITY_TIMEOUT_OPTIONS.map(option => (
                                         <SelectItem key={option.value} value={String(option.value)}>
                                             {option.label}
                                         </SelectItem>

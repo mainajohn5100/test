@@ -17,13 +17,14 @@ import { useRouter } from "next/navigation"
 import Link from "next/link";
 import { TicketTableRowActions } from "../tickets/ticket-table-row-actions";
 import { Button } from "../ui/button";
-import { MoreVertical } from "lucide-react";
+import { Briefcase, Mail, MessageCircle, MoreVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useSettings } from "@/contexts/settings-context";
-import { format } from "date-fns";
+import { format, isValid, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 
 const statusVariantMap: { [key: string]: string } = {
   'New': 'text-blue-700 border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20',
@@ -41,25 +42,30 @@ const priorityVariantMap: { [key: string]: string } = {
     'Urgent': 'text-red-700 border-red-500/50 bg-red-500/10 hover:bg-red-500/20',
 };
 
+const getTicketSource = (ticket: Ticket) => {
+    if (ticket.source === 'WhatsApp') return { name: 'WhatsApp', icon: MessageCircle, color: 'text-green-700'};
+    if (ticket.source === 'Project') return { name: 'Project', icon: Briefcase, color: 'text-purple-700' };
+    return { name: 'Email', icon: Mail, color: 'text-sky-700' };
+}
 
 interface RecentTicketsProps {
     tickets: Ticket[];
     userMap: Map<string, User>;
-}
+} 
 
 export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
   const router = useRouter();
   const { excludeClosedTickets, setExcludeClosedTickets } = useSettings();
   const recentTickets = tickets
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5);
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 10);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Recent Tickets</CardTitle>
-          <CardDescription>A list of the most recently updated tickets. Click a row to view details.</CardDescription>
+          <CardDescription>A list of the 10 most recently updated tickets. Click a row to view details.</CardDescription>
         </div>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -71,9 +77,9 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
             <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                     <div className="flex items-center justify-between w-full">
-                        <Label htmlFor="hide-closed" className="pr-2 font-normal">Hide Closed Tickets</Label>
+                        <Label htmlFor="hide-closed-dashboard" className="pr-2 font-normal">Hide Closed Tickets</Label>
                         <Switch
-                            id="hide-closed"
+                            id="hide-closed-dashboard"
                             checked={excludeClosedTickets}
                             onCheckedChange={setExcludeClosedTickets}
                         />
@@ -90,7 +96,8 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Assignee</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Last Updated</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -100,11 +107,16 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
                 const reporterUser = userMap.get(ticket.reporter);
                 const reporterDisplay = ticket.reporterEmail || (reporterUser ? reporterUser.email : `From: ${ticket.reporter}`);
                 const reporterTitle = ticket.reporterEmail || (reporterUser ? reporterUser.email : ticket.reporter);
-
+                const source = getTicketSource(ticket);
+                const updatedAtDate = new Date(ticket.updatedAt);
+                const updatedAtDisplay = isValid(updatedAtDate)
+                  ? formatDistanceToNow(updatedAtDate, { addSuffix: true })
+                  : '...';
+              
                 return(
               <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
                 <TableCell>
-                  <div className="font-medium">{ticket.title}</div>
+                  <div className="font-medium truncate">{ticket.title}</div>
                   <div className="text-sm text-muted-foreground truncate" title={reporterTitle}>
                     {reporterDisplay}
                   </div>
@@ -136,7 +148,21 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
                     </div>
                 </TableCell>
                 <TableCell>
-                    <div className="text-sm text-muted-foreground">{format(new Date(ticket.createdAt), "dd MMM, yyyy")}</div>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <div className="flex items-center gap-2">
+                                     <source.icon className={cn("h-4 w-4", source.color)} />
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Source: {source.name}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </TableCell>
+                <TableCell>
+                    <span className="text-muted-foreground">{updatedAtDisplay}</span>
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                     <TicketTableRowActions ticket={ticket} />
@@ -144,7 +170,7 @@ export function RecentTickets({ tickets, userMap }: RecentTicketsProps) {
               </TableRow>
             )}) : (
                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                     No recent tickets found.
                     </TableCell>
                 </TableRow>

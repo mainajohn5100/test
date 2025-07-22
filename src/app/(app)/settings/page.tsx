@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { PageHeader } from "@/components/page-header";
@@ -9,48 +8,48 @@ import { AppearanceForm } from "@/components/settings/appearance-form";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/contexts/settings-context";
-import { EmailIntegrationForm } from "@/components/settings/email-integration-form";
 import { AccountForm } from "@/components/settings/account-form";
 import { useAuth } from "@/contexts/auth-context";
-import { Input } from "@/components/ui/input";
 import { EmailTemplatesForm } from "@/components/settings/email-templates-form";
+import { Loader } from "lucide-react";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
-  const { 
-    inAppNotifications, 
-    setInAppNotifications,
-    emailNotifications,
-    setEmailNotifications,
-    agentPanelEnabled,
-    setAgentPanelEnabled,
-    clientPanelEnabled,
-    setClientPanelEnabled,
-    clientCanSelectProject,
-    setClientCanSelectProject,
-    agentCanEditTeam,
-    setAgentCanEditTeam,
-  } = useSettings();
+  const { user, loading: authLoading } = useAuth();
+  const settings = useSettings();
+  
+  if (authLoading || settings.loading) {
+     return (
+      <div className="flex flex-col gap-6">
+          <PageHeader
+            title="Settings"
+            description="Configure application settings and preferences."
+          />
+          <div className="flex h-48 items-center justify-center">
+            <Loader className="h-8 w-8 animate-spin" />
+          </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Settings"
-        description="Configure application settings and integrations."
+        description="Configure application settings and preferences."
       />
-      <Tabs defaultValue="appearance" className="space-y-6">
+      <Tabs defaultValue="personalization" className="space-y-6">
         <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="personalization">Personalization</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          {user?.role === 'Admin' && <TabsTrigger value="integrations">Integrations</TabsTrigger>}
           {user?.role === 'Admin' && <TabsTrigger value="access">Access Control</TabsTrigger>}
           <TabsTrigger value="account">Account</TabsTrigger>
+          {user?.role === 'Admin' && <TabsTrigger value="templates">Email Templates</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="appearance">
+        <TabsContent value="personalization">
             <Card>
                 <CardHeader>
-                    <CardTitle>Appearance</CardTitle>
+                    <CardTitle>Personalization</CardTitle>
                     <CardDescription>
                         Customize the look and feel of your dashboard.
                     </CardDescription>
@@ -65,7 +64,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
               <CardDescription>
-                Manage how you receive notifications from the application. These settings are local to your browser.
+                Manage how you receive notifications from the application. These settings are local to your browser and organization.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -80,8 +79,8 @@ export default function SettingsPage() {
                   </div>
                   <Switch
                     id="in-app-notifications"
-                    checked={inAppNotifications}
-                    onCheckedChange={setInAppNotifications}
+                    checked={settings.inAppNotifications}
+                    onCheckedChange={settings.setInAppNotifications}
                     aria-label="Toggle in-app notifications"
                   />
                 </div>
@@ -96,22 +95,15 @@ export default function SettingsPage() {
                   </div>
                   <Switch
                     id="email-notifications"
-                    checked={emailNotifications}
-                    onCheckedChange={setEmailNotifications}
+                    checked={settings.emailNotifications}
+                    onCheckedChange={settings.setEmailNotifications}
                     aria-label="Toggle email notifications"
+                    disabled
                   />
                 </div>
             </CardContent>
           </Card>
         </TabsContent>
-        {user?.role === 'Admin' && (
-          <TabsContent value="integrations">
-            <div className="space-y-6">
-              <EmailIntegrationForm />
-              <EmailTemplatesForm />
-            </div>
-          </TabsContent>
-        )}
          {user?.role === 'Admin' && (
           <TabsContent value="access">
             <div className="space-y-6">
@@ -134,8 +126,8 @@ export default function SettingsPage() {
                           </div>
                           <Switch
                               id="agent-panel"
-                              checked={agentPanelEnabled}
-                              onCheckedChange={setAgentPanelEnabled}
+                              checked={settings.agentPanelEnabled}
+                              onCheckedChange={settings.setAgentPanelEnabled}
                               aria-label="Toggle agent panel access"
                           />
                       </div>
@@ -150,43 +142,47 @@ export default function SettingsPage() {
                           </div>
                           <Switch
                               id="client-panel"
-                              checked={clientPanelEnabled}
-                              onCheckedChange={setClientPanelEnabled}
+                              checked={settings.clientPanelEnabled}
+                              onCheckedChange={settings.setClientPanelEnabled}
                               aria-label="Toggle client panel access"
                           />
                       </div>
-                       <div className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                              <Label htmlFor="client-project" className="text-base">
-                                  Client Can Select Project
-                              </Label>
-                              <p className="text-sm text-muted-foreground">
-                                  Allow clients to assign tickets to projects during creation.
-                              </p>
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="projects-enabled" className="text-base">
+                                Enable Projects Module
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                                Globally enable or disable the Projects feature.
+                            </p>
+                        </div>
+                        <Switch
+                            id="projects-enabled"
+                            checked={settings.projectsEnabled}
+                            onCheckedChange={settings.setProjectsEnabled}
+                            aria-label="Toggle projects module"
+                        />
+                       </div>
+                       {settings.projectsEnabled && (
+                        <>
+                          <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <Label htmlFor="client-project" className="text-base">
+                                    Client Can Select Project
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Allow clients to assign tickets to projects during creation.
+                                </p>
+                            </div>
+                            <Switch
+                                id="client-project"
+                                checked={settings.clientCanSelectProject}
+                                onCheckedChange={settings.setClientCanSelectProject}
+                                aria-label="Toggle client project selection"
+                            />
                           </div>
-                          <Switch
-                              id="client-project"
-                              checked={clientCanSelectProject}
-                              onCheckedChange={setClientCanSelectProject}
-                              aria-label="Toggle client project selection"
-                          />
-                      </div>
-                       <div className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                              <Label htmlFor="agent-can-edit-team" className="text-base">
-                                  Agent Can Add Team Members
-                              </Label>
-                              <p className="text-sm text-muted-foreground">
-                                  Allow agents who are project creators to add or remove team members from projects.
-                              </p>
-                          </div>
-                          <Switch
-                              id="agent-can-edit-team"
-                              checked={agentCanEditTeam}
-                              onCheckedChange={setAgentCanEditTeam}
-                              aria-label="Toggle agent team editing"
-                          />
-                      </div>
+                        </>
+                       )}
                   </CardContent>
               </Card>
             </div>
@@ -195,6 +191,11 @@ export default function SettingsPage() {
         <TabsContent value="account">
             <AccountForm />
         </TabsContent>
+        {user?.role === 'Admin' && (
+          <TabsContent value="templates">
+            <EmailTemplatesForm />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

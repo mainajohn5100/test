@@ -18,6 +18,7 @@ export async function createTicketAction(formData: FormData) {
     reporterId: formData.get('reporterId') as string,
     email: formData.get('email') as string,
     priority: formData.get('priority') as 'low' | 'medium' | 'high' | 'urgent',
+    category: formData.get('category') as 'General' | 'Support' | 'Advertising' | 'Billing',
     project: formData.get('project') as string,
     assignee: formData.get('assignee') as string,
     tags: formData.getAll('tags') as string[] || [],
@@ -32,7 +33,7 @@ export async function createTicketAction(formData: FormData) {
     };
   }
   
-  const { title, description, reporter, reporterId, email, priority, project, assignee, tags } = validatedFields.data;
+  const { title, description, reporter, reporterId, email, priority, category, project, assignee, tags } = validatedFields.data;
   
   const priorityMap: { [key: string]: Ticket['priority'] } = {
     low: 'Low',
@@ -48,7 +49,21 @@ export async function createTicketAction(formData: FormData) {
 
   const finalAssignee = (!assignee || assignee === 'unassigned') ? 'Unassigned' : assignee;
   const finalProject = (!project || project === 'none') ? null : project;
-  const source: Ticket['source'] = finalProject ? 'Project' : 'Client Inquiry';
+  
+  let finalCategory = category;
+  // If an Admin/Agent creates a ticket not linked to a project, categorize it as 'Internal'.
+  if ((reporterUser.role === 'Admin' || reporterUser.role === 'Agent') && !finalProject) {
+    finalCategory = 'Internal';
+  }
+
+  let source: Ticket['source'];
+  if (finalProject) {
+    source = 'Project';
+  } else if (reporterUser.role === 'Client') {
+    source = 'Client Inquiry';
+  } else {
+    source = 'Internal';
+  }
 
   const ticketData = {
     title,
@@ -57,10 +72,13 @@ export async function createTicketAction(formData: FormData) {
     reporterEmail: email,
     tags: tags || [],
     priority: priorityMap[priority],
+    category: finalCategory,
     assignee: finalAssignee,
     project: finalProject,
     source,
     organizationId: reporterUser.organizationId,
+    statusLastSetBy: reporterUser.role,
+    priorityLastSetBy: reporterUser.role,
   };
 
   let newTicketId: string;

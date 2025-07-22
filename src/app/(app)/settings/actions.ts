@@ -1,10 +1,6 @@
-
-'use server';
-
 import { z } from 'zod';
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { revalidatePath } from 'next/cache';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required.'),
@@ -14,55 +10,60 @@ const passwordSchema = z.object({
   path: ["newPassword"],
 });
 
-export async function changePasswordAction(values: z.infer<typeof passwordSchema>) {
+// Helper to get user-friendly Firebase error messages
+function getFirebaseAuthError(error: any): string {
+    switch (error.code) {
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            return 'The password you entered is incorrect. Please try again.';
+        case 'auth/too-many-requests':
+            return 'Too many failed attempts. Please try again later.';
+        case 'auth/weak-password':
+            return 'The new password is too weak. Please use at least 6 characters.';
+        case 'auth/requires-recent-login':
+            return 'This action is sensitive and requires a recent login. Please re-authenticate.';
+        default:
+            return error.message || 'An unexpected error occurred.';
+    }
+}
+
+/**
+ * Re-authenticates the current user with their password.
+ * This is a client-side function.
+ * @param password The user's current password.
+ * @returns A promise that resolves with a success or error object.
+ */
+export async function reauthenticateUser(password: string): Promise<{ success: boolean; error?: string }> {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    return { success: false, error: 'No authenticated user found or user is missing an email address.' };
+  }
+
   try {
-    const user = auth.currentUser;
-    if (!user || !user.email) {
-      return { success: false, error: 'No authenticated user found or user is missing an email address.' };
-    }
-
-    const validated = passwordSchema.safeParse(values);
-    if (!validated.success) {
-      const issues = validated.error.flatten().fieldErrors;
-      const errorMessage = Object.values(issues).flat().join(' ');
-      return { success: false, error: errorMessage || "Invalid data provided." };
-    }
-
-    const { currentPassword, newPassword } = validated.data;
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-
-    // Re-authenticate before changing the password
+    const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
-    
-    // Actually update the password in Firebase Auth
-    await updatePassword(user, newPassword);
-
-    return { success: true, message: "Password updated successfully." };
+    return { success: true };
   } catch (error: any) {
-    if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        return { success: false, error: 'The current password you entered is incorrect.' };
-    }
-    console.error("Error changing password:", error);
-    return { success: false, error: 'An unexpected error occurred while changing the password.' };
+    return { success: false, error: getFirebaseAuthError(error) };
   }
 }
 
-export async function reauthenticateAction(password: string): Promise<{success: boolean, error?: string}> {
+/**
+ * Changes the current user's password.
+ * This is a client-side function and should be called after successful re-authentication.
+ * @param newPassword The new password for the user.
+ * @returns A promise that resolves with a success or error object.
+ */
+export async function changeUserPassword(newPassword: string): Promise<{ success: boolean; error?: string, message?: string }> {
+  const user = auth.currentUser;
+  if (!user) {
+    return { success: false, error: 'No authenticated user found.' };
+  }
+
   try {
-    const user = auth.currentUser;
-    if (!user || !user.email) {
-      return { success: false, error: 'No authenticated user found.' };
-    }
-
-    const credential = EmailAuthProvider.credential(user.email, password);
-    await reauthenticateWithCredential(user, credential);
-
-    return { success: true };
+    await updatePassword(user, newPassword);
+    return { success: true, message: 'Password updated successfully.' };
   } catch (error: any) {
-    if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-      return { success: false, error: 'Incorrect password.' };
-    }
-    console.error("Re-authentication error:", error);
-    return { success: false, error: 'Re-authentication failed.' };
+    return { success: false, error: getFirebaseAuthError(error) };
   }
 }

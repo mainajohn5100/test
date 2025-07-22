@@ -137,12 +137,6 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Change Password</DialogTitle>
-                    <DialogDescription>
-                        Enter and confirm your new password below.
-                    </DialogDescription>
-                </DialogHeader>
                 <ChangePasswordForm setOpen={setPasswordDialogOpen} />
             </DialogContent>
           </Dialog>

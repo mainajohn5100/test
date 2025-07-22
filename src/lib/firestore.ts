@@ -80,7 +80,13 @@ export const getTickets = cache(async (user: User): Promise<Ticket[]> => {
       return snapshotToData<Ticket>(ticketSnapshot);
     }
     
-    // Agent or Admin
+    if (user.role === 'Agent') {
+        const agentQuery = query(ticketsCol, orgQuery, where("assignee", "==", user.name));
+        const ticketSnapshot = await getDocs(agentQuery);
+        return snapshotToData<Ticket>(ticketSnapshot);
+    }
+
+    // Admin gets all
     const ticketQuery = query(ticketsCol, orgQuery);
     const ticketSnapshot = await getDocs(ticketQuery);
     return snapshotToData<Ticket>(ticketSnapshot);
@@ -104,6 +110,12 @@ export const getTicketsByStatus = cache(async (status: string, user: User): Prom
       return snapshotToData<Ticket>(ticketSnapshot);
     }
     
+    if (user.role === 'Agent') {
+        const agentQuery = query(ticketsCol, orgQuery, where("assignee", "==", user.name), ...statusQuery);
+        const ticketSnapshot = await getDocs(agentQuery);
+        return snapshotToData<Ticket>(ticketSnapshot);
+    }
+
     const q = query(ticketsCol, orgQuery, ...statusQuery);
     const ticketSnapshot = await getDocs(q);
     return snapshotToData<Ticket>(ticketSnapshot);
@@ -185,47 +197,29 @@ export const getProjects = cache(async (user: User): Promise<Project[]> => {
 
   const projectsCol = collection(db, 'projects');
   const orgQuery = where("organizationId", "==", user.organizationId);
-  const userRole = user.role;
 
   try {
-    if (userRole === 'Client') {
-      const clientTickets = await getTicketsByReporter(user.name);
-      if (clientTickets.length === 0) return [];
-      
-      const projectNames = [...new Set(clientTickets.map(t => t.project).filter(Boolean))];
-      if (projectNames.length === 0) return [];
-
-      const q = query(projectsCol, orgQuery, where("name", "in", projectNames));
+    if (user.role === 'Client') {
+      const q = query(projectsCol, orgQuery, where("stakeholders", "array-contains", user.id));
       const projectSnapshot = await getDocs(q);
       return snapshotToData<Project>(projectSnapshot);
     }
-
-    // For Admins, fetch all projects in the organization
-    if (userRole === 'Admin') {
-        const q = query(projectsCol, orgQuery);
-        const projectSnapshot = await getDocs(q);
-        return snapshotToData<Project>(projectSnapshot);
-    }
-
-    // For Agents, fetch projects they manage or are on the team for.
-    if (userRole === 'Agent') {
-        const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id));
-        const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id));
-
-        const [managerSnap, teamSnap] = await Promise.all([
-            getDocs(managerQuery),
-            getDocs(teamMemberQuery)
-        ]);
-
-        const projectsMap = new Map<string, Project>();
-        snapshotToData<Project>(managerSnap).forEach(p => projectsMap.set(p.id, p));
-        snapshotToData<Project>(teamSnap).forEach(p => projectsMap.set(p.id, p));
-        
-        return Array.from(projectsMap.values());
-    }
     
-    return [];
+    // Admins and Agents now have the same logic
+    const managerQuery = query(projectsCol, orgQuery, where("manager", "==", user.id));
+    const teamMemberQuery = query(projectsCol, orgQuery, where("team", "array-contains", user.id));
 
+    const [managerSnap, teamSnap] = await Promise.all([
+        getDocs(managerQuery),
+        getDocs(teamMemberQuery)
+    ]);
+
+    const projectsMap = new Map<string, Project>();
+    snapshotToData<Project>(managerSnap).forEach(p => projectsMap.set(p.id, p));
+    snapshotToData<Project>(teamSnap).forEach(p => projectsMap.set(p.id, p));
+    
+    return Array.from(projectsMap.values());
+    
   } catch (error) {
     console.error("Error fetching projects:", error);
     return [];
@@ -273,6 +267,18 @@ export const getTasksByProject = cache(async (projectId: string): Promise<Task[]
         return [];
     }
 });
+
+export const getTaskById = cache(async (projectId: string, taskId: string): Promise<Task | null> => {
+    try {
+        const taskRef = doc(db, 'projects', projectId, 'tasks', taskId);
+        const taskSnap = await getDoc(taskRef);
+        return docToData<Task>(taskSnap);
+    } catch (error) {
+        console.error("Error fetching task by ID:", error);
+        return null;
+    }
+});
+
 
 export const getUsers = cache(async (user: User): Promise<User[]> => {
   try {
@@ -329,6 +335,21 @@ export const getUserByEmail = cache(async (email: string): Promise<User | null> 
     }
 });
 
+export const getUserByPhone = cache(async (phone: string, organizationId: string): Promise<User | null> => {
+    try {
+        const usersCol = collection(db, 'users');
+        const q = query(usersCol, where("phone", "==", phone), where("organizationId", "==", organizationId), limit(1));
+        const userSnapshot = await getDocs(q);
+        if (userSnapshot.empty) {
+            return null;
+        }
+        return docToData<User>(userSnapshot.docs[0]);
+    } catch (error) {
+        console.error("Error fetching user by phone number:", error);
+        return null;
+    }
+});
+
 export async function createUserInAuth(email: string, password: string):Promise<string> {
     try {
         const tempAuth = auth;
@@ -349,7 +370,11 @@ export async function createUserInAuth(email: string, password: string):Promise<
 export async function createUserInFirestore(userId: string, userData: Omit<User, 'id'>): Promise<void> {
     try {
         const userRef = doc(db, 'users', userId);
-        await setDoc(userRef, userData);
+        await setDoc(userRef, {
+            ...userData,
+            status: userData.status || 'active', // Ensure status is set
+            lastSeen: serverTimestamp(),
+        });
     } catch (error) {
         console.error("Error creating user in Firestore:", error);
         throw new Error("Failed to create user profile in database.");
@@ -370,6 +395,18 @@ export async function updateUser(userId: string, userData: Partial<Omit<User, 'i
     }
 }
 
+export async function updateUserPresence(userId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    try {
+        await updateDoc(userRef, {
+            lastSeen: serverTimestamp()
+        });
+    } catch (error) {
+        // This might fail if the user is offline, which is fine.
+        // We can ignore this specific error.
+    }
+}
+
 export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
   try {
     const docRef = await addDoc(collection(db, 'tickets'), {
@@ -377,6 +414,7 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
       status: 'New',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      clientCanReply: true,
     });
     return docRef.id;
   } catch (error) {
@@ -385,7 +423,11 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
   }
 }
 
-export async function addConversation(ticketId: string, conversationData: Omit<TicketConversation, 'id' | 'createdAt'>): Promise<string> {
+export async function addConversation(
+    ticketId: string, 
+    conversationData: Omit<TicketConversation, 'id' | 'createdAt'>,
+    ticketUpdate: Partial<Ticket> = {}
+): Promise<string> {
     const batch = writeBatch(db);
     
     // Create the conversation document
@@ -396,9 +438,10 @@ export async function addConversation(ticketId: string, conversationData: Omit<T
         createdAt: serverTimestamp(),
     });
 
-    // Update the parent ticket's updatedAt timestamp
+    // Update the parent ticket
     const ticketRef = doc(db, 'tickets', ticketId);
-    batch.update(ticketRef, { updatedAt: serverTimestamp() });
+    const updates = { ...ticketUpdate, updatedAt: serverTimestamp() };
+    batch.update(ticketRef, updates);
 
     try {
         await batch.commit();
@@ -418,6 +461,8 @@ export async function addProject(projectData: {
     budget?: number;
     creatorId: string;
     organizationId: string;
+    teamCanEditTasks: boolean;
+    statusLastSetBy: 'Admin' | 'Agent' | 'Client';
 }): Promise<string> {
     try {
         const docRef = await addDoc(collection(db, 'projects'), {
@@ -425,6 +470,7 @@ export async function addProject(projectData: {
             status: 'New',
             createdAt: serverTimestamp(),
             ticketsEnabled: true,
+            stakeholders: [],
         });
         return docRef.id;
     } catch (error) {
@@ -446,7 +492,10 @@ export async function updateTicket(ticketId: string, data: Partial<Omit<Ticket, 
 export async function updateProject(projectId: string, data: Partial<Omit<Project, 'id'>>): Promise<void> {
   try {
     const projectRef = doc(db, 'projects', projectId);
-    await updateDoc(projectRef, data);
+    const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+    if (Object.keys(cleanData).length > 0) {
+        await updateDoc(projectRef, cleanData);
+    }
   } catch (error) {
     console.error("Error updating project:", error);
     throw new Error("Failed to update project.");
@@ -500,6 +549,23 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
         return snapshotToData<Notification>(snapshot);
     } catch (error) {
         console.error("Error fetching notifications:", error);
+        return [];
+    }
+}
+
+export async function getRecentNotifications(userId: string, count: number): Promise<Notification[]> {
+    try {
+        const notificationsCol = collection(db, 'notifications');
+        const q = query(
+            notificationsCol,
+            where("userId", "==", userId),
+            orderBy('createdAt', 'desc'),
+            limit(count)
+        );
+        const snapshot = await getDocs(q);
+        return snapshotToData<Notification>(snapshot);
+    } catch (error) {
+        console.error("Error fetching recent notifications:", error);
         return [];
     }
 }
@@ -565,6 +631,21 @@ export const getOrganizationById = cache(async (id: string): Promise<Organizatio
     }
 });
 
+export const getOrganizationByWhatsAppNumber = cache(async (phoneNumber: string): Promise<Organization | null> => {
+    try {
+        const orgsCol = collection(db, 'organizations');
+        const q = query(orgsCol, where("settings.whatsapp.phoneNumber", "==", phoneNumber), limit(1));
+        const orgSnapshot = await getDocs(q);
+        if (orgSnapshot.empty) {
+            return null;
+        }
+        return docToData<Organization>(orgSnapshot.docs[0]);
+    } catch (error) {
+        console.error("Error fetching organization by WhatsApp number:", error);
+        return null;
+    }
+});
+
 export async function updateOrganizationSettings(orgId: string, settingsUpdate: Partial<Organization['settings']>): Promise<void> {
     try {
         const orgRef = doc(db, 'organizations', orgId);
@@ -589,18 +670,20 @@ export async function setAuthUserClaims(uid: string, claims: object): Promise<vo
 }
 
 // Project Task Functions
-export async function addTaskToProject(projectId: string, taskData: Omit<Task, 'id'>) {
+export async function addTaskToProject(projectId: string, taskData: Omit<Task, 'id'>): Promise<string> {
     try {
         const tasksCol = collection(db, 'projects', projectId, 'tasks');
-        await addDoc(tasksCol, {
+        const docRef = await addDoc(tasksCol, {
             ...taskData,
             dueDate: taskData.dueDate ? Timestamp.fromDate(new Date(taskData.dueDate)) : null
         });
+        return docRef.id;
     } catch (error) {
         console.error("Error adding task to project:", error);
         throw new Error("Failed to add task.");
     }
 }
+
 
 export async function updateTaskInProject(projectId: string, taskId: string, updates: Partial<Task>) {
     try {

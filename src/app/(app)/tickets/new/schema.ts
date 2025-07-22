@@ -8,6 +8,9 @@ export const ticketSchema = z.object({
   reporterId: z.string().min(1, "Reporter ID is missing."),
   email: z.string().email("Invalid email address.").optional().or(z.literal('')),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  category: z.enum(['General', 'Support', 'Advertising', 'Billing', 'Internal'], {
+    required_error: "A category must be selected."
+  }),
   project: z.string().optional(),
   assignee: z.string().optional(),
   tags: z.array(z.string()).optional(),

@@ -23,6 +23,8 @@ export async function createProjectAction(values: z.infer<typeof projectSchema>)
     budget: values.budget,
     creatorId: values.creatorId,
     organizationId: creator.organizationId,
+    teamCanEditTasks: false, // Default to false
+    statusLastSetBy: creator.role,
   };
 
   let newProjectId: string;

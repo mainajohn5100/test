@@ -3,7 +3,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { Organization } from '@/lib/data';
+import type { Organization, WhatsAppSettings } from '@/lib/data';
 import { useAuth } from './auth-context';
 import { getOrganizationById, updateOrganizationSettings } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -19,10 +19,14 @@ const INACTIVITY_TIMEOUT_OPTIONS = [
     { value: 30, label: '30 minutes' },
 ];
 
+const DEFAULT_TICKET_STATUSES = ['New', 'Active', 'Pending', 'On Hold', 'Closed', 'Terminated'];
+
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
+interface OrgSettings extends Omit<Required<Organization>['settings'], 'emailTemplates' | 'excludeClosedTickets' | 'loadingScreenStyle' | 'aiGreetingsEnabled' | 'ticketStatuses'> {}
+
 // Merging local settings with DB settings for a comprehensive context
-interface SettingsContextType extends Omit<Required<Organization>['settings'], 'emailTemplates'> {
+interface SettingsContextType extends OrgSettings {
   showFullScreenButton: boolean;
   setShowFullScreenButton: (show: boolean) => void;
   inAppNotifications: boolean;
@@ -33,31 +37,42 @@ interface SettingsContextType extends Omit<Required<Organization>['settings'], '
   loading: boolean;
   supportEmail: string;
   setSupportEmail: (email: string) => void;
+  whatsappSettings: Partial<WhatsAppSettings>;
+  setWhatsappSettings: (settings: Partial<WhatsAppSettings>) => void;
   setAgentPanelEnabled: (enabled: boolean) => void;
   setClientPanelEnabled: (enabled: boolean) => void;
+  setProjectsEnabled: (enabled: boolean) => void;
   setClientCanSelectProject: (enabled: boolean) => void;
-  setAgentCanEditTeam: (enabled: boolean) => void;
-  setExcludeClosedTickets: (enabled: boolean) => void;
   setInactivityTimeout: (minutes: number) => void;
+  ticketStatuses: string[];
+  
+  // New local/hybrid settings
+  loadingScreenStyle: LoadingScreenStyle;
   setLoadingScreenStyle: (style: LoadingScreenStyle) => void;
+  aiGreetingsEnabled: boolean;
+  setAIGreetingsEnabled: (enabled: boolean) => void;
+  excludeClosedTickets: boolean;
+  setExcludeClosedTickets: (enabled: boolean) => void;
 }
 
-const defaultSettings = {
+const defaultOrgSettings: Required<Organization>['settings'] = {
     agentPanelEnabled: true,
     clientPanelEnabled: true,
+    projectsEnabled: false,
     clientCanSelectProject: true,
-    agentCanEditTeam: false,
-    excludeClosedTickets: false,
     inactivityTimeout: 15,
-    loadingScreenStyle: 'spinner' as LoadingScreenStyle,
     supportEmail: '',
+    emailTemplates: {},
+    whatsapp: {},
+    excludeClosedTickets: false,
+    ticketStatuses: DEFAULT_TICKET_STATUSES,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 // Helper function to safely get item from localStorage for local-only settings
 const getItemFromStorage = (key: string, defaultValue: any) => {
-    if (typeof window === 'undefined') return defaultValue;
+    if (typeof window === 'undefined' || !key) return defaultValue;
     const item = localStorage.getItem(key);
     if (item === null) return defaultValue;
     try {
@@ -72,19 +87,36 @@ const getItemFromStorage = (key: string, defaultValue: any) => {
 export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
-    const [settings, setSettings] = useState<Organization['settings']>(defaultSettings);
+    const [orgSettings, setOrgSettings] = useState<Partial<Organization['settings']>>(defaultOrgSettings);
     const [loading, setLoading] = useState(true);
+
+    const orgId = user?.organizationId;
+
+    // Keys are now organization-specific
+    const showFullScreenKey = `show-fullscreen-button-${orgId}`;
+    const inAppNotifyKey = `in-app-notifications-${orgId}`;
+    const emailNotifyKey = `email-notifications-${orgId}`;
+    const loadingStyleKey = `loading-screen-style-${orgId}`;
+    const aiGreetingsKey = `ai-greetings-enabled-${orgId}`;
+    const excludeClosedKey = `exclude-closed-tickets-${orgId}`;
 
     // Local-only settings that are not part of the organization document
     const [showFullScreenButton, _setShowFullScreenButton] = useState(true);
     const [inAppNotifications, _setInAppNotifications] = useState(true);
     const [emailNotifications, _setEmailNotifications] = useState(false);
+    const [loadingScreenStyle, _setLoadingScreenStyle] = useState<LoadingScreenStyle>('spinner');
+    const [aiGreetingsEnabled, _setAIGreetingsEnabled] = useState(false);
+    const [excludeClosedTickets, _setExcludeClosedTickets] = useState(false);
 
     useEffect(() => {
-        _setShowFullScreenButton(getItemFromStorage('show-fullscreen-button', true));
-        _setInAppNotifications(getItemFromStorage('in-app-notifications', true));
-        _setEmailNotifications(getItemFromStorage('email-notifications', false));
-    }, []);
+        if (!orgId) return; // Don't load from storage until we have an org ID
+        _setShowFullScreenButton(getItemFromStorage(showFullScreenKey, true));
+        _setInAppNotifications(getItemFromStorage(inAppNotifyKey, true));
+        _setEmailNotifications(getItemFromStorage(emailNotifyKey, false));
+        _setLoadingScreenStyle(getItemFromStorage(loadingStyleKey, 'spinner'));
+        _setAIGreetingsEnabled(getItemFromStorage(aiGreetingsKey, false));
+        _setExcludeClosedTickets(getItemFromStorage(excludeClosedKey, false));
+    }, [orgId, showFullScreenKey, inAppNotifyKey, emailNotifyKey, loadingStyleKey, aiGreetingsKey, excludeClosedKey]);
     
     useEffect(() => {
         if (authLoading) return;
@@ -93,9 +125,13 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             getOrganizationById(user.organizationId)
                 .then(org => {
                     if (org && org.settings) {
-                        setSettings({ ...defaultSettings, ...org.settings });
+                        setOrgSettings({ ...defaultOrgSettings, ...org.settings });
+                        // For admin, the local state for this setting should sync with org setting
+                        if (user.role === 'Admin' && typeof org.settings.excludeClosedTickets === 'boolean') {
+                          _setExcludeClosedTickets(org.settings.excludeClosedTickets);
+                        }
                     } else {
-                        setSettings(defaultSettings);
+                        setOrgSettings(defaultOrgSettings);
                     }
                 })
                 .catch(error => {
@@ -108,47 +144,64 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         }
     }, [user, authLoading, toast]);
     
-    const updateSetting = useCallback(async (update: Partial<Organization['settings']>) => {
+    const updateOrgSetting = useCallback(async (update: Partial<Organization['settings']>) => {
         if (!user?.organizationId) {
             toast({ title: "Error", description: "You must be authenticated to change settings.", variant: "destructive" });
             return;
         }
         
-        const oldSettings = { ...settings };
-        // Optimistic update
-        setSettings(prev => ({ ...prev, ...update }));
+        const oldSettings = { ...orgSettings };
+        setOrgSettings(prev => ({ ...prev, ...update }));
 
         try {
             await updateOrganizationSettings(user.organizationId, update);
         } catch (error) {
             console.error("Failed to update setting:", error);
-            setSettings(oldSettings); // Revert on failure
+            setOrgSettings(oldSettings);
             toast({ title: "Error", description: "Failed to save setting.", variant: "destructive" });
         }
-    }, [user, toast, settings]);
+    }, [user, toast, orgSettings]);
 
 
     const setLocalStorageItem = (key: string, value: string) => {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && key) { // Ensure key is not empty
             localStorage.setItem(key, value);
         }
+    };
+    
+    const setExcludeClosedTicketsHandler = (enabled: boolean) => {
+        if (user?.role === 'Admin') {
+            updateOrgSetting({ excludeClosedTickets: enabled });
+        }
+        _setExcludeClosedTickets(enabled);
+        setLocalStorageItem(excludeClosedKey, String(enabled));
     };
 
     const setShowFullScreenButton = (show: boolean) => {
         _setShowFullScreenButton(show);
-        setLocalStorageItem('show-fullscreen-button', String(show));
+        setLocalStorageItem(showFullScreenKey, String(show));
     };
 
     const setInAppNotifications = (enabled: boolean) => {
         _setInAppNotifications(enabled);
-        setLocalStorageItem('in-app-notifications', String(enabled));
+        setLocalStorageItem(inAppNotifyKey, String(enabled));
     };
 
     const setEmailNotifications = (enabled: boolean) => {
         _setEmailNotifications(enabled);
-        setLocalStorageItem('email-notifications', String(enabled));
+        setLocalStorageItem(emailNotifyKey, String(enabled));
+    };
+    
+    const setLoadingScreenStyle = (style: LoadingScreenStyle) => {
+        _setLoadingScreenStyle(style);
+        setLocalStorageItem(loadingStyleKey, style);
     };
 
+    const setAIGreetingsEnabled = (enabled: boolean) => {
+        _setAIGreetingsEnabled(enabled);
+        setLocalStorageItem(aiGreetingsKey, String(enabled));
+    };
+    
     const value: SettingsContextType = {
         showFullScreenButton,
         setShowFullScreenButton,
@@ -156,25 +209,29 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setInAppNotifications,
         emailNotifications,
         setEmailNotifications,
-        agentPanelEnabled: settings?.agentPanelEnabled ?? defaultSettings.agentPanelEnabled,
-        clientPanelEnabled: settings?.clientPanelEnabled ?? defaultSettings.clientPanelEnabled,
-        clientCanSelectProject: settings?.clientCanSelectProject ?? defaultSettings.clientCanSelectProject,
-        agentCanEditTeam: settings?.agentCanEditTeam ?? defaultSettings.agentCanEditTeam,
-        excludeClosedTickets: settings?.excludeClosedTickets ?? defaultSettings.excludeClosedTickets,
-        inactivityTimeout: settings?.inactivityTimeout ?? defaultSettings.inactivityTimeout,
-        loadingScreenStyle: settings?.loadingScreenStyle ?? defaultSettings.loadingScreenStyle,
-        supportEmail: settings?.supportEmail ?? defaultSettings.supportEmail,
-        setAgentPanelEnabled: (enabled: boolean) => updateSetting({ agentPanelEnabled: enabled }),
-        setClientPanelEnabled: (enabled: boolean) => updateSetting({ clientPanelEnabled: enabled }),
-        setClientCanSelectProject: (enabled: boolean) => updateSetting({ clientCanSelectProject: enabled }),
-        setAgentCanEditTeam: (enabled: boolean) => updateSetting({ agentCanEditTeam: enabled }),
-        setExcludeClosedTickets: (enabled: boolean) => updateSetting({ excludeClosedTickets: enabled }),
-        setInactivityTimeout: (minutes: number) => updateSetting({ inactivityTimeout: minutes }),
-        setLoadingScreenStyle: (style: LoadingScreenStyle) => updateSetting({ loadingScreenStyle: style }),
+        loadingScreenStyle,
+        setLoadingScreenStyle,
+        aiGreetingsEnabled,
+        setAIGreetingsEnabled,
+        excludeClosedTickets,
+        setExcludeClosedTickets: setExcludeClosedTicketsHandler,
+        agentPanelEnabled: orgSettings?.agentPanelEnabled ?? defaultOrgSettings.agentPanelEnabled,
+        clientPanelEnabled: orgSettings?.clientPanelEnabled ?? defaultOrgSettings.clientPanelEnabled,
+        projectsEnabled: orgSettings?.projectsEnabled ?? defaultOrgSettings.projectsEnabled,
+        clientCanSelectProject: orgSettings?.clientCanSelectProject ?? defaultOrgSettings.clientCanSelectProject,
+        inactivityTimeout: orgSettings?.inactivityTimeout ?? defaultOrgSettings.inactivityTimeout,
+        supportEmail: orgSettings?.supportEmail ?? defaultOrgSettings.supportEmail,
+        whatsappSettings: orgSettings?.whatsapp ?? defaultOrgSettings.whatsapp,
+        ticketStatuses: orgSettings?.ticketStatuses ?? DEFAULT_TICKET_STATUSES,
+        setAgentPanelEnabled: (enabled: boolean) => updateOrgSetting({ agentPanelEnabled: enabled }),
+        setClientPanelEnabled: (enabled: boolean) => updateOrgSetting({ clientPanelEnabled: enabled }),
+        setProjectsEnabled: (enabled: boolean) => updateOrgSetting({ projectsEnabled: enabled }),
+        setClientCanSelectProject: (enabled: boolean) => updateOrgSetting({ clientCanSelectProject: enabled }),
+        setInactivityTimeout: (minutes: number) => updateOrgSetting({ inactivityTimeout: minutes }),
         setSupportEmail: (email: string) => {
-            // This is a special case since it's saved via a button, not a direct toggle
-            setSettings(prev => ({...prev, supportEmail: email}));
+            setOrgSettings(prev => ({...prev, supportEmail: email}));
         },
+        setWhatsappSettings: (settings: Partial<WhatsAppSettings>) => updateOrgSetting({ whatsapp: settings }),
         INACTIVITY_TIMEOUT_OPTIONS,
         loading: loading || authLoading,
     };

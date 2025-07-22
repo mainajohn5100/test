@@ -11,6 +11,7 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -27,11 +28,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize } from "lucide-react";
+import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize, ExternalLink, ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
@@ -39,27 +40,29 @@ import { useTheme } from "next-themes";
 import type { Notification } from "@/lib/data";
 import { formatDistanceToNow } from "date-fns";
 import { useSettings } from "@/contexts/settings-context";
-import { markAllUserNotificationsAsRead, updateNotificationReadStatus, getNotifications } from "@/lib/firestore";
+import { markAllUserNotificationsAsRead, updateNotificationReadStatus } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "./ui/scroll-area";
-import { onSnapshot, query, collection, where, Timestamp } from "firebase/firestore";
+import { onSnapshot, query, collection, where, Timestamp, orderBy, limit } from "firebase/firestore";
+import { SheetTitle } from "./ui/sheet";
 
-const getNotificationIcon = (title: string) => {
-    if (title.toLowerCase().includes('ticket')) {
-        return <Ticket className="h-4 w-4" />
-    }
-    if (title.toLowerCase().includes('project')) {
-        return <Briefcase className="h-4 w-4" />
-    }
+export const dynamic = 'force-dynamic'
+
+const getNotificationIcon = (notification: Notification) => {
+    if (notification.type === 'new_reply') return <MessageSquare className="h-4 w-4" />
+    if (notification.title.toLowerCase().includes('ticket')) return <Ticket className="h-4 w-4" />
+    if (notification.title.toLowerCase().includes('project')) return <Briefcase className="h-4 w-4" />
     return <MessageSquare className="h-4 w-4" />
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+function AppShellContent({ children }: { children: React.ReactNode }) {
   const { user: currentUser } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { setTheme } = useTheme();
   const { toast } = useToast();
+  const { isMobile } = useSidebar();
   const { inAppNotifications, showFullScreenButton } = useSettings();
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = React.useState(true);
@@ -74,59 +77,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fetchNotifications = React.useCallback(async () => {
-    if (!currentUser?.id) return;
-    setLoadingNotifications(true);
-    try {
-        const fetchedNotifications = await getNotifications(currentUser.id);
-        setNotifications(fetchedNotifications);
-    } catch (error) {
-        console.error("Failed to fetch notifications:", error);
-        toast({
-            title: "Error",
-            description: "Could not fetch notifications.",
-            variant: "destructive"
-        });
-    } finally {
-        setLoadingNotifications(false);
-    }
-  }, [currentUser?.id, toast]);
-
-  // Real-time listener
+  // Real-time listener for notifications
   React.useEffect(() => {
     if (!currentUser?.id || !inAppNotifications) {
       setLoadingNotifications(false);
       setNotifications([]);
-      return;
+      return () => {};
     }
 
     setLoadingNotifications(true);
     const q = query(
       collection(db, "notifications"),
-      where("userId", "==", currentUser.id)
+      where("userId", "==", currentUser.id),
+      orderBy("createdAt", "desc"),
+      limit(50)
     );
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const fetchedNotifications: Notification[] = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          const createdAtTimestamp = data.createdAt as Timestamp | null;
-          
-          return {
+        const allNotifications = snapshot.docs.map(doc => ({
             id: doc.id,
-            userId: data.userId,
-            title: data.title,
-            description: data.description,
-            read: data.read,
-            link: data.link,
-            createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString(),
-          };
-        });
+            ...doc.data(),
+            createdAt: (doc.data().createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString()
+        }) as Notification)
 
-        fetchedNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        setNotifications(fetchedNotifications);
+        setNotifications(allNotifications);
         setLoadingNotifications(false);
       },
       (error) => {
@@ -209,10 +185,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
   }, []);
 
+  const showBackButton = isMobile && (pathname.includes('/tickets/view/') || pathname.includes('/projects/view/'));
+
   return (
-    <SidebarProvider>
+    <>
       <Sidebar variant="sidebar" collapsible="icon" side="left">
-        <SidebarHeader className="p-4">
+        <SidebarHeader>
           <Link href="/dashboard" className="flex items-center gap-2">
             <Logo className="w-8 h-8 text-sidebar-primary" />
             <span className="font-headline font-semibold text-xl text-sidebar-foreground group-data-[collapsible=icon]:hidden">
@@ -223,8 +201,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarContent>
           <MainNav />
         </SidebarContent>
-        <SidebarFooter className="p-4">
-          {currentUser ? (
+        <SidebarFooter>
+          {currentUser && !isMobile ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="justify-start w-full h-auto p-2">
@@ -273,7 +251,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
+          ) : !isMobile ? (
             <div className="flex items-center gap-3 p-2">
                 <Skeleton className="h-8 w-8 rounded-full" />
                 <div className="flex flex-col gap-1.5 group-data-[collapsible=icon]:hidden">
@@ -281,12 +259,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Skeleton className="h-3 w-32" />
                 </div>
             </div>
-          )}
+          ) : null}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-            <SidebarTrigger className="md:hidden" />
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+            {showBackButton ? (
+                <Button variant="ghost" size="icon" className="md:hidden" onClick={() => router.back()}>
+                    <ArrowLeft className="h-5 w-5" />
+                    <span className="sr-only">Back</span>
+                </Button>
+            ) : (
+                <SidebarTrigger className="md:hidden" />
+            )}
           <div className="flex-1">
             <SidebarTrigger className="hidden md:block" />
           </div>
@@ -320,16 +305,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuContent align="end" className="w-96">
                     <div className="flex justify-between items-center p-2 pr-1">
                       <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
-                      <div className="flex items-center">
-                        {inAppNotifications && notifications.length > 0 && unreadCount > 0 && (
+                      {inAppNotifications && notifications.length > 0 && unreadCount > 0 && (
                            <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="text-xs h-auto p-1 font-medium">
                               Mark all as read
                            </Button>
                         )}
-                        <Button variant="ghost" size="icon" onClick={fetchNotifications} className="h-6 w-6">
-                            <RefreshCw className={cn("h-4 w-4", loadingNotifications && "animate-spin")} />
-                        </Button>
-                      </div>
                     </div>
                     <DropdownMenuSeparator />
                     {inAppNotifications ? (
@@ -342,7 +322,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                                       <DropdownMenuItem key={notification.id} asChild className={cn("flex items-start gap-3 p-2 cursor-pointer h-auto", !notification.read && "bg-accent/50 hover:bg-accent/60")}>
                                         <button onClick={() => handleNotificationClick(notification)} className="w-full text-left">
                                           <div className="flex items-start gap-3">
-                                            <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification.title)}</div>
+                                            <div className="mt-1 text-muted-foreground">{getNotificationIcon(notification)}</div>
                                             <div className="flex flex-col flex-1 whitespace-normal">
                                                 <p className="font-medium text-sm leading-tight">{notification.title}</p>
                                                 <p className="text-xs text-muted-foreground leading-snug">{notification.description}</p>
@@ -368,10 +348,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                 </DropdownMenuContent>
             </DropdownMenu>
+            {currentUser && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+                                <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleProfileClick}>Profile</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
       </SidebarInset>
-    </SidebarProvider>
+    </>
   );
+}
+
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <AppShellContent>{children}</AppShellContent>
+    </SidebarProvider>
+  )
 }

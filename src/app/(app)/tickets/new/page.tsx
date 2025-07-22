@@ -8,8 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, FileUp, Send, XCircle, Loader, Trash2 } from "lucide-react";
-import React, { useState, useTransition } from "react";
+import { Sparkles, FileUp, Send, XCircle, Loader, Trash2, PlusCircle, UserPlus } from "lucide-react";
+import React, { useState, useTransition, useEffect } from "react";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -19,15 +19,22 @@ import { createTicketAction } from "./actions";
 import { ticketSchema } from "./schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { getProjects, getUsers } from "@/lib/firestore";
-import type { Project, User } from "@/lib/data";
+import type { Project, User, Ticket } from "@/lib/data";
 import { useAuth } from "@/contexts/auth-context";
 import { useSettings } from "@/contexts/settings-context";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CreateUserForm } from "@/app/(app)/users/create-user-form";
+import { Combobox } from "@/components/ui/combobox";
+import { useSearchParams } from "next/navigation";
+
+const categories: Ticket['category'][] = ['General', 'Support', 'Advertising', 'Billing'];
 
 export default function NewTicketPage() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const { user } = useAuth();
-  const { clientCanSelectProject } = useSettings();
+  const { clientCanSelectProject, projectsEnabled } = useSettings();
 
   const [tagInput, setTagInput] = useState('');
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
@@ -36,6 +43,38 @@ export default function NewTicketPage() {
   
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
+  const [isCreateUserOpen, setCreateUserOpen] = React.useState(false);
+  const [allUsers, setAllUsers] = React.useState<User[]>([]);
+  
+  const initialProject = searchParams.get('project');
+
+  const form = useForm<z.infer<typeof ticketSchema>>({
+    resolver: zodResolver(ticketSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      reporter: user?.name || "",
+      reporterId: user?.id || "",
+      email: user?.email || "",
+      priority: "medium",
+      category: "General",
+      project: initialProject || "none",
+      assignee: "unassigned",
+      tags: [],
+    },
+  });
+
+  useEffect(() => {
+    if (user) {
+      form.setValue('reporter', user.name);
+      form.setValue('reporterId', user.id);
+      form.setValue('email', user.email);
+    }
+    if (initialProject) {
+      form.setValue('project', initialProject);
+    }
+  }, [user, initialProject, form]);
+
 
   React.useEffect(() => {
     if (user) {
@@ -45,9 +84,11 @@ export default function NewTicketPage() {
             getProjects(user),
             getUsers(user)
           ]);
+          setAllUsers(usersData);
           // Filter projects to only include those where tickets are enabled
           const enabledProjects = projectsData.filter(p => p.ticketsEnabled !== false);
           setProjects(enabledProjects);
+          // Users who can be assigned tickets
           setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
         } catch (error) {
           console.error("Failed to fetch projects or users", error);
@@ -60,31 +101,7 @@ export default function NewTicketPage() {
       };
       fetchData();
     }
-  }, [user, toast]);
-
-
-  const form = useForm<z.infer<typeof ticketSchema>>({
-    resolver: zodResolver(ticketSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      reporter: "",
-      reporterId: "",
-      email: "",
-      priority: "medium",
-      project: "none",
-      assignee: "unassigned",
-      tags: [],
-    },
-  });
-  
-  React.useEffect(() => {
-    if (user) {
-      form.setValue('reporter', user.name);
-      form.setValue('reporterId', user.id);
-      form.setValue('email', user.email);
-    }
-  }, [user, form]);
+  }, [user, toast, isCreateUserOpen]);
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,6 +204,9 @@ export default function NewTicketPage() {
   
   const currentTags = form.watch("tags") || [];
 
+  const isAgentOrAdmin = user?.role === 'Agent' || user?.role === 'Admin';
+  const clientUsers = allUsers.filter(u => u.role === 'Client');
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -203,6 +223,51 @@ export default function NewTicketPage() {
                   <CardDescription>Fill in the details for the new support ticket.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {isAgentOrAdmin && (
+                    <FormField
+                      control={form.control}
+                      name="reporterId"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Client</FormLabel>
+                          <div className="flex items-center gap-2">
+                             <Combobox
+                                options={clientUsers.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))}
+                                selectedValue={field.value}
+                                onSelect={(value) => {
+                                  const selectedUser = clientUsers.find(u => u.id === value);
+                                  if (selectedUser) {
+                                    form.setValue('reporterId', selectedUser.id, { shouldValidate: true });
+                                    form.setValue('reporter', selectedUser.name);
+                                    form.setValue('email', selectedUser.email);
+                                  }
+                                }}
+                                placeholder="Select a client..."
+                                searchPlaceholder="Search clients..."
+                                notFoundMessage="No client found."
+                              />
+                              <Dialog open={isCreateUserOpen} onOpenChange={setCreateUserOpen}>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="icon">
+                                    <UserPlus className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Create New Client</DialogTitle>
+                                    <DialogDescription>
+                                      Create a new client account. They will be notified to set up their password.
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <CreateUserForm setOpen={setCreateUserOpen} />
+                                </DialogContent>
+                              </Dialog>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   <FormField
                     control={form.control}
                     name="title"
@@ -273,6 +338,26 @@ export default function NewTicketPage() {
                 <CardContent className="space-y-6">
                   <FormField
                     control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="priority"
                     render={({ field }) => (
                       <FormItem>
@@ -294,14 +379,14 @@ export default function NewTicketPage() {
                       </FormItem>
                     )}
                   />
-                  {(user?.role !== 'Client' || clientCanSelectProject) && (
+                  {projectsEnabled && (user?.role !== 'Client' || clientCanSelectProject) && (
                   <FormField
                     control={form.control}
                     name="project"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Project (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Assign to a project" />
@@ -397,3 +482,5 @@ export default function NewTicketPage() {
     </div>
   );
 }
+
+    

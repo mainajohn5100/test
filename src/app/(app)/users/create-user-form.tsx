@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Loader } from 'lucide-react';
+import { Eye, EyeOff, Loader, Phone } from 'lucide-react';
 import { userCreateSchema } from './schema';
 import { createUserAction } from './actions';
 import { useAuth } from '@/contexts/auth-context';
@@ -30,6 +30,7 @@ export function CreateUserForm({ setOpen }: { setOpen: (open: boolean) => void }
       name: '',
       email: '',
       password: '',
+      phone: '',
     },
   });
 
@@ -74,6 +75,22 @@ export function CreateUserForm({ setOpen }: { setOpen: (open: boolean) => void }
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input type="email" placeholder="john.doe@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number (Optional)</FormLabel>
+                <FormControl>
+                    <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input type="tel" placeholder="+1 555-123-4567" {...field} className="pl-9" />
+                    </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

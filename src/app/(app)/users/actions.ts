@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { z } from 'zod';
@@ -18,7 +19,8 @@ export async function createUserAction(values: z.infer<typeof userCreateSchema>,
         return { error: 'Invalid data provided.' };
     }
 
-    const { name, email, password, role } = validatedFields.data;
+    const { name, email, password, phone } = validatedFields.data;
+    const role = values.role; // Role is required and validated
 
     try {
         const creatorUser = await getUserById(creatorId);
@@ -42,9 +44,17 @@ export async function createUserAction(values: z.infer<typeof userCreateSchema>,
             name,
             email,
             role,
+            phone,
+            country: '',
+            city: '',
+            zipCode: '',
+            dob: '',
+            gender: 'Prefer not to say',
+            status: 'active',
             avatar,
             organizationId: orgId,
             activityIsPublic: false,
+            createdByAdmin: true,
         };
 
         await createUserInFirestore(newUserId, newUser);
@@ -141,6 +151,22 @@ export async function updateUserRoleAction(userId: string, role: User['role']) {
     return { success: true };
   } catch (error) {
     console.error("Error in updateUserRoleAction:", error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function updateUserStatusAction(userId: string, status: User['status']) {
+  try {
+    if (!userId || !status) {
+      throw new Error("User ID and status are required.");
+    }
+    await updateFirestoreUser(userId, { status });
+    revalidatePath('/users');
+    revalidatePath(`/users/${userId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in updateUserStatusAction:", error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { success: false, error: errorMessage };
   }

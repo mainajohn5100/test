@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ScrollArea } from "./scroll-area"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -177,6 +178,11 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const sidebarChildren = React.Children.toArray(children)
+    
+    const header = sidebarChildren.find((child) => React.isValidElement(child) && child.type === SidebarHeader)
+    const content = sidebarChildren.find((child) => React.isValidElement(child) && child.type === SidebarContent)
+    const footer = sidebarChildren.find((child) => React.isValidElement(child) && child.type === SidebarFooter)
 
     if (collapsible === "none") {
       return (
@@ -207,10 +213,12 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
-            <SheetHeader className="p-4 border-b">
-                <SheetTitle className="text-lg font-semibold">Menu</SheetTitle>
-            </SheetHeader>
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <SheetTitle className="sr-only">Mobile Navigation Menu</SheetTitle>
+            {header}
+            <ScrollArea className="flex-1">
+              {content}
+            </ScrollArea>
+            {footer}
           </SheetContent>
         </Sheet>
       )
@@ -362,7 +370,7 @@ const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={cn("flex flex-col gap-2 p-2 border-b", className)}
       {...props}
     />
   )
@@ -377,7 +385,7 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("flex flex-col gap-2 p-2 mt-auto", className)}
+      className={cn("flex flex-col gap-2 p-2 mt-auto border-t", className)}
       {...props}
     />
   )

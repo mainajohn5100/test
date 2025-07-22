@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { updateOrganizationSettings } from '@/lib/firestore';
+import { todo } from 'node:test';
 
 export function EmailIntegrationForm() {
     const { user } = useAuth();
@@ -22,14 +23,14 @@ export function EmailIntegrationForm() {
     // Generate a unique, stable alias for the user's inbound email
     const inboundAlias = React.useMemo(() => {
       if (!user) return 'your-unique-alias';
-      // Simple hash to create a somewhat unique but stable alias from user ID
-      const hash = user.id.split('').reduce((acc, char) => {
+      // Simple hash to create a somewhat unique but stable alias from organization ID
+      const hash = user.organizationId.split('').reduce((acc, char) => {
         return char.charCodeAt(0) + ((acc << 5) - acc);
       }, 0);
       return `inbound-${(hash & 0x7FFFFFFF).toString(16)}`;
     }, [user]);
-
-    const inboundAddress = `${inboundAlias}@inbound.requestflow.app`;
+//TODO - Add a predefined custom domain for inbound emails
+    const inboundAddress = `${inboundAlias}@yourdomain.com`; // Update this with your Resend domain
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(inboundAddress).then(() => {
@@ -56,9 +57,9 @@ export function EmailIntegrationForm() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Email Integration</CardTitle>
+                <CardTitle>Email Integration (Resend)</CardTitle>
                 <CardDescription>
-                    Automatically convert emails sent to your support address into tickets.
+                    Automatically convert emails sent to your support address into tickets using Resend.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -76,9 +77,10 @@ export function EmailIntegrationForm() {
                         checked={isEnabled}
                         onCheckedChange={setIsEnabled}
                         aria-label="Toggle email-to-ticket integration"
+                        disabled //TODO - enable when complete
                     />
                 </div>
-
+ {/* TODO  */}
                 <div className="space-y-2">
                     <Label htmlFor="support-email">Your Public Support Email</Label>
                     <div className="relative">
@@ -90,6 +92,7 @@ export function EmailIntegrationForm() {
                             value={supportEmail}
                             onChange={(e) => setSupportEmail(e.target.value)}
                             className="pl-9"
+                            disabled  //enable when complete
                         />
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -98,7 +101,7 @@ export function EmailIntegrationForm() {
                 </div>
 
                  <div className="space-y-2">
-                    <Label htmlFor="forwarding-address">Your Unique Forwarding Address</Label>
+                    <Label htmlFor="forwarding-address">Your Unique Inbound Address</Label>
                     <div className="relative">
                         <Input 
                             id="forwarding-address" 
@@ -113,11 +116,11 @@ export function EmailIntegrationForm() {
                         </Button>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        To complete setup, configure your support inbox (<span className="font-semibold text-foreground">{effectiveSupportEmail}</span>) to automatically forward all incoming mail to this unique address.
+                        To finish setup, go to your email provider (e.g., Gmail, Outlook) and set up automatic forwarding from your public support email to this unique address.
                     </p>
                 </div>
-                 <div className="flex justify-end">
-                    <Button onClick={handleSave}>Save Email Settings</Button>
+                 <div className="flex justify-end">{/*TODO - ENABLE THIS BUTTON LATER */}
+                    <Button onClick={handleSave} disabled>Save Email Settings</Button>
                 </div>
             </CardContent>
         </Card>

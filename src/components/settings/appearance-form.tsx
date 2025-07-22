@@ -23,6 +23,7 @@ import { useSettings } from '@/contexts/settings-context'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import type { LoadingScreenStyle } from '@/lib/data'
+import { useAuth } from '@/contexts/auth-context'
 
 const appearanceFormSchema = z.object({
   theme: z.enum(['light', 'dark', 'system'], {
@@ -34,15 +35,20 @@ const appearanceFormSchema = z.object({
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 
 export function AppearanceForm() {
+  const { user } = useAuth();
   const { setTheme, theme: mode } = useTheme()
+  const settings = useSettings();
+  
   const { 
     showFullScreenButton, 
     setShowFullScreenButton,
     loadingScreenStyle,
     setLoadingScreenStyle,
     excludeClosedTickets,
-    setExcludeClosedTickets
-  } = useSettings();
+    setExcludeClosedTickets,
+    aiGreetingsEnabled,
+    setAIGreetingsEnabled,
+  } = settings;
 
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
@@ -53,8 +59,18 @@ export function AppearanceForm() {
   })
 
   React.useEffect(() => {
+    if (loadingScreenStyle) {
       form.setValue('loadingScreenStyle', loadingScreenStyle);
+    }
   }, [loadingScreenStyle, form]);
+
+  if (settings.loading) {
+    return (
+        <div className="flex items-center justify-center p-10">
+            <Loader className="h-6 w-6 animate-spin" />
+        </div>
+    )
+  }
 
   return (
     <Form {...form}>
@@ -160,7 +176,7 @@ export function AppearanceForm() {
             <FormItem className="space-y-1">
               <FormLabel>Loading Screen</FormLabel>
               <FormDescription>
-                Choose the style for loading states across the application. This is an organization-wide setting.
+                Choose the style for loading states across the application. This is a personal preference.
               </FormDescription>
               <FormMessage />
               <RadioGroup
@@ -214,7 +230,7 @@ export function AppearanceForm() {
         />
         <Separator />
          <div className="space-y-4">
-            <FormLabel>Interface Elements</FormLabel>
+            <h3 className="text-lg font-medium">Interface Elements</h3>
             <FormDescription>
                 Manage visibility and default filters.
             </FormDescription>
@@ -239,7 +255,8 @@ export function AppearanceForm() {
                         Exclude Closed Tickets
                     </FormLabel>
                     <p className="text-sm text-muted-foreground">
-                        Hide closed and terminated tickets from default views (organization-wide).
+                        Hide closed and terminated tickets from default views.
+                        {user?.role === 'Admin' ? ' (This is an organization-wide setting)' : ' (This is a personal setting)'}
                     </p>
                 </div>
                 <Switch
@@ -248,6 +265,28 @@ export function AppearanceForm() {
                     onCheckedChange={setExcludeClosedTickets}
                     aria-label="Toggle excluding closed tickets"
                 />
+            </div>
+        </div>
+        <Separator />
+         <div className="space-y-4">
+            <h3 className="text-lg font-medium">AI Features</h3>
+            <FormDescription>
+                Manage AI-powered features for your personal account.
+            </FormDescription>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">
+                  Enable AI Greetings
+                </FormLabel>
+                <FormDescription>
+                  Allow AI to generate a dynamic greeting on the dashboard.
+                </FormDescription>
+              </div>
+              <Switch
+                checked={aiGreetingsEnabled}
+                onCheckedChange={setAIGreetingsEnabled}
+                aria-label="Toggle AI greetings"
+              />
             </div>
         </div>
       </form>
