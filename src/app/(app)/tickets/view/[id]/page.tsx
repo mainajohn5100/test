@@ -34,13 +34,13 @@ import React from "react";
 import { generateSmartReply } from "@/ai/flows/smart-replies";
 import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
-import { getTicketById, getUsers } from "@/lib/firestore";
+import { getUsers } from "@/lib/firestore";
 import type { Ticket, User, TicketConversation } from "@/lib/data";
 import { updateTicketAction, deleteTicketAction, addReplyAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
 import { TiptapEditor } from "@/components/tiptap-editor";
 import { Switch } from "@/components/ui/switch";
-import { collection, query, onSnapshot, orderBy, Timestamp } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, Timestamp, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useSettings } from "@/contexts/settings-context";
@@ -388,17 +388,32 @@ export default function ViewTicketPage() {
     },
   });
 
-  const fetchInitialData = React.useCallback(async () => {
-    if (!params.id || !currentUser) return;
+  // Initial data fetch for non-realtime data like users
+  React.useEffect(() => {
+    if (!currentUser) return;
     setLoading(true);
+    getUsers(currentUser)
+      .then(setUsers)
+      .catch((error) => {
+        console.error("Failed to fetch users", error);
+        toast({ title: "Error", description: "Could not load user data.", variant: "destructive" });
+      })
+      .finally(() => setLoading(false));
+  }, [currentUser, toast]);
+  
+  // Real-time listener for the main ticket document
+  React.useEffect(() => {
+    if (!params.id) return;
     const ticketId = Array.isArray(params.id) ? params.id[0] : params.id;
-    try {
-      const [ticketData, usersData] = await Promise.all([
-        getTicketById(ticketId),
-        getUsers(currentUser),
-      ]);
-
-      if (ticketData) {
+    const unsub = onSnapshot(doc(db, "tickets", ticketId), (doc) => {
+      if (doc.exists()) {
+        const ticketData = { 
+            id: doc.id,
+            ...doc.data(),
+            createdAt: (doc.data().createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+            updatedAt: (doc.data().updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+        } as Ticket;
+        
         setTicket(ticketData);
         setCurrentStatus(ticketData.status);
         setCurrentPriority(ticketData.priority);
@@ -409,25 +424,10 @@ export default function ViewTicketPage() {
       } else {
         notFound();
       }
-      setUsers(usersData);
+    });
+    return () => unsub();
+  }, [params.id]);
 
-    } catch (error) {
-      console.error("Failed to fetch initial ticket data", error);
-      toast({
-        title: "Error",
-        description: "Could not load ticket data.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [params.id, toast, currentUser]);
-
-  // Initial data fetch
-  React.useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
-  
   // Scroll listener for header shrink effect
   React.useEffect(() => {
     const mainContent = document.querySelector('main');
@@ -473,16 +473,12 @@ export default function ViewTicketPage() {
   }, [params.id, toast]);
   
   
-  if (loading || !currentUser) {
+  if (loading || !currentUser || !ticket) {
     return (
       <div className="flex items-center justify-center h-full">
           <Loader className="h-8 w-8 animate-spin" />
       </div>
     );
-  }
-
-  if (!ticket || !currentStatus || !currentPriority || typeof currentAssignee === 'undefined') {
-    notFound();
   }
   
   const assignee = userMap.get(currentAssignee);
@@ -512,7 +508,6 @@ export default function ViewTicketPage() {
           const result = await updateTicketAction(ticket.id, { status: newStatus }, currentUser.id);
           if(result.success) {
               toast({ title: "Status updated successfully!" });
-              fetchInitialData();
           } else {
               toast({ title: "Error", description: result.error, variant: 'destructive' });
               setCurrentStatus(oldStatus);
@@ -543,7 +538,6 @@ export default function ViewTicketPage() {
         const result = await updateTicketAction(ticket.id, { priority: newPriority }, currentUser.id);
         if(result.success) {
             toast({ title: "Priority updated successfully!" });
-            fetchInitialData();
         } else {
             toast({ title: "Error", description: result.error, variant: 'destructive' });
             setCurrentPriority(oldPriority);
@@ -595,7 +589,6 @@ export default function ViewTicketPage() {
 
         if (result.success) {
             toast({ title: "Assignee updated successfully!" });
-            fetchInitialData();
         } else {
             toast({ title: "Error", description: result.error, variant: 'destructive' });
             setCurrentAssignee(oldAssignee);
@@ -617,7 +610,6 @@ export default function ViewTicketPage() {
 
         if (result.success) {
             toast({ title: "Ticket unassigned successfully!" });
-            fetchInitialData();
         } else {
             toast({ title: "Error", description: result.error, variant: 'destructive' });
             setCurrentAssignee(oldAssignee);
