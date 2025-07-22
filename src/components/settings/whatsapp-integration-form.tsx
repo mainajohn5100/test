@@ -132,7 +132,7 @@ export function WhatsAppIntegrationForm() {
                 </div>
                 
                  <div className="space-y-2">
-                    <Label htmlFor="twilio-phone">Twilio WhatsApp Number</Label>
+                    <Label htmlFor="twilio-phone">Your Business's Twilio WhatsApp Number</Label>
                     <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
