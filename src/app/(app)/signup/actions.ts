@@ -64,4 +64,3 @@ export async function signupAction(values: z.infer<typeof signupSchema>) {
     
     redirect('/dashboard');
 }
-

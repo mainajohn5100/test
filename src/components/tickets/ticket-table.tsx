@@ -50,7 +50,8 @@ const categoryVariantMap: { [key: string]: string } = {
 export function TicketTable({ tickets, users }: TicketTableProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
+  const userMapByName = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
+  const userMapByEmail = React.useMemo(() => new Map(users.filter(u => u.email).map(u => [u.email, u])), [users]);
 
   const getTicketSource = (ticket: Ticket) => {
     if (ticket.source === 'WhatsApp' || ticket.source === 'Project') {
@@ -86,8 +87,9 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
         <TableBody>
             {filteredTickets.length > 0 ? (
             filteredTickets.map((ticket) => {
-                const assignee = userMap.get(ticket.assignee);
-                const reporter = userMap.get(ticket.reporter);
+                const assignee = userMapByName.get(ticket.assignee);
+                // Prioritize finding user by email, then fall back to name
+                const reporter = ticket.reporterEmail ? userMapByEmail.get(ticket.reporterEmail) : userMapByName.get(ticket.reporter);
                 const truncatedId = `${ticket.id.substring(0, 5)}...${ticket.id.slice(-3)}`;
 
                 const updatedAtDate = new Date(ticket.updatedAt);
@@ -128,7 +130,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                                     </Avatar>
                                     <div>
                                         <p className="font-medium hover:underline">{reporter.name}</p>
-                                        <p className="text-xs text-muted-foreground">{reporter.email}</p>
+                                        <p className="text-xs text-muted-foreground">{reporter.email || reporter.phone}</p>
                                     </div>
                                 </div>
                             </Link>
