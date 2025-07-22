@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrganizationByWhatsAppNumber, getUserByPhone, addTicket, createUserInFirestore } from '@/lib/firestore';
+import { getOrganizationByWhatsAppNumber, getUserByPhone, addTicket, createUserInFirestore, getOpenTicketsByUserId, addConversation } from '@/lib/firestore';
 import { Twilio } from 'twilio';
 
 export async function POST(request: NextRequest) {
@@ -50,43 +50,55 @@ export async function POST(request: NextRequest) {
             organizationId: organization.id,
             status: 'active' as const,
             activityIsPublic: false,
+            createdByAdmin: false,
         };
         // This is a simplified user creation. A real app might require more fields or logic.
-        // We'll use a simple ID scheme for now.
+        // We'll use the phone number to create a unique ID for whatsapp users
         const newUserId = `whatsapp_${clientPhoneNumber}`;
         await createUserInFirestore(newUserId, newUserData);
         user = { ...newUserData, id: newUserId };
     }
     
-    // 4. Create the ticket
-    const ticketData = {
-        title: `New WhatsApp Ticket from ${profileName}`,
-        description: messageBody,
-        reporter: user.name,
-        reporterEmail: user.email, // Will be empty
-        tags: ['whatsapp'],
-        priority: 'Medium' as const,
-        category: 'General' as const,
-        assignee: 'Unassigned',
-        project: null,
-        source: 'WhatsApp' as const,
-        organizationId: organization.id,
-        statusLastSetBy: 'System' as const,
-        priorityLastSetBy: 'System' as const,
-    };
-    
-    const newTicketId = await addTicket(ticketData);
+    // 4. Check for existing open tickets for this user
+    const openTickets = await getOpenTicketsByUserId(user.id, organization.id);
 
-    // 5. Send confirmation reply via Twilio
-    const twilioClient = new Twilio(organization.settings.whatsapp.accountSid, organization.settings.whatsapp.authToken);
-    
-    await twilioClient.messages.create({
-        from: to,
-        to: from,
-        body: `Thanks for contacting us, ${profileName}! We've received your message and created ticket #${newTicketId.substring(0, 6)}. An agent will be with you shortly.`
-    });
+    if (openTickets.length > 0) {
+        // Append to the most recently updated open ticket
+        const ticketToUpdate = openTickets[0]; // getOpenTicketsByUserId returns sorted by updatedAt desc
+        await addConversation(ticketToUpdate.id, { content: messageBody, authorId: user.id });
+        console.log(`Appended reply from ${profileName} to existing ticket ${ticketToUpdate.id}`);
+        return NextResponse.json({ success: true, message: `Appended reply to ticket ${ticketToUpdate.id}` });
+    } else {
+        // 5. Create a new ticket if no open tickets exist
+        const ticketData = {
+            title: `New WhatsApp Ticket from ${profileName}`,
+            description: messageBody,
+            reporter: user.name,
+            reporterEmail: user.email, // Will be empty
+            tags: ['whatsapp'],
+            priority: 'Medium' as const,
+            category: 'General' as const,
+            assignee: 'Unassigned',
+            project: null,
+            source: 'WhatsApp' as const,
+            organizationId: organization.id,
+            statusLastSetBy: 'System' as const,
+            priorityLastSetBy: 'System' as const,
+        };
+        
+        const newTicketId = await addTicket(ticketData);
 
-    return NextResponse.json({ success: true, ticketId: newTicketId });
+        // 6. Send confirmation reply via Twilio ONLY for new tickets
+        const twilioClient = new Twilio(organization.settings.whatsapp.accountSid, organization.settings.whatsapp.authToken);
+        
+        await twilioClient.messages.create({
+            from: to,
+            to: from,
+            body: `Thanks for contacting us, ${profileName}! We've received your message and created ticket #${newTicketId.substring(0, 6)}. An agent will be with you shortly.`
+        });
+
+        return NextResponse.json({ success: true, ticketId: newTicketId });
+    }
 
   } catch (error) {
     console.error('Error processing Twilio inbound WhatsApp message:', error);

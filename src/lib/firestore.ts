@@ -136,6 +136,28 @@ export const getTicketById = cache(async (id: string): Promise<Ticket | null> =>
   }
 });
 
+export const getOpenTicketsByUserId = cache(async (userId: string, organizationId: string): Promise<Ticket[]> => {
+    try {
+        const user = await getUserById(userId);
+        if (!user) return [];
+
+        const ticketsCol = collection(db, 'tickets');
+        const q = query(
+            ticketsCol,
+            where("organizationId", "==", organizationId),
+            where("reporter", "==", user.name),
+            where("status", "in", ['New', 'Active', 'Pending', 'On Hold']),
+            orderBy('updatedAt', 'desc'),
+            limit(1)
+        );
+        const ticketSnapshot = await getDocs(q);
+        return snapshotToData<Ticket>(ticketSnapshot);
+    } catch (error) {
+        console.error("Error fetching open tickets by user ID:", error);
+        return [];
+    }
+});
+
 export const getTicketConversations = cache(async (ticketId: string): Promise<TicketConversation[]> => {
     try {
         const conversationCol = collection(db, 'tickets', ticketId, 'conversations');
