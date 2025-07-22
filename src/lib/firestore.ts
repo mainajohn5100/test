@@ -139,25 +139,51 @@ export const getTicketById = cache(async (id: string): Promise<Ticket | null> =>
 export const getOpenTicketsByUserId = cache(async (userId: string, organizationId: string): Promise<Ticket[]> => {
     try {
         const ticketsCol = collection(db, 'tickets');
-        // This logic is tricky. How do we link a user to a ticket?
-        // Let's assume the user created the ticket. We'll need a way to find the user from the WhatsApp webhook.
-        // For now, let's assume `reporter` holds a user ID.
-        // We need to fetch the user by ID first.
-        const user = await getUserById(userId);
-        if (!user) return [];
-
-        const q = query(
+        
+        let q = query(
             ticketsCol,
             where("organizationId", "==", organizationId),
-            // This assumes the `reporter` field holds the user ID. 
-            // In the `inbound-whatsapp` route, it sets `reporter: user.name`. This needs to be reconciled.
-            // Let's query by reporter's name for now, but this is brittle.
-            where("reporter", "==", user.name),
-            where("status", "in", ['New', 'Active', 'Pending', 'On Hold']),
+            where("reporterId", "==", userId),
+            where("status", "not-in", ['Closed', 'Terminated']),
+            orderBy('status'), // This helps with consistent ordering before the final sort
             orderBy('updatedAt', 'desc'),
-            limit(1)
+            limit(10)
         );
-        const ticketSnapshot = await getDocs(q);
+        
+        let ticketSnapshot = await getDocs(q);
+        
+        if (ticketSnapshot.empty) {
+            const user = await getUserById(userId);
+            if (!user) return [];
+            
+            q = query(
+                ticketsCol,
+                where("organizationId", "==", organizationId),
+                where("reporter", "==", user.name),
+                where("status", "not-in", ['Closed', 'Terminated']),
+                orderBy('status'),
+                orderBy('updatedAt', 'desc'),
+                limit(10)
+            );
+            ticketSnapshot = await getDocs(q);
+        }
+        
+        if (ticketSnapshot.empty) {
+            const user = await getUserById(userId);
+            if (user && user.phone) {
+                q = query(
+                    ticketsCol,
+                    where("organizationId", "==", organizationId),
+                    where("reporterPhone", "==", user.phone),
+                    where("status", "not-in", ['Closed', 'Terminated']),
+                    orderBy('status'),
+                    orderBy('updatedAt', 'desc'),
+                    limit(10)
+                );
+                ticketSnapshot = await getDocs(q);
+            }
+        }
+        
         return snapshotToData<Ticket>(ticketSnapshot);
     } catch (error) {
         console.error("Error fetching open tickets by user ID:", error);
@@ -180,9 +206,6 @@ export const getTicketConversations = cache(async (ticketId: string): Promise<Ti
 
 export const getTicketsByProject = cache(async (projectId: string): Promise<Ticket[]> => {
     try {
-        // This query is tricky if project names aren't unique. Let's assume they are for now,
-        // or better yet, we should query by project ID if possible.
-        // For now, let's get the project name from the ID first.
         const project = await getProjectById(projectId);
         if (!project) return [];
 
@@ -460,6 +483,8 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       clientCanReply: true,
+      reporterId: ticketData.reporterId || null,
+      reporterPhone: ticketData.reporterPhone || null,
     });
     return docRef.id;
   } catch (error) {

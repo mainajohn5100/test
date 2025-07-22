@@ -15,7 +15,9 @@ export type Ticket = {
   category: 'General' | 'Support' | 'Advertising' | 'Billing' | 'Internal';
   assignee: string;
   reporter: string;
+  reporterId?: string;
   reporterEmail?: string;
+  reporterPhone?: string;
   createdAt: string;
   updatedAt: string;
   tags: string[];
@@ -34,6 +36,8 @@ export type TicketConversation = {
     authorId: string;
     content: string;
     createdAt: string;
+    isInternal: boolean;
+    authorName: string;
 }
 
 export type User = {
@@ -44,11 +48,11 @@ export type User = {
   role: 'Admin' | 'Agent' | 'Client';
   status: 'active' | 'disabled';
   phone: string;
-  country: string;
-  city: string;
-  zipCode: string;
-  dob: string; // ISO Date string
-  gender: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
+  country?: string;
+  city?: string;
+  zipCode?: string;
+  dob?: string; // ISO Date string
+  gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
   activityIsPublic: boolean;
   organizationId: string;
   lastSeen?: string;
