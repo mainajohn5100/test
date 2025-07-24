@@ -4,7 +4,7 @@ import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task } from './data';
 import { cache } from 'react';
-import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail } from 'firebase/auth';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -786,5 +786,14 @@ export async function deleteTaskFromProject(projectId: string, taskId: string) {
     } catch (error) {
         console.error("Error deleting task from project:", error);
         throw new Error("Failed to delete task.");
+    }
+}
+
+export async function sendPasswordResetEmail(email: string) {
+    try {
+        await firebaseSendPasswordResetEmail(auth, email);
+    } catch (error) {
+        console.error("Error sending password reset email:", error);
+        throw new Error("Failed to send password reset email.");
     }
 }

@@ -3,7 +3,7 @@
 'use server';
 
 import { z } from 'zod';
-import { updateUser as updateFirestoreUser, createUserInAuth, createUserInFirestore, setAuthUserClaims } from '@/lib/firestore';
+import { updateUser as updateFirestoreUser, createUserInAuth, createUserInFirestore, setAuthUserClaims, sendPasswordResetEmail } from '@/lib/firestore';
 import { revalidatePath } from 'next/cache';
 import { storage, auth } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';

@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updateUserAction } from "@/app/(app)/users/actions";
 import { useAuth } from "@/contexts/auth-context";
 import { ChangePasswordForm } from "./change-password-form";
+import { sendPasswordResetEmail } from "@/lib/firestore";
 
 export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open: boolean) => void }) {
   const { toast } = useToast();
@@ -71,6 +72,24 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
           variant: "destructive",
         });
       }
+    });
+  };
+
+   const handlePasswordReset = () => {
+    startTransition(async () => {
+        try {
+            await sendPasswordResetEmail(user.email);
+            toast({
+                title: 'Password Reset Email Sent',
+                description: 'Please check your inbox to reset your password.',
+            });
+        } catch (error) {
+            toast({
+                title: 'Error',
+                description: 'Failed to send password reset email.',
+                variant: 'destructive',
+            });
+        }
     });
   };
 
