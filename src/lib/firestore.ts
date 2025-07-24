@@ -1,6 +1,6 @@
 
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, or } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, or, arrayUnion } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task } from './data';
 import { cache } from 'react';
@@ -300,8 +300,16 @@ export const getTaskById = cache(async (projectId: string, taskId: string): Prom
 export const getUsers = cache(async (user: User): Promise<User[]> => {
   try {
     if (!user || !user.organizationId) return [];
+    
     const usersCol = collection(db, 'users');
-    const q = query(usersCol, where("organizationId", "==", user.organizationId));
+    const queries = [where("organizationId", "==", user.organizationId)];
+    
+    // Allow fetching just admins by passing a partial User object
+    if (user.role === 'Admin' && Object.keys(user).length === 2) {
+      queries.push(where("role", "==", "Admin"));
+    }
+
+    const q = query(usersCol, ...queries);
     const userSnapshot = await getDocs(q);
     return snapshotToData<User>(userSnapshot);
   } catch (error) {
@@ -468,10 +476,21 @@ export async function addConversation(
 
     const ticketRef = doc(db, 'tickets', ticketId);
     const conversationCol = collection(ticketRef, 'conversations');
+    
+    // Look up author name if not provided.
+    let authorName = conversationData.authorName;
+    if (!authorName) {
+        const author = await getUserById(conversationData.authorId);
+        if (author) {
+            authorName = author.name;
+        } else {
+            throw new Error(`Author with ID ${conversationData.authorId} not found.`);
+        }
+    }
 
     const newConversation: Omit<TicketConversation, 'id'> = {
         authorId: conversationData.authorId,
-        authorName: conversationData.authorName || 'Unknown User',
+        authorName: authorName,
         content: conversationData.content,
         createdAt: new Date().toISOString(),
     };

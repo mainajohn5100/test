@@ -1,9 +1,8 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNotification, getTicketById, updateTicket, deleteTicket, getUserById, addConversation, getUserByName, getOrganizationById, getUserByEmail } from '@/lib/firestore';
+import { createNotification, getTicketById, updateTicket, deleteTicket, getUserById, addConversation, getUserByName, getOrganizationById, getUserByEmail, getUsers } from '@/lib/firestore';
 import type { Ticket, User, TicketConversation, Organization } from '@/lib/data';
 import { redirect } from 'next/navigation';
 import { sendEmail } from '@/lib/email';
@@ -34,17 +33,19 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
     const userIdsToNotify = new Set<string>();
     
     // Notify the reporter (client) if they exist
-    if (ticket.reporterEmail) {
-      const reporter = await getUserByEmail(ticket.reporterEmail);
-      if(reporter) userIdsToNotify.add(reporter.id);
-    }
+    const reporter = await getUserByEmail(ticket.reporterEmail);
+    if(reporter) userIdsToNotify.add(reporter.id);
     
-    // Notify the assignee if they exist and are not the author
+    // Notify the assignee if they exist
     if (ticket.assignee !== 'Unassigned') {
         const assignee = await getUserByName(ticket.assignee);
         if (assignee) userIdsToNotify.add(assignee.id);
     }
     
+    // Notify all admins
+    const admins = await getUsers({ organizationId: ticket.organizationId, role: 'Admin' } as User);
+    admins.forEach(admin => userIdsToNotify.add(admin.id));
+
     // Ensure the author doesn't get a notification for their own message
     userIdsToNotify.delete(author.id);
     
