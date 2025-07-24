@@ -1,6 +1,6 @@
 
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, arrayUnion } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task } from './data';
 import { cache } from 'react';
@@ -144,34 +144,18 @@ export const getOpenTicketsByUserId = cache(async (userId: string, organizationI
             ticketsCol,
             where("organizationId", "==", organizationId),
             where("reporterId", "==", userId),
-            where("status", "in", ['New', 'Active', 'Pending', 'On Hold'])
+            where("status", "not-in", ['Closed', 'Terminated']),
+            orderBy("status"), // Required for not-in queries
+            orderBy('updatedAt', 'desc')
         );
         
         const ticketSnapshot = await getDocs(q);
-        const tickets = snapshotToData<Ticket>(ticketSnapshot);
-
-        // Sort by updatedAt descending in memory
-        tickets.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-
-        return tickets;
+        return snapshotToData<Ticket>(ticketSnapshot);
     } catch (error) {
         console.error("Error fetching open tickets by user ID:", error);
         return [];
     }
 });
-
-export const getTicketConversations = cache(async (ticketId: string): Promise<TicketConversation[]> => {
-    try {
-        const conversationCol = collection(db, 'tickets', ticketId, 'conversations');
-        const q = query(conversationCol, orderBy('createdAt', 'asc'));
-        const conversationSnapshot = await getDocs(q);
-        return snapshotToData<TicketConversation>(conversationSnapshot);
-    } catch (error) {
-        console.error("Error fetching ticket conversations:", error);
-        return [];
-    }
-});
-
 
 export const getTicketsByProject = cache(async (projectId: string): Promise<Ticket[]> => {
     try {
@@ -464,27 +448,25 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
 
 export async function addConversation(
     ticketId: string, 
-    conversationData: Omit<TicketConversation, 'id' | 'createdAt'>,
+    conversationData: Omit<TicketConversation, 'createdAt'>,
     ticketUpdate: Partial<Ticket> = {}
 ): Promise<string> {
-    const batch = writeBatch(db);
-    
-    // Create the conversation document
-    const conversationCol = collection(db, 'tickets', ticketId, 'conversations');
-    const conversationDocRef = doc(conversationCol); // Create a new doc with a generated ID
-    batch.set(conversationDocRef, {
-        ...conversationData,
-        createdAt: serverTimestamp(),
-    });
-
-    // Update the parent ticket
     const ticketRef = doc(db, 'tickets', ticketId);
-    const updates = { ...ticketUpdate, updatedAt: serverTimestamp() };
-    batch.update(ticketRef, updates);
+    
+    const newConversation: TicketConversation = {
+        ...conversationData,
+        createdAt: new Date().toISOString(),
+    };
+    
+    const updates = { 
+        ...ticketUpdate, 
+        conversations: arrayUnion(newConversation),
+        updatedAt: serverTimestamp(),
+    };
 
     try {
-        await batch.commit();
-        return conversationDocRef.id;
+        await updateDoc(ticketRef, updates);
+        return ticketId;
     } catch (error) {
         console.error("Error adding conversation:", error);
         throw new Error("Failed to add conversation.");

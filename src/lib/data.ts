@@ -6,6 +6,13 @@ export type Attachment = {
   type: string;
 };
 
+export type TicketConversation = {
+    authorId: string;
+    authorName: string;
+    content: string;
+    createdAt: string;
+}
+
 export type Ticket = {
   id: string;
   title: string;
@@ -23,22 +30,13 @@ export type Ticket = {
   tags: string[];
   project: string | null;
   attachments?: Attachment[];
+  conversations?: TicketConversation[];
   source?: 'Project' | 'Client Inquiry' | 'Internal' | 'Partner' | 'Vendor' | 'General Inquiry' | 'WhatsApp';
   organizationId: string;
   clientCanReply?: boolean;
   statusLastSetBy?: 'Admin' | 'Agent' | 'Client' | 'System';
   priorityLastSetBy?: 'Admin' | 'Agent' | 'Client' | 'System';
-  conversations?: TicketConversation[];
 };
-
-export type TicketConversation = {
-    id: string;
-    authorId: string;
-    content: string;
-    createdAt: string;
-    isInternal: boolean;
-    authorName: string;
-}
 
 export type User = {
   id: string;

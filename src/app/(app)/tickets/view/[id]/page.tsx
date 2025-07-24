@@ -346,8 +346,7 @@ export default function ViewTicketPage() {
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [conversations, setConversations] = React.useState<TicketConversation[]>([]);
-
+  
   const [currentStatus, setCurrentStatus] = React.useState<Ticket['status'] | undefined>();
   const [currentPriority, setCurrentPriority] = React.useState<Ticket['priority'] | undefined>();
   const [currentCategory, setCurrentCategory] = React.useState<Ticket['category'] | undefined>();
@@ -369,7 +368,7 @@ export default function ViewTicketPage() {
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
   const userMapById = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
   const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Admin' || u.role === 'Agent'), [users]);
-
+  const conversations = React.useMemo(() => (ticket?.conversations || []).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()), [ticket]);
 
   const editor = useEditor({
     extensions: [
@@ -441,37 +440,6 @@ export default function ViewTicketPage() {
     mainContent.addEventListener('scroll', handleScroll, { passive: true });
     return () => mainContent.removeEventListener('scroll', handleScroll);
   }, [isMobile]);
-
-  // Real-time listener for conversations
-  React.useEffect(() => {
-    if (!params.id) return;
-    const ticketId = Array.isArray(params.id) ? params.id[0] : params.id;
-
-    const q = query(
-      collection(db, 'tickets', ticketId, 'conversations'),
-      orderBy('createdAt', 'asc')
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const convos = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const createdAtTimestamp = data.createdAt as Timestamp | null;
-        return {
-          id: doc.id,
-          authorId: data.authorId,
-          content: data.content,
-          createdAt: createdAtTimestamp ? createdAtTimestamp.toDate().toISOString() : new Date().toISOString()
-        }
-      });
-      setConversations(convos);
-    }, (error) => {
-      console.error("Error listening to conversations:", error);
-      toast({ title: "Real-time Error", description: "Could not get new replies automatically.", variant: "destructive" });
-    });
-
-    return () => unsubscribe();
-  }, [params.id, toast]);
-  
   
   if (loading || !currentUser || !ticket) {
     return (
@@ -900,11 +868,11 @@ export default function ViewTicketPage() {
 
                                 {conversations.length > 0 && <Separator />}
                                 
-                                {conversations.map((conv) => {
+                                {conversations.map((conv, idx) => {
                                     const author = userMapById.get(conv.authorId);
                                     const isCurrentUserAuthor = author?.id === currentUser.id;
                                     return (
-                                    <div key={conv.id} className={cn('flex w-full gap-2 md:gap-4', isCurrentUserAuthor ? 'justify-end' : 'justify-start')}>
+                                    <div key={idx} className={cn('flex w-full gap-2 md:gap-4', isCurrentUserAuthor ? 'justify-end' : 'justify-start')}>
                                         <div className={cn("flex flex-col gap-1 w-full", isCurrentUserAuthor ? "items-end" : "items-start")}>
                                             <div className={cn("flex items-center gap-2", isCurrentUserAuthor ? "flex-row-reverse" : "flex-row")}>
                                                 {author && (

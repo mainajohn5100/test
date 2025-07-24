@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Validate the request is from the correct Twilio account
     if (organization.settings?.whatsapp?.accountSid !== accountSid) {
-        console.error(`Request SID ${accountSid} does not match configured SID ${organization.settings.whatsapp.accountSid}`);
+        console.error(`Request SID ${accountSid} does not match configured SID ${organization.settings?.whatsapp?.accountSid}`);
         return NextResponse.json({ error: 'Invalid AccountSid. Request ignored.' }, { status: 403 });
     }
 
@@ -76,13 +76,20 @@ export async function POST(request: NextRequest) {
         console.log(`Appending reply to existing open ticket: ${ticketToUpdate.id}`);
         
         const ticketUpdate = {
-            clientCanReply: true,
             ...(ticketToUpdate.status === 'Pending' || ticketToUpdate.status === 'On Hold' 
                 ? { status: 'Active' as const, statusLastSetBy: 'Client' as const } 
                 : {})
         };
 
-        await addConversation(ticketToUpdate.id, { content: messageBody, authorId: user.id, isInternal: false, authorName: user.name }, ticketUpdate);
+        await addConversation(
+            ticketToUpdate.id,
+            { 
+                content: messageBody, 
+                authorId: user.id, 
+                authorName: user.name, 
+            },
+            ticketUpdate
+        );
         
         console.log(`Successfully appended reply to ticket ${ticketToUpdate.id}`);
         
@@ -106,6 +113,12 @@ export async function POST(request: NextRequest) {
             statusLastSetBy: 'System' as const,
             priorityLastSetBy: 'System' as const,
             status: 'New' as const,
+            conversations: [{
+                authorId: user.id,
+                authorName: user.name,
+                content: messageBody,
+                createdAt: new Date().toISOString(),
+            }],
         };
         
         const newTicketId = await addTicket(ticketData);
