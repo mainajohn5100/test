@@ -139,27 +139,16 @@ export const getTicketById = cache(async (id: string): Promise<Ticket | null> =>
 export const getOpenTicketsByUserId = cache(async (userId: string, phone: string, name: string): Promise<Ticket[]> => {
     try {
         const ticketsCol = collection(db, 'tickets');
+        // A simplified query that is more likely to be supported by Firestore's default indexes.
+        // It fetches open tickets by reporterId and we will do a final filter in memory.
         const q = query(
             ticketsCol,
-            or(
-                where("reporterId", "==", userId),
-                where("reporterPhone", "==", phone),
-                where("reporter", "==", name)
-            ),
-            where("status", "not-in", ['Closed', 'Terminated']),
-            orderBy('updatedAt', 'desc')
+            where("reporterId", "==", userId),
+            where("status", "in", ['New', 'Active', 'Pending', 'On Hold'])
         );
         
         const ticketSnapshot = await getDocs(q);
-        const allMatchingTickets = snapshotToData<Ticket>(ticketSnapshot);
-        
-        // Firestore limitation: `not-in` and `or` queries can be tricky together.
-        // We do a final client-side filter to be absolutely sure.
-        return allMatchingTickets.filter(ticket => (
-            (ticket.reporterId === userId || ticket.reporterPhone === phone || ticket.reporter === name) &&
-            ticket.status !== 'Closed' &&
-            ticket.status !== 'Terminated'
-        ));
+        return snapshotToData<Ticket>(ticketSnapshot);
 
     } catch (error) {
         console.error("Error fetching open tickets by user ID:", error);
@@ -458,14 +447,26 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
 
 export async function addConversation(
     ticketId: string, 
-    conversationData: Omit<TicketConversation, 'createdAt'>,
+    conversationData: Partial<Omit<TicketConversation, 'createdAt'>>,
     statusUpdate?: Partial<Ticket>
 ): Promise<string> {
+    if (!conversationData.authorId || !conversationData.content) {
+        throw new Error("Author ID and content are required to add a conversation.");
+    }
+
     const ticketRef = doc(db, 'tickets', ticketId);
     
+    // Ensure authorName is present, fetching if necessary
+    let authorName = conversationData.authorName;
+    if (!authorName) {
+        const author = await getUserById(conversationData.authorId);
+        if (!author) throw new Error(`Could not find author with ID: ${conversationData.authorId}`);
+        authorName = author.name;
+    }
+
     const newConversation: TicketConversation = {
         authorId: conversationData.authorId,
-        authorName: conversationData.authorName,
+        authorName: authorName,
         content: conversationData.content,
         createdAt: new Date().toISOString(),
     };
@@ -478,7 +479,6 @@ export async function addConversation(
         ...statusUpdate,
     };
 
-    // If a client replies to a ticket that was pending, set it to active
     if (author?.role === 'Client') {
         const ticket = await getTicketById(ticketId);
         if (ticket && (ticket.status === 'Pending' || ticket.status === 'On Hold')) {

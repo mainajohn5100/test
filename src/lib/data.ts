@@ -8,7 +8,7 @@ export type Attachment = {
 
 export type TicketConversation = {
     authorId: string;
-    authorName: string;
+    authorName?: string;
     content: string;
     createdAt: string;
 }

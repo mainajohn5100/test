@@ -30,7 +30,7 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
         statusUpdate.statusLastSetBy = author.role;
     }
 
-    await addConversation(ticketId, { content, authorId }, statusUpdate);
+    await addConversation(ticketId, { content, authorId, authorName: author.name }, statusUpdate);
     
     // Refresh ticket data if it was updated
     const updatedTicket = { ...ticket, ...statusUpdate };
