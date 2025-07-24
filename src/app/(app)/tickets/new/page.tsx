@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { CreateUserForm } from "@/app/(app)/users/create-user-form";
 import { Combobox } from "@/components/ui/combobox";
 import { useSearchParams } from "next/navigation";
+import { TiptapEditor } from "@/components/tiptap-editor";
 
 const categories: Ticket['category'][] = ['General', 'Support', 'Advertising', 'Billing'];
 
@@ -288,10 +289,11 @@ export default function NewTicketPage() {
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            placeholder="Provide a detailed description of the issue..." 
-                            className="min-h-40"
-                            {...field} />
+                          <TiptapEditor
+                            content={field.value}
+                            onChange={field.onChange}
+                            placeholder="Provide a detailed description of the issue..."
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -482,5 +484,3 @@ export default function NewTicketPage() {
     </div>
   );
 }
-
-    

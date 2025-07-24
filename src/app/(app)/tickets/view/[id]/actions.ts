@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { sendEmail } from '@/lib/email';
 import { summarizeNewMessage } from '@/ai/flows/summarize-new-message';
 import { Twilio } from 'twilio';
+import { htmlToText } from 'html-to-text';
 
 export async function addReplyAction(data: { ticketId: string; content: string; authorId: string; }) {
   try {
@@ -27,7 +28,7 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
       throw new Error("Ticket or author not found");
     }
 
-    await addConversation(ticketId, { content, authorId });
+    await addConversation(ticketId, { content, authorId: author.id, authorName: author.name });
     
     const userIdsToNotify = new Set<string>();
 
@@ -40,9 +41,6 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
         const assignee = await getUserByName(ticket.assignee);
         if (assignee) userIdsToNotify.add(assignee.id);
     }
-
-    // This part is an assumption. A better way would be to fetch all conversation authors.
-    // For now, let's keep it simple.
     
     userIdsToNotify.delete(author.id);
     
@@ -70,13 +68,29 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
                 ticketTitle: ticket.title,
             }
         });
-
-        // Email logic can be re-added here if needed.
     }
     
-    // WhatsApp reply logic is handled separately in the inbound webhook, not here.
+    // --- Outbound WhatsApp Reply Logic ---
+    if (ticket.source === 'WhatsApp' && (author.role === 'Admin' || author.role === 'Agent')) {
+      const orgWhatsapp = org?.settings?.whatsapp;
+      if (orgWhatsapp?.accountSid && orgWhatsapp?.authToken && orgWhatsapp?.phoneNumber && ticket.reporterPhone) {
+        try {
+          const twilioClient = new Twilio(orgWhatsapp.accountSid, orgWhatsapp.authToken);
+          const plainTextContent = htmlToText(content, { wordwrap: 130 });
 
-    // revalidatePath(`/tickets/view/${ticketId}`); // No longer needed with real-time listener
+          await twilioClient.messages.create({
+              from: `whatsapp:${orgWhatsapp.phoneNumber}`,
+              to: `whatsapp:${ticket.reporterPhone}`,
+              body: plainTextContent,
+          });
+          console.log(`Successfully sent WhatsApp reply to ${ticket.reporterPhone} for ticket ${ticketId}`);
+        } catch (twilioError) {
+          console.error("Error sending outbound WhatsApp message via Twilio:", twilioError);
+          // Don't throw error to client, but log it.
+        }
+      }
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Error in addReplyAction:", error);
@@ -110,7 +124,6 @@ export async function updateTicketAction(
 
     await updateTicket(ticketId, dataToUpdate);
     
-    // revalidatePath(`/tickets/view/${ticketId}`); // Not needed due to real-time listener
     revalidatePath('/tickets', 'layout');
     revalidatePath('/dashboard');
 
