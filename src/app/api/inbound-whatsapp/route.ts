@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     
     // 4. Check for existing open tickets for this user
     console.log(`Checking for open tickets for user: ${user.id} in organization: ${organization.id}`);
-    const openTickets = await getOpenTicketsByUserId(user.id, organization.id);
+    const openTickets = await getOpenTicketsByUserId(user.id, user.phone, organization.id);
     console.log(`Found ${openTickets.length} open tickets for user.`);
 
     if (openTickets.length > 0) {
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         console.log(`No open tickets found. Creating a new ticket for user ${user.name}.`);
         const ticketData = {
             title: `New WhatsApp Message from ${user.name}`,
-            description: messageBody,
+            description: messageBody, // The first message becomes the description
             reporter: user.name,
             reporterId: user.id,
             reporterPhone: user.phone,
@@ -113,12 +113,7 @@ export async function POST(request: NextRequest) {
             statusLastSetBy: 'System' as const,
             priorityLastSetBy: 'System' as const,
             status: 'New' as const,
-            conversations: [{
-                authorId: user.id,
-                authorName: user.name,
-                content: messageBody,
-                createdAt: new Date().toISOString(),
-            }],
+            conversations: [], // Initialize with an empty array
         };
         
         const newTicketId = await addTicket(ticketData);

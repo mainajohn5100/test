@@ -893,7 +893,7 @@ export default function ViewTicketPage() {
                                     </div>
                                     )
                                 })}
-                                {conversations.length === 0 && (
+                                {conversations.length === 0 && !ticket.description && (
                                     <p className="text-sm text-center text-muted-foreground py-4">No replies yet.</p>
                                 )}
                             </div>
