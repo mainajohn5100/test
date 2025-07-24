@@ -30,50 +30,52 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
 
     await addConversation(ticketId, { content, authorId: author.id, authorName: author.name });
     
+    // --- Notification Logic ---
     const userIdsToNotify = new Set<string>();
-
+    
+    // Notify the reporter (client) if they exist
     if (ticket.reporterEmail) {
       const reporter = await getUserByEmail(ticket.reporterEmail);
       if(reporter) userIdsToNotify.add(reporter.id);
     }
     
+    // Notify the assignee if they exist and are not the author
     if (ticket.assignee !== 'Unassigned') {
         const assignee = await getUserByName(ticket.assignee);
         if (assignee) userIdsToNotify.add(assignee.id);
     }
     
+    // Ensure the author doesn't get a notification for their own message
     userIdsToNotify.delete(author.id);
     
-    // --- Notification Logic ---
-    const org = await getOrganizationById(ticket.organizationId);
-    
-    for (const userId of Array.from(userIdsToNotify)) {
-        const recipient = await getUserById(userId);
-        if(!recipient) continue;
-
+    if (userIdsToNotify.size > 0) {
         const { summary } = await summarizeNewMessage({
             from: author.name,
             message: content,
             ticketTitle: ticket.title,
         });
 
-        await createNotification({
-            userId: recipient.id,
-            title: `New reply from ${author.name}`,
-            description: summary,
-            link: `/tickets/view/${ticketId}`,
-            type: 'new_reply',
-            metadata: {
-                from: author.name,
-                ticketTitle: ticket.title,
-            }
-        });
+        const notificationPromises = Array.from(userIdsToNotify).map(userId => 
+            createNotification({
+                userId: userId,
+                title: `New reply from ${author.name}`,
+                description: summary,
+                link: `/tickets/view/${ticketId}`,
+                type: 'new_reply',
+                metadata: {
+                    from: author.name,
+                    ticketTitle: ticket.title,
+                }
+            })
+        );
+        await Promise.all(notificationPromises);
     }
     
     // --- Outbound WhatsApp Reply Logic ---
-    if (ticket.source === 'WhatsApp' && (author.role === 'Admin' || author.role === 'Agent')) {
+    if (ticket.source === 'WhatsApp' && (author.role === 'Admin' || author.role === 'Agent') && ticket.reporterPhone) {
+      const org = await getOrganizationById(ticket.organizationId);
       const orgWhatsapp = org?.settings?.whatsapp;
-      if (orgWhatsapp?.accountSid && orgWhatsapp?.authToken && orgWhatsapp?.phoneNumber && ticket.reporterPhone) {
+      if (orgWhatsapp?.accountSid && orgWhatsapp?.authToken && orgWhatsapp?.phoneNumber) {
         try {
           const twilioClient = new Twilio(orgWhatsapp.accountSid, orgWhatsapp.authToken);
           const plainTextContent = htmlToText(content, { wordwrap: 130 });
