@@ -10,10 +10,14 @@ import { sendEmail } from '@/lib/email';
 import { summarizeNewMessage } from '@/ai/flows/summarize-new-message';
 import { Twilio } from 'twilio';
 
-export async function addReplyAction(data: { ticketId: string; content: string; authorId: string; }) {
+export async function addReplyAction(data: { ticketId: string; content: string; authorId: string; authorName?: string; }) {
   try {
-    const { ticketId, content, authorId } = data;
+    const { ticketId, content, authorId, authorName } = data;
     
+    if (!ticketId || !content || !authorId) {
+        throw new Error("Missing required data for reply.");
+    }
+
     const [ticket, author] = await Promise.all([
         getTicketById(ticketId),
         getUserById(authorId)
@@ -23,17 +27,12 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
       throw new Error("Ticket or author not found");
     }
 
-    // Automatically set status to Active on first Agent/Admin reply
-    let statusUpdate: Partial<Ticket> = {};
-    if ((author.role === 'Admin' || author.role === 'Agent') && ticket.status === 'New') {
-        statusUpdate.status = 'Active';
-        statusUpdate.statusLastSetBy = author.role;
-    }
-
-    await addConversation(ticketId, { content, authorId, authorName: author.name }, statusUpdate);
+    // Pass the author's name to the conversation function.
+    await addConversation(ticketId, { content, authorId, authorName: authorName || author.name });
     
-    // Refresh ticket data if it was updated
-    const updatedTicket = { ...ticket, ...statusUpdate };
+    // Refresh ticket data after adding conversation to get the latest state
+    const updatedTicket = await getTicketById(ticketId);
+    if (!updatedTicket) throw new Error("Failed to retrieve updated ticket.");
 
     // --- Notification Logic ---
     const reporter = await getUserByName(updatedTicket.reporter);
@@ -42,10 +41,9 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
     const userIdsToNotify = new Set<string>();
     if (reporter) userIdsToNotify.add(reporter.id);
     if (assignee) userIdsToNotify.add(assignee.id);
-    if(ticket.conversations) {
-        ticket.conversations.forEach(convo => userIdsToNotify.add(convo.authorId));
+    if(updatedTicket.conversations) {
+        updatedTicket.conversations.forEach(convo => userIdsToNotify.add(convo.authorId));
     }
-
 
     // Remove the author of the reply from the notification list
     userIdsToNotify.delete(author.id);
@@ -82,7 +80,6 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
         }
       }
     }
-
 
     for (const recipient of usersToNotify) {
         const { summary } = await summarizeNewMessage({

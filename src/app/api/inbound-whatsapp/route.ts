@@ -67,12 +67,12 @@ export async function POST(request: NextRequest) {
     }
     
     // 4. Check for existing open tickets for this user
-    console.log(`Checking for open tickets for user: ${user.id} in organization: ${organization.id}`);
-    const openTickets = await getOpenTicketsByUserId(user.id, user.phone, user.name);
+    console.log(`Checking for open tickets for user: ${user.id}`);
+    const openTickets = await getOpenTicketsByUserId(user.id);
     console.log(`Found ${openTickets.length} open tickets for user.`);
 
     if (openTickets.length > 0) {
-        const ticketToUpdate = openTickets[0]; // getOpenTicketsByUserId returns sorted by updatedAt desc
+        const ticketToUpdate = openTickets[0];
         console.log(`Appending reply to existing open ticket: ${ticketToUpdate.id}`);
         
         await addConversation(
@@ -80,19 +80,19 @@ export async function POST(request: NextRequest) {
             { 
                 content: messageBody, 
                 authorId: user.id, 
-                authorName: user.name, // Ensure authorName is passed correctly
+                authorName: user.name,
             }
         );
         
         console.log(`Successfully appended reply to ticket ${ticketToUpdate.id}`);
-        
         return NextResponse.json({ success: true, message: `Appended reply to ticket ${ticketToUpdate.id}` });
+
     } else {
         // 5. Create a new ticket if no open tickets exist
         console.log(`No open tickets found. Creating a new ticket for user ${user.name}.`);
         const ticketData = {
             title: `New WhatsApp Message from ${user.name}`,
-            description: messageBody, // The first message becomes the description
+            description: messageBody,
             reporter: user.name,
             reporterId: user.id,
             reporterPhone: user.phone,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
             statusLastSetBy: 'System' as const,
             priorityLastSetBy: 'System' as const,
             status: 'New' as const,
-            conversations: [], // Initialize with an empty array
+            conversations: [],
         };
         
         const newTicketId = await addTicket(ticketData);
