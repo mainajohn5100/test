@@ -140,51 +140,20 @@ export const getOpenTicketsByUserId = cache(async (userId: string, organizationI
     try {
         const ticketsCol = collection(db, 'tickets');
         
-        let q = query(
+        const q = query(
             ticketsCol,
             where("organizationId", "==", organizationId),
             where("reporterId", "==", userId),
-            where("status", "not-in", ['Closed', 'Terminated']),
-            orderBy('status'), // This helps with consistent ordering before the final sort
-            orderBy('updatedAt', 'desc'),
-            limit(10)
+            where("status", "in", ['New', 'Active', 'Pending', 'On Hold'])
         );
         
-        let ticketSnapshot = await getDocs(q);
-        
-        if (ticketSnapshot.empty) {
-            const user = await getUserById(userId);
-            if (!user) return [];
-            
-            q = query(
-                ticketsCol,
-                where("organizationId", "==", organizationId),
-                where("reporter", "==", user.name),
-                where("status", "not-in", ['Closed', 'Terminated']),
-                orderBy('status'),
-                orderBy('updatedAt', 'desc'),
-                limit(10)
-            );
-            ticketSnapshot = await getDocs(q);
-        }
-        
-        if (ticketSnapshot.empty) {
-            const user = await getUserById(userId);
-            if (user && user.phone) {
-                q = query(
-                    ticketsCol,
-                    where("organizationId", "==", organizationId),
-                    where("reporterPhone", "==", user.phone),
-                    where("status", "not-in", ['Closed', 'Terminated']),
-                    orderBy('status'),
-                    orderBy('updatedAt', 'desc'),
-                    limit(10)
-                );
-                ticketSnapshot = await getDocs(q);
-            }
-        }
-        
-        return snapshotToData<Ticket>(ticketSnapshot);
+        const ticketSnapshot = await getDocs(q);
+        const tickets = snapshotToData<Ticket>(ticketSnapshot);
+
+        // Sort by updatedAt descending in memory
+        tickets.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+        return tickets;
     } catch (error) {
         console.error("Error fetching open tickets by user ID:", error);
         return [];
