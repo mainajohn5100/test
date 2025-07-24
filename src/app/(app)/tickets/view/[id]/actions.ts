@@ -3,7 +3,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createNotification, getTicketById, updateTicket, deleteTicket, getUserById, addConversation, getUserByName, getOrganizationById } from '@/lib/firestore';
+import { createNotification, getTicketById, updateTicket, deleteTicket, getUserById, addConversation, getUserByName, getOrganizationById, getUserByEmail } from '@/lib/firestore';
 import type { Ticket, User, TicketConversation, Organization } from '@/lib/data';
 import { redirect } from 'next/navigation';
 import { sendEmail } from '@/lib/email';
@@ -27,12 +27,14 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
       throw new Error("Ticket or author not found");
     }
 
-    await addConversation(ticketId, { content, authorId, authorName: author.name });
+    await addConversation(ticketId, { content, authorId });
     
-    const usersToNotify = new Set<string>();
+    const userIdsToNotify = new Set<string>();
 
-    const reporter = await getUserByEmail(ticket.reporterEmail);
-    if(reporter) userIdsToNotify.add(reporter.id);
+    if (ticket.reporterEmail) {
+      const reporter = await getUserByEmail(ticket.reporterEmail);
+      if(reporter) userIdsToNotify.add(reporter.id);
+    }
     
     if (ticket.assignee !== 'Unassigned') {
         const assignee = await getUserByName(ticket.assignee);
