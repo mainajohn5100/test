@@ -711,6 +711,7 @@ export default function ViewTicketPage() {
             ticketId: ticket.id,
             content: reply,
             authorId: currentUser.id,
+            authorName: currentUser.name,
         });
 
         if (result.success) {

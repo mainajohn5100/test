@@ -435,6 +435,7 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       clientCanReply: true,
+      conversations: [], //added
       reporterId: ticketData.reporterId || null,
       reporterPhone: ticketData.reporterPhone || null,
     });
