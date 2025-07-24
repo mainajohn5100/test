@@ -68,27 +68,20 @@ export async function POST(request: NextRequest) {
     
     // 4. Check for existing open tickets for this user
     console.log(`Checking for open tickets for user: ${user.id} in organization: ${organization.id}`);
-    const openTickets = await getOpenTicketsByUserId(user.id, user.phone, organization.id);
+    const openTickets = await getOpenTicketsByUserId(user.id);
     console.log(`Found ${openTickets.length} open tickets for user.`);
 
     if (openTickets.length > 0) {
         const ticketToUpdate = openTickets[0]; // getOpenTicketsByUserId returns sorted by updatedAt desc
         console.log(`Appending reply to existing open ticket: ${ticketToUpdate.id}`);
         
-        const ticketUpdate = {
-            ...(ticketToUpdate.status === 'Pending' || ticketToUpdate.status === 'On Hold' 
-                ? { status: 'Active' as const, statusLastSetBy: 'Client' as const } 
-                : {})
-        };
-
         await addConversation(
             ticketToUpdate.id,
             { 
                 content: messageBody, 
                 authorId: user.id, 
                 authorName: user.name, 
-            },
-            ticketUpdate
+            }
         );
         
         console.log(`Successfully appended reply to ticket ${ticketToUpdate.id}`);

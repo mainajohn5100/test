@@ -136,13 +136,11 @@ export const getTicketById = cache(async (id: string): Promise<Ticket | null> =>
   }
 });
 
-export const getOpenTicketsByUserId = cache(async (userId: string, organizationId: string): Promise<Ticket[]> => {
+export const getOpenTicketsByUserId = cache(async (userId: string): Promise<Ticket[]> => {
     try {
         const ticketsCol = collection(db, 'tickets');
-        
         const q = query(
             ticketsCol,
-            where("organizationId", "==", organizationId),
             where("reporterId", "==", userId),
             where("status", "not-in", ['Closed', 'Terminated']),
             orderBy("status"), // Required for not-in queries
@@ -448,8 +446,7 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
 
 export async function addConversation(
     ticketId: string, 
-    conversationData: Omit<TicketConversation, 'createdAt'>,
-    ticketUpdate: Partial<Ticket> = {}
+    conversationData: Omit<TicketConversation, 'createdAt'>
 ): Promise<string> {
     const ticketRef = doc(db, 'tickets', ticketId);
     
@@ -458,11 +455,27 @@ export async function addConversation(
         createdAt: new Date().toISOString(),
     };
     
-    const updates = { 
-        ...ticketUpdate, 
+    const author = await getUserById(conversationData.authorId);
+
+    const updates: { [key: string]: any } = {
         conversations: arrayUnion(newConversation),
         updatedAt: serverTimestamp(),
     };
+
+    // If a client replies to a ticket that was pending, set it to active
+    if (author?.role === 'Client') {
+        const ticket = await getTicketById(ticketId);
+        if (ticket && (ticket.status === 'Pending' || ticket.status === 'On Hold')) {
+            updates.status = 'Active';
+            updates.statusLastSetBy = 'Client';
+        }
+    } else if (author?.role === 'Admin' || author?.role === 'Agent') {
+        const ticket = await getTicketById(ticketId);
+        if (ticket && ticket.status === 'New') {
+            updates.status = 'Active';
+            updates.statusLastSetBy = author.role;
+        }
+    }
 
     try {
         await updateDoc(ticketRef, updates);
