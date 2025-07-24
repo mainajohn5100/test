@@ -111,6 +111,11 @@ export type EmailTemplate = {
 
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
+export type CannedResponse = {
+    title: string;
+    content: string;
+};
+
 export type WhatsAppSettings = {
   provider: 'twilio';
   accountSid: string;
@@ -132,6 +137,7 @@ export type Organization = {
     emailTemplates?: Partial<EmailTemplate>;
     whatsapp?: Partial<WhatsAppSettings>;
     ticketStatuses?: string[];
+    cannedResponses?: CannedResponse[];
     // Hybrid / Org-level settings
     excludeClosedTickets?: boolean;
   }

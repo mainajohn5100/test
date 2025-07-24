@@ -18,8 +18,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 export function StatusTagsForm() {
   const { ticketStatuses, setTicketStatuses, loading } = useSettings();
@@ -30,9 +29,13 @@ export function StatusTagsForm() {
   const handleAddStatus = () => {
     if (newStatus && !ticketStatuses.includes(newStatus)) {
         startTransition(async () => {
-            await setTicketStatuses([...ticketStatuses, newStatus]);
-            setNewStatus('');
-            toast({ title: 'Status Added' });
+            const success = await setTicketStatuses([...ticketStatuses, newStatus]);
+            if (success) {
+              setNewStatus('');
+              toast({ title: 'Status Added' });
+            } else {
+              toast({ title: 'Error', description: 'Failed to add status.', variant: 'destructive' });
+            }
         });
     }
   };
@@ -40,15 +43,19 @@ export function StatusTagsForm() {
   const handleRemoveStatus = (statusToRemove: string) => {
     startTransition(async () => {
         const newStatuses = ticketStatuses.filter(s => s !== statusToRemove);
-        await setTicketStatuses(newStatuses);
-        toast({ title: 'Status Removed' });
+        const success = await setTicketStatuses(newStatuses);
+        if (success) {
+            toast({ title: 'Status Removed' });
+        } else {
+            toast({ title: 'Error', description: 'Failed to remove status.', variant: 'destructive' });
+        }
     });
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Workflow Settings</CardTitle>
+        <CardTitle>Ticket Statuses</CardTitle>
         <CardDescription>
           Customize the ticket status tags for your organization's workflow.
         </CardDescription>
@@ -64,7 +71,7 @@ export function StatusTagsForm() {
                     placeholder="e.g., Escalated"
                 />
                 <Button onClick={handleAddStatus} disabled={!newStatus.trim() || isSaving}>
-                    <Plus className="mr-2 h-4 w-4" />
+                    {isSaving ? <Loader className="h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
                     Add
                 </Button>
             </div>

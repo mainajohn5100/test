@@ -3,7 +3,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { Organization, WhatsAppSettings } from '@/lib/data';
+import type { Organization, WhatsAppSettings, CannedResponse } from '@/lib/data';
 import { useAuth } from './auth-context';
 import { getOrganizationById, updateOrganizationSettings } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -20,10 +20,17 @@ const INACTIVITY_TIMEOUT_OPTIONS = [
 ];
 
 const DEFAULT_TICKET_STATUSES = ['New', 'Active', 'Pending', 'On Hold', 'Closed', 'Terminated'];
+const DEFAULT_CANNED_RESPONSES: CannedResponse[] = [
+    { title: "Greeting", content: "Hi there! Thanks for reaching out. How can I help you today?" },
+    { title: "Follow-up", content: "Just checking in to see if you had any other questions or if there's anything else I can help with." },
+    { title: "Troubleshooting Steps", content: "Could you please try the following steps and let me know if it resolves the issue?\n1. Clear your browser cache and cookies.\n2. Try a different web browser.\n3. Restart your device." },
+    { title: "Escalation", content: "I'm escalating this ticket to our senior support team. They will get back to you as soon as possible." },
+    { title: "Resolution Confirmation", content: "We've implemented a fix for the issue you reported. Can you please confirm that everything is working as expected now?" },
+];
 
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
-interface OrgSettings extends Omit<Required<Organization>['settings'], 'emailTemplates' | 'excludeClosedTickets' | 'loadingScreenStyle' | 'aiGreetingsEnabled' | 'ticketStatuses'> {}
+interface OrgSettings extends Omit<Required<Organization>['settings'], 'emailTemplates' | 'excludeClosedTickets' | 'loadingScreenStyle' | 'aiGreetingsEnabled' | 'ticketStatuses' | 'cannedResponses'> {}
 
 // Merging local settings with DB settings for a comprehensive context
 interface SettingsContextType extends OrgSettings {
@@ -45,6 +52,9 @@ interface SettingsContextType extends OrgSettings {
   setClientCanSelectProject: (enabled: boolean) => void;
   setInactivityTimeout: (minutes: number) => void;
   ticketStatuses: string[];
+  setTicketStatuses: (statuses: string[]) => Promise<boolean>;
+  cannedResponses: CannedResponse[];
+  setCannedResponses: (responses: CannedResponse[]) => Promise<boolean>;
   
   // New local/hybrid settings
   loadingScreenStyle: LoadingScreenStyle;
@@ -66,6 +76,7 @@ const defaultOrgSettings: Required<Organization>['settings'] = {
     whatsapp: {},
     excludeClosedTickets: false,
     ticketStatuses: DEFAULT_TICKET_STATUSES,
+    cannedResponses: DEFAULT_CANNED_RESPONSES,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -147,7 +158,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const updateOrgSetting = useCallback(async (update: Partial<Organization['settings']>) => {
         if (!user?.organizationId) {
             toast({ title: "Error", description: "You must be authenticated to change settings.", variant: "destructive" });
-            return;
+            return false;
         }
         
         const oldSettings = { ...orgSettings };
@@ -155,10 +166,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 
         try {
             await updateOrganizationSettings(user.organizationId, update);
+            return true;
         } catch (error) {
             console.error("Failed to update setting:", error);
             setOrgSettings(oldSettings);
             toast({ title: "Error", description: "Failed to save setting.", variant: "destructive" });
+            return false;
         }
     }, [user, toast, orgSettings]);
 
@@ -223,6 +236,9 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         supportEmail: orgSettings?.supportEmail ?? defaultOrgSettings.supportEmail,
         whatsappSettings: orgSettings?.whatsapp ?? defaultOrgSettings.whatsapp,
         ticketStatuses: orgSettings?.ticketStatuses ?? DEFAULT_TICKET_STATUSES,
+        cannedResponses: orgSettings?.cannedResponses ?? DEFAULT_CANNED_RESPONSES,
+        setTicketStatuses: (statuses: string[]) => updateOrgSetting({ ticketStatuses: statuses }),
+        setCannedResponses: (responses: CannedResponse[]) => updateOrgSetting({ cannedResponses: responses }),
         setAgentPanelEnabled: (enabled: boolean) => updateOrgSetting({ agentPanelEnabled: enabled }),
         setClientPanelEnabled: (enabled: boolean) => updateOrgSetting({ clientPanelEnabled: enabled }),
         setProjectsEnabled: (enabled: boolean) => updateOrgSetting({ projectsEnabled: enabled }),

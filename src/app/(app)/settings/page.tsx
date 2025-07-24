@@ -12,6 +12,8 @@ import { AccountForm } from "@/components/settings/account-form";
 import { useAuth } from "@/contexts/auth-context";
 import { EmailTemplatesForm } from "@/components/settings/email-templates-form";
 import { Loader } from "lucide-react";
+import { StatusTagsForm } from "@/components/settings/status-tags-form";
+import { CannedResponsesForm } from "@/components/settings/canned-responses-form";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -44,6 +46,7 @@ export default function SettingsPage() {
           {user?.role === 'Admin' && <TabsTrigger value="access">Access Control</TabsTrigger>}
           <TabsTrigger value="account">Account</TabsTrigger>
           {user?.role === 'Admin' && <TabsTrigger value="templates">Email Templates</TabsTrigger>}
+          {user?.role === 'Admin' && <TabsTrigger value="workflow">Workflow</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="personalization">
@@ -195,6 +198,14 @@ export default function SettingsPage() {
           <TabsContent value="templates">
             <EmailTemplatesForm />
           </TabsContent>
+        )}
+        {user?.role === 'Admin' && (
+            <TabsContent value="workflow">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <StatusTagsForm />
+                    <CannedResponsesForm />
+                </div>
+            </TabsContent>
         )}
       </Tabs>
     </div>

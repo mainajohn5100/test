@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, formatDistanceToNow, isValid } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail, Link as LinkIcon, KeyRound, Flag, NotebookText, MessageCircleQuestion } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail, Link as LinkIcon, KeyRound, Flag, NotebookText, MessageCircleQuestion, MessageSquarePlus } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -31,7 +31,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import React from "react";
-import { generateSmartReply } from "@/ai/flows/smart-replies";
 import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { getUsers } from "@/lib/firestore";
@@ -340,7 +339,7 @@ export default function ViewTicketPage() {
   const params = useParams();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const { ticketStatuses } = useSettings();
+  const { ticketStatuses, cannedResponses } = useSettings();
   const [isPending, startTransition] = React.useTransition();
   
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
@@ -353,7 +352,6 @@ export default function ViewTicketPage() {
   const [currentCategory, setCurrentCategory] = React.useState<Ticket['category'] | undefined>();
   const [currentAssignee, setCurrentAssignee] = React.useState<string | undefined>();
   const [reply, setReply] = React.useState("");
-  const [isSuggestingReply, setIsSuggestingReply] = React.useState(false);
   const [currentTags, setCurrentTags] = React.useState<string[]>([]);
   const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [isSuggestingTags, setIsSuggestingTags] = React.useState(false);
@@ -626,36 +624,6 @@ export default function ViewTicketPage() {
     });
   };
 
-  const handleSmartReply = async () => {
-    if (!editor) return;
-    setIsSuggestingReply(true);
-    try {
-      const userHistory = "No previous tickets for this user.";
-      const cannedResponses = "1. Thank you for your patience. We are looking into it.\n2. Could you please provide more details?\n3. This issue has been resolved and the fix will be deployed shortly.";
-      
-      const conversation = `User: ${ticket.description}`;
-
-      const result = await generateSmartReply({
-        ticketContent: conversation,
-        userHistory: userHistory,
-        cannedResponses: cannedResponses,
-      });
-      
-      editor.commands.setContent(result.suggestedReply);
-      setReply(result.suggestedReply);
-
-    } catch (error) {
-      console.error("Error generating smart reply:", error);
-      toast({
-        title: "Error",
-        description: "Could not generate a smart reply.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSuggestingReply(false);
-    }
-  };
-
   const handleSuggestTags = async () => {
     setIsSuggestingTags(true);
     try {
@@ -722,6 +690,11 @@ export default function ViewTicketPage() {
     });
     setConfirmationOpen(true);
   };
+
+    const handleTemplateSelect = (templateContent: string) => {
+    if (!editor) return;
+    editor.commands.insertContent(templateContent);
+    };
 
 
   const handleAddReply = () => {
@@ -929,10 +902,27 @@ export default function ViewTicketPage() {
                         <div className="flex items-center justify-between">
                             <h4 className="font-medium">Add Reply</h4>
                             {(currentUser.role === 'Admin' || currentUser.role === 'Agent') && (
-                                <Button variant="ghost" size="sm" onClick={handleSmartReply} disabled={isSuggestingReply}>
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    {isSuggestingReply ? 'Thinking...' : 'Smart Reply'}
-                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm">
+                                            <MessageSquarePlus className="mr-2 h-4 w-4" />
+                                            Templates
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-80">
+                                        <DropdownMenuLabel>Select a Template</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        {cannedResponses.length > 0 ? (
+                                            cannedResponses.map((res, index) => (
+                                                <DropdownMenuItem key={index} onSelect={() => handleTemplateSelect(res.content)}>
+                                                    <p className="font-medium truncate">{res.title}</p>
+                                                </DropdownMenuItem>
+                                            ))
+                                        ) : (
+                                            <DropdownMenuItem disabled>No templates found.</DropdownMenuItem>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             )}
                         </div>
                         <TiptapEditor 

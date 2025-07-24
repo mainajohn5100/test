@@ -1,11 +1,12 @@
+
 'use server';
 
 /**
- * @fileOverview Provides smart replies to speed up agent response times.
+ * @fileOverview This flow is deprecated. Canned responses are now handled by a manual template picker.
  *
- * - generateSmartReply - Generates a smart reply based on the ticket and user history.
- * - SmartReplyInput - The input type for the generateSmartReply function.
- * - SmartReplyOutput - The return type for the generateSmartReply function.
+ * - generateSmartReply - DEPRECATED
+ * - SmartReplyInput - DEPRECATED
+ * - SmartReplyOutput - DEPRECATED
  */
 
 import {ai} from '@/ai/genkit';
@@ -24,28 +25,9 @@ const SmartReplyOutputSchema = z.object({
 export type SmartReplyOutput = z.infer<typeof SmartReplyOutputSchema>;
 
 export async function generateSmartReply(input: SmartReplyInput): Promise<SmartReplyOutput> {
-  return smartReplyFlow(input);
+  // This is deprecated, return a simple response.
+  return { suggestedReply: "This feature has been replaced by manual templates." };
 }
-
-const prompt = ai.definePrompt({
-  name: 'smartReplyPrompt',
-  input: {schema: SmartReplyInputSchema},
-  output: {schema: SmartReplyOutputSchema},
-  prompt: `You are an AI assistant helping agents respond to tickets quickly.
-
-  Given the current ticket content, a summary of the user's past tickets, and a list of canned responses, suggest the most appropriate reply for the agent to use.
-
-  Current Ticket:
-  {{ticketContent}}
-
-  User History:
-  {{userHistory}}
-
-  Canned Responses:
-  {{cannedResponses}}
-
-  Suggested Reply:`,
-});
 
 const smartReplyFlow = ai.defineFlow(
   {
@@ -54,7 +36,6 @@ const smartReplyFlow = ai.defineFlow(
     outputSchema: SmartReplyOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    return { suggestedReply: "This feature has been replaced by manual templates." };
   }
 );
