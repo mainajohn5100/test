@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
@@ -27,39 +28,13 @@ import { useCallback } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface TiptapEditorProps {
+  editor: Editor | null;
   content: string;
   onChange: (richText: string) => void;
   placeholder?: string;
 }
 
-export function TiptapEditor({ content, onChange, placeholder }: TiptapEditorProps) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure(),
-      Placeholder.configure({
-        placeholder: placeholder || 'Type something...',
-      }),
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-      }),
-      Image.configure({
-        inline: false,
-      }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-    ],
-    content: content,
-    editorProps: {
-      attributes: {
-        class: 'prose dark:prose-invert prose-sm sm:prose-base max-w-none min-h-[120px] p-3 outline-none focus:outline-none',
-      },
-    },
-    onUpdate({ editor }) {
-      onChange(editor.getHTML());
-    },
-  });
+export function TiptapEditor({ editor, content, onChange, placeholder }: TiptapEditorProps) {
 
   const addImage = useCallback(() => {
     if (!editor) return;

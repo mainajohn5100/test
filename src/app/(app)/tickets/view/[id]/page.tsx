@@ -374,14 +374,13 @@ export default function ViewTicketPage() {
       Placeholder.configure({ placeholder: "Type your reply here..." }),
       TipTapLink.configure({ openOnClick: false, autolink: true }),
     ],
-    content: reply,
-    onUpdate({ editor }) {
-        setReply(editor.getHTML());
-    },
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert prose-sm sm:prose-base max-w-none',
       },
+    },
+    onUpdate({ editor }) {
+      setReply(editor.getHTML());
     },
   });
 
@@ -691,10 +690,10 @@ export default function ViewTicketPage() {
     setConfirmationOpen(true);
   };
 
-    const handleTemplateSelect = (templateContent: string) => {
+  const handleTemplateSelect = (templateContent: string) => {
     if (!editor) return;
     editor.commands.insertContent(templateContent);
-    };
+  };
 
 
   const handleAddReply = () => {
@@ -926,6 +925,7 @@ export default function ViewTicketPage() {
                             )}
                         </div>
                         <TiptapEditor 
+                            editor={editor}
                             content={reply}
                             onChange={setReply}
                             placeholder="Type your reply here..."
