@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         await addConversation(
             ticketToUpdate.id,
             { 
-                content: messageBody, 
+                content: `New Message From ---<br/><br/>${messageBody}`, 
                 authorId: user.id,
                 authorName: user.name,
             }
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
             description: messageBody,
             reporter: user.name,
             reporterId: user.id,
-            reporterPhone: clientPhoneNumber, // Explicitly save phone number
+            reporterPhone: clientPhoneNumber,
             tags: ['whatsapp'],
             priority: 'Medium' as const,
             category: 'General' as const,

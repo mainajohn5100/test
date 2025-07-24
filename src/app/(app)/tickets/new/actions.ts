@@ -20,7 +20,8 @@ export async function createTicketAction(formData: FormData) {
     priority: formData.get('priority') as 'low' | 'medium' | 'high' | 'urgent',
     category: formData.get('category') as 'General' | 'Support' | 'Advertising' | 'Billing',
     project: formData.get('project') as string,
-    assignee: formData.get('assignee') as string,
+    // Safely get the assignee, defaulting to 'unassigned' if null or undefined
+    assignee: (formData.get('assignee') as string) || 'unassigned',
     tags: formData.getAll('tags') as string[] || [],
   };
 
