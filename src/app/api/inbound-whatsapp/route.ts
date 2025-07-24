@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     
     // 4. Check for existing open tickets for this user
     console.log(`Checking for open tickets for user: ${user.id} in organization: ${organization.id}`);
-    const openTickets = await getOpenTicketsByUserId(user.id);
+    const openTickets = await getOpenTicketsByUserId(user.id, user.phone, user.name);
     console.log(`Found ${openTickets.length} open tickets for user.`);
 
     if (openTickets.length > 0) {
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
             { 
                 content: messageBody, 
                 authorId: user.id, 
-                authorName: user.name, 
+                authorName: user.name, // Ensure authorName is passed correctly
             }
         );
         

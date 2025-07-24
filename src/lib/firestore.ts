@@ -1,6 +1,6 @@
 
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, arrayUnion } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, arrayUnion, or } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task } from './data';
 import { cache } from 'react';
@@ -136,19 +136,31 @@ export const getTicketById = cache(async (id: string): Promise<Ticket | null> =>
   }
 });
 
-export const getOpenTicketsByUserId = cache(async (userId: string): Promise<Ticket[]> => {
+export const getOpenTicketsByUserId = cache(async (userId: string, phone: string, name: string): Promise<Ticket[]> => {
     try {
         const ticketsCol = collection(db, 'tickets');
         const q = query(
             ticketsCol,
-            where("reporterId", "==", userId),
+            or(
+                where("reporterId", "==", userId),
+                where("reporterPhone", "==", phone),
+                where("reporter", "==", name)
+            ),
             where("status", "not-in", ['Closed', 'Terminated']),
-            orderBy("status"), // Required for not-in queries
             orderBy('updatedAt', 'desc')
         );
         
         const ticketSnapshot = await getDocs(q);
-        return snapshotToData<Ticket>(ticketSnapshot);
+        const allMatchingTickets = snapshotToData<Ticket>(ticketSnapshot);
+        
+        // Firestore limitation: `not-in` and `or` queries can be tricky together.
+        // We do a final client-side filter to be absolutely sure.
+        return allMatchingTickets.filter(ticket => (
+            (ticket.reporterId === userId || ticket.reporterPhone === phone || ticket.reporter === name) &&
+            ticket.status !== 'Closed' &&
+            ticket.status !== 'Terminated'
+        ));
+
     } catch (error) {
         console.error("Error fetching open tickets by user ID:", error);
         return [];
@@ -446,12 +458,15 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
 
 export async function addConversation(
     ticketId: string, 
-    conversationData: Omit<TicketConversation, 'createdAt'>
+    conversationData: Omit<TicketConversation, 'createdAt'>,
+    statusUpdate?: Partial<Ticket>
 ): Promise<string> {
     const ticketRef = doc(db, 'tickets', ticketId);
     
     const newConversation: TicketConversation = {
-        ...conversationData,
+        authorId: conversationData.authorId,
+        authorName: conversationData.authorName,
+        content: conversationData.content,
         createdAt: new Date().toISOString(),
     };
     
@@ -460,6 +475,7 @@ export async function addConversation(
     const updates: { [key: string]: any } = {
         conversations: arrayUnion(newConversation),
         updatedAt: serverTimestamp(),
+        ...statusUpdate,
     };
 
     // If a client replies to a ticket that was pending, set it to active
