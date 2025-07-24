@@ -344,6 +344,7 @@ export default function ViewTicketPage() {
   const [isPending, startTransition] = React.useTransition();
   
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
+  const [conversations, setConversations] = React.useState<TicketConversation[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
   
@@ -368,7 +369,6 @@ export default function ViewTicketPage() {
   const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
   const userMapById = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
   const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Admin' || u.role === 'Agent'), [users]);
-  const conversations = React.useMemo(() => (ticket?.conversations || []).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()), [ticket]);
 
   const editor = useEditor({
     extensions: [
@@ -404,7 +404,9 @@ export default function ViewTicketPage() {
   React.useEffect(() => {
     if (!params.id) return;
     const ticketId = Array.isArray(params.id) ? params.id[0] : params.id;
-    const unsub = onSnapshot(doc(db, "tickets", ticketId), (doc) => {
+    
+    // Listener for the main ticket document
+    const ticketUnsub = onSnapshot(doc(db, "tickets", ticketId), (doc) => {
       if (doc.exists()) {
         const ticketData = { 
             id: doc.id,
@@ -424,7 +426,25 @@ export default function ViewTicketPage() {
         notFound();
       }
     });
-    return () => unsub();
+
+    // Listener for the conversations sub-collection
+    const conversationsQuery = query(collection(db, "tickets", ticketId, "conversations"), orderBy("createdAt", "asc"));
+    const conversationsUnsub = onSnapshot(conversationsQuery, (snapshot) => {
+        const convos = snapshot.docs.map(doc => {
+             const data = doc.data();
+             return {
+                id: doc.id,
+                ...data,
+                createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+             } as TicketConversation
+        });
+        setConversations(convos);
+    });
+
+    return () => {
+        ticketUnsub();
+        conversationsUnsub();
+    };
   }, [params.id]);
 
   // Scroll listener for header shrink effect
@@ -711,7 +731,6 @@ export default function ViewTicketPage() {
             ticketId: ticket.id,
             content: reply,
             authorId: currentUser.id,
-            authorName: currentUser.name,
         });
 
         if (result.success) {

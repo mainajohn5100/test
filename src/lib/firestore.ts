@@ -1,6 +1,6 @@
 
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, arrayUnion, or } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, or } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task } from './data';
 import { cache } from 'react';
@@ -137,24 +137,37 @@ export const getTicketById = cache(async (id: string): Promise<Ticket | null> =>
 });
 
 export const getOpenTicketsByUserId = cache(async (userId: string): Promise<Ticket[]> => {
+    console.log(`Searching for open tickets for user ID: ${userId}`);
+    if (!userId) {
+        console.error("getOpenTicketsByUserId called with no userId.");
+        return [];
+    }
+
     try {
         const ticketsCol = collection(db, 'tickets');
         const q = query(
             ticketsCol,
             where("reporterId", "==", userId),
-            where("status", "in", ['New', 'Active', 'Pending', 'On Hold']),
-            orderBy("updatedAt", "desc"),
-            limit(1)
+            where("status", "in", ['New', 'Active', 'Pending', 'On Hold'])
         );
         
         const ticketSnapshot = await getDocs(q);
-        return snapshotToData<Ticket>(ticketSnapshot);
+        const tickets = snapshotToData<Ticket>(ticketSnapshot);
+        
+        console.log(`Found ${tickets.length} open ticket(s) for user ${userId}.`);
+        
+        // Sort by most recently updated to get the most active conversation
+        if (tickets.length > 1) {
+            tickets.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        }
 
+        return tickets;
     } catch (error) {
-        console.error("Error fetching open tickets by user ID:", error);
+        console.error(`Error fetching open tickets by user ID ${userId}:`, error);
         return [];
     }
 });
+
 
 export const getTicketsByProject = cache(async (projectId: string): Promise<Ticket[]> => {
     try {
@@ -435,7 +448,6 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       clientCanReply: true,
-      conversations: [],
       reporterId: ticketData.reporterId || null,
       reporterPhone: ticketData.reporterPhone || null,
     });
@@ -448,37 +460,37 @@ export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'u
 
 export async function addConversation(
     ticketId: string, 
-    conversationData: Partial<TicketConversation>
+    conversationData: Partial<Omit<TicketConversation, 'id' | 'createdAt'>>
 ): Promise<string> {
     if (!conversationData.authorId || !conversationData.content) {
         throw new Error("Author ID and content are required to add a conversation.");
     }
 
     const ticketRef = doc(db, 'tickets', ticketId);
-    
-    let authorName = conversationData.authorName;
-    if (!authorName) {
-        const author = await getUserById(conversationData.authorId);
-        if (!author) throw new Error(`Could not find author with ID: ${conversationData.authorId}`);
-        authorName = author.name;
-    }
+    const conversationCol = collection(ticketRef, 'conversations');
 
-    const newConversation: TicketConversation = {
+    const newConversation: Omit<TicketConversation, 'id'> = {
         authorId: conversationData.authorId,
-        authorName: authorName,
+        authorName: conversationData.authorName || 'Unknown User',
         content: conversationData.content,
         createdAt: new Date().toISOString(),
     };
     
-    const author = await getUserById(conversationData.authorId);
+    // Add the new message to the sub-collection
+    const docRef = await addDoc(conversationCol, {
+        ...newConversation,
+        createdAt: serverTimestamp()
+    });
+    
+    // Also, update the main ticket's `updatedAt` field and status if needed.
+    const ticket = await getTicketById(ticketId);
+    if (!ticket) throw new Error("Ticket not found for update.");
+    
+    const author = await getUserById(newConversation.authorId);
     const updates: { [key: string]: any } = {
-        conversations: arrayUnion(newConversation),
         updatedAt: serverTimestamp(),
     };
-
-    const ticket = await getTicketById(ticketId);
-    if (!ticket) throw new Error("Ticket not found.");
-
+    
     if (author?.role === 'Client') {
         if (ticket.status === 'Pending' || ticket.status === 'On Hold') {
             updates.status = 'Active';
@@ -490,15 +502,12 @@ export async function addConversation(
             updates.statusLastSetBy = author.role;
         }
     }
+    
+    await updateDoc(ticketRef, updates);
 
-    try {
-        await updateDoc(ticketRef, updates);
-        return ticketId;
-    } catch (error) {
-        console.error("Error adding conversation:", error);
-        throw new Error("Failed to add conversation.");
-    }
+    return docRef.id;
 }
+
 
 export async function addProject(projectData: {
     name: string;

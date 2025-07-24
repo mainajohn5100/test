@@ -7,8 +7,9 @@ export type Attachment = {
 };
 
 export type TicketConversation = {
+    id: string;
     authorId: string;
-    authorName?: string;
+    authorName: string;
     content: string;
     createdAt: string;
 }
@@ -30,7 +31,6 @@ export type Ticket = {
   tags: string[];
   project: string | null;
   attachments?: Attachment[];
-  conversations?: TicketConversation[];
   source?: 'Project' | 'Client Inquiry' | 'Internal' | 'Partner' | 'Vendor' | 'General Inquiry' | 'WhatsApp';
   organizationId: string;
   clientCanReply?: boolean;

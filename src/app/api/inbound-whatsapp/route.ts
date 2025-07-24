@@ -106,7 +106,6 @@ export async function POST(request: NextRequest) {
             statusLastSetBy: 'System' as const,
             priorityLastSetBy: 'System' as const,
             status: 'New' as const,
-            conversations: [],
         };
         
         const newTicketId = await addTicket(ticketData);
