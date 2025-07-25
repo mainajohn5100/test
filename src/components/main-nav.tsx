@@ -35,16 +35,6 @@ type NavItem = {
     setting?: string;
 };
 
-const allTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
-    { label: "All Tickets", href: "/tickets/all" },
-    { label: "New", href: "/tickets/new-status" },
-    { label: "Active", href: "/tickets/active" },
-    { label: "Pending", href: "/tickets/pending" },
-    { label: "On Hold", href: "/tickets/on-hold" },
-    { label: "Closed", href: "/tickets/closed" },
-    { label: "Terminated", href: "/tickets/terminated" },
-];
-
 const menuItems: NavItem[] = [
   {
     label: "Dashboard",
@@ -54,12 +44,9 @@ const menuItems: NavItem[] = [
   },
   {
     label: "Tickets",
+    href: "/tickets",
     icon: Ticket,
     roles: ['Admin', 'Agent', 'Client'],
-    subItems: [
-      ...allTicketSubItems,
-      { label: "Create Ticket", href: "/tickets/new" },
-    ],
   },
   {
     label: "Projects",
@@ -101,11 +88,6 @@ const menuItems: NavItem[] = [
   },
 ];
 
-const clientTicketSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
-    ...allTicketSubItems,
-    { label: "Create Ticket", href: "/tickets/new" },
-];
-
 const clientProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
     { label: "All Projects", href: "/projects/all" },
 ];
@@ -137,13 +119,7 @@ export function MainNav() {
 
       let finalSubItems = item.subItems;
 
-      if (item.label === 'Tickets') {
-        if (user.role === 'Client') {
-          finalSubItems = clientTicketSubItems;
-        } else if (user.role === 'Agent') {
-          finalSubItems = [...allTicketSubItems, { label: "Create Ticket", href: "/tickets/new" }];
-        }
-      } else if (item.label === 'Projects') {
+      if (item.label === 'Projects') {
         if (user.role === 'Client') {
           finalSubItems = clientProjectSubItems;
         }
@@ -193,7 +169,7 @@ export function MainNav() {
                 variant="ghost"
                 className={cn(
                   "w-full justify-start gap-3 text-sm font-medium py-2 px-3 h-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10",
-                  pathname === item.href && "bg-sidebar-accent"
+                  pathname.startsWith(item.href!) && "bg-sidebar-accent"
                 )}
               >
                 <item.icon className="h-5 w-5" />

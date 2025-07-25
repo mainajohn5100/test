@@ -3,7 +3,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, MoreVertical, ListOrdered, Mail, MessageCircle, NotebookText, Briefcase } from "lucide-react";
+import { X, MoreVertical, ListOrdered, Mail, MessageCircle, NotebookText, Briefcase, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Label } from "../ui/label";
@@ -17,6 +17,8 @@ interface TicketTableToolbarProps {
   setSearchTerm: (value: string) => void;
   sortBy: string;
   setSortBy: (value: string) => void;
+  statusFilter: string;
+  setStatusFilter: (value: string) => void;
   channelFilter: string;
   setChannelFilter: (value: string) => void;
 }
@@ -26,11 +28,13 @@ export function TicketTableToolbar({
   setSearchTerm,
   sortBy,
   setSortBy,
+  statusFilter,
+  setStatusFilter,
   channelFilter,
   setChannelFilter
 }: TicketTableToolbarProps) {
 
-  const { excludeClosedTickets, setExcludeClosedTickets } = useSettings();
+  const { ticketStatuses, excludeClosedTickets, setExcludeClosedTickets } = useSettings();
   const showReset = searchTerm.length > 0;
 
   return (
@@ -94,6 +98,19 @@ export function TicketTableToolbar({
               </Tooltip>
             </ToggleGroup>
           </TooltipProvider>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full h-10 md:w-auto">
+              <Filter className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {ticketStatuses.map(status => (
+                <SelectItem key={status} value={status}>{status}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-full h-10 md:w-auto">

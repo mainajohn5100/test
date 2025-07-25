@@ -35,6 +35,7 @@ const EMAIL_SOURCES: Ticket['source'][] = ['Client Inquiry', 'Partner', 'Vendor'
 export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [sortBy, setSortBy] = useState('updatedAt_desc');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [channelFilter, setChannelFilter] = useState('all'); // 'all', 'email', 'whatsapp', 'project'
   const { excludeClosedTickets } = useSettings();
   
@@ -47,6 +48,10 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
     
     if (excludeClosedTickets) {
       displayTickets = displayTickets.filter(t => t.status !== 'Closed' && t.status !== 'Terminated');
+    }
+    
+    if (statusFilter !== 'all') {
+      displayTickets = displayTickets.filter(t => t.status === statusFilter);
     }
 
     if (channelFilter !== 'all') {
@@ -94,7 +99,7 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
     });
 
     return displayTickets;
-  }, [tickets, searchTerm, sortBy, excludeClosedTickets, channelFilter]);
+  }, [tickets, searchTerm, sortBy, excludeClosedTickets, channelFilter, statusFilter]);
 
 
   return (
@@ -106,6 +111,8 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
             setSearchTerm={setSearchTerm}
             sortBy={sortBy}
             setSortBy={setSortBy}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
             channelFilter={channelFilter}
             setChannelFilter={setChannelFilter}
           />
