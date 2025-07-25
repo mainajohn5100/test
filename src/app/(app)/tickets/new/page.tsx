@@ -4,7 +4,6 @@
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +26,12 @@ import { CreateUserForm } from "@/app/(app)/users/create-user-form";
 import { Combobox } from "@/components/ui/combobox";
 import { useSearchParams } from "next/navigation";
 import { TiptapEditor } from "@/components/tiptap-editor";
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
 
 const categories: Ticket['category'][] = ['General', 'Support', 'Advertising', 'Billing'];
 
@@ -62,6 +67,25 @@ export default function NewTicketPage() {
       project: initialProject || "none",
       assignee: "unassigned",
       tags: [],
+    },
+  });
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({ placeholder: "Provide a detailed description of the issue..." }),
+      Link.configure({ openOnClick: false, autolink: true }),
+      Image,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    ],
+    content: form.watch('description'),
+    onUpdate({ editor }) {
+      form.setValue('description', editor.getHTML(), { shouldValidate: true });
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose dark:prose-invert prose-sm sm:prose-base max-w-none',
+      },
     },
   });
 
@@ -290,6 +314,7 @@ export default function NewTicketPage() {
                         <FormLabel>Description</FormLabel>
                         <FormControl>
                           <TiptapEditor
+                            editor={editor}
                             content={field.value}
                             onChange={field.onChange}
                             placeholder="Provide a detailed description of the issue..."
