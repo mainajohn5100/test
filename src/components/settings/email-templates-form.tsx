@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useTransition } from 'react';
@@ -19,12 +20,12 @@ const defaultTemplates: EmailTemplate = {
   priorityChange: `Hi {{user.name}},\n\nThe priority of your ticket "{{ticket.title}}" has been updated to: {{ticket.priority}}.\n\nThank you,\nYour Support Team`,
   newAssignee: `Hi {{user.name}},\n\nYou have been assigned a new ticket: "{{ticket.title}}".\n\n- The Support Team`,
   projectInvite: `Hi {{user.name}},\n\nYou've been invited by {{inviter.name}} to join the project: "{{project.name}}".\n\nPlease sign up or log in to access the project: {{link}}\n\nThank you,\nThe Support Team`,
-  agentReplyToClient: `Hi {{user.name}},\n\nThere's a new reply on your ticket: "{{ticket.title}}".\n\n{{replier.name}} said:\n{{content}}\n\nPlease visit the ticket page to respond.\n- The Support Team`,
-  clientReplyToAgent: `Hi {{user.name}},\n\nThere's a new reply from a client on ticket: "{{ticket.title}}".\n\n{{replier.name}} said:\n{{content}}\n\nPlease visit the ticket page to respond.\n- The Support Team`,
-  adminReplyToClient: `Hi {{user.name}},\n\nAn administrator has replied to your ticket: "{{ticket.title}}".\n\n{{replier.name}} said:\n{{content}}\n\nPlease visit the ticket page to respond.\n- The Support Team`,
-  adminReplyToAgent: `Hi {{user.name}},\n\nAn administrator has replied to a ticket you are assigned to: "{{ticket.title}}".\n\n{{replier.name}} said:\n{{content}}\n\nPlease visit the ticket page to respond.\n- The Support Team`,
-  clientReplyToAdmin: `Hi {{user.name}},\n\nA client has replied to a ticket you are involved in: "{{ticket.title}}".\n\n{{replier.name}} said:\n{{content}}\n\nPlease visit the ticket page to respond.\n- The Support Team`,
-  agentReplyToAdmin: `Hi {{user.name}},\n\nAn agent has replied to a ticket you are involved in: "{{ticket.title}}".\n\n{{replier.name}} said:\n{{content}}\n\nPlease visit the ticket page to respond.\n- The Support Team`,
+  agentReplyToClient: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
+  clientReplyToAgent: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
+  adminReplyToClient: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
+  adminReplyToAgent: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
+  clientReplyToAdmin: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
+  agentReplyToAdmin: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
 };
 
 export function EmailTemplatesForm() {
