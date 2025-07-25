@@ -10,14 +10,18 @@ import type { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { signupSchema } from './schema';
 import { signupAction } from './actions';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { createUserFromGoogle, getUserById } from '@/lib/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Loader, TriangleAlert } from 'lucide-react';
-import { Logo } from '@/components/icons';
+import { Logo, GoogleIcon } from '@/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
@@ -26,6 +30,8 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState(1);
+  const [googleUser, setGoogleUser] = useState(null);
 
   const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -54,7 +60,8 @@ export default function SignupPage() {
         } else {
           toast({
             title: 'Welcome!',
-            description: 'Your account and organization have been created.',
+            description: 'Your account has been created. Please check your email to verify your account before logging in.',
+            duration: 8000,
           });
           // Redirect is handled by the server action on success.
         }
@@ -72,6 +79,70 @@ export default function SignupPage() {
       });
   };
 
+  const handleGoogleSignup = async () => {
+    setPending(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if user already exists in our DB
+      const appUser = await getUserById(user.uid);
+      if (appUser) {
+        toast({
+          title: "Account Exists",
+          description: "This Google account is already registered. Please log in instead.",
+        });
+        router.push('/login');
+        return;
+      }
+      
+      // New user, proceed to create organization
+      form.setValue('name', user.displayName || '');
+      form.setValue('email', user.email || '');
+      setStep(2); // Move to organization details step
+      
+    } catch (error: any) {
+        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+           // Do nothing, user cancelled.
+        } else {
+             toast({
+              title: 'Google Sign-up Failed',
+              description: error.message || 'An unexpected error occurred.',
+              variant: 'destructive',
+            });
+        }
+    } finally {
+        setPending(false);
+    }
+  };
+
+  const onFinalGoogleSubmit = (values: SignupFormValues) => {
+    if (!auth.currentUser) {
+        toast({ title: 'Error', description: 'Authentication session lost. Please try again.', variant: 'destructive'});
+        setStep(1);
+        return;
+    }
+    setPending(true);
+    createUserFromGoogle(auth.currentUser, values.organizationName)
+        .then(() => {
+            toast({
+              title: "Welcome!",
+              description: "Your account and organization have been created."
+            });
+            router.push('/dashboard');
+        })
+        .catch((error) => {
+            toast({
+              title: 'Signup Failed',
+              description: error.message,
+              variant: 'destructive',
+            });
+        })
+        .finally(() => setPending(false));
+  };
+
+
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-md">
@@ -80,8 +151,8 @@ export default function SignupPage() {
             <Logo className="w-8 h-8" />
             <h1 className="font-headline font-semibold text-2xl">RequestFlow</h1>
           </div>
-          <CardTitle>Create your Organization</CardTitle>
-          <CardDescription>Get started by creating your account and organization.</CardDescription>
+          <CardTitle>{step === 1 ? "Create an Account" : "Create your Organization"}</CardTitle>
+          <CardDescription>{step === 1 ? "Get started by creating your account." : "Just one more step to get started."}</CardDescription>
         </CardHeader>
         <CardContent>
           {!isFirebaseConfigured && (
@@ -93,83 +164,124 @@ export default function SignupPage() {
               </AlertDescription>
             </Alert>
           )}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Jane Doe" {...field} disabled={isPending || !isFirebaseConfigured} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="organizationName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Organization Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Acme Inc." {...field} disabled={isPending || !isFirebaseConfigured} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@company.com" {...field} disabled={isPending || !isFirebaseConfigured} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                        <div className="relative">
-                            <Input
-                                type={showPassword ? 'text' : 'password'}
-                                {...field}
-                                disabled={isPending || !isFirebaseConfigured}
-                                className="pr-10"
-                            />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
-                                onClick={() => setShowPassword(!showPassword)}
-                                disabled={isPending || !isFirebaseConfigured}
-                            >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button className="w-full" type="submit" disabled={isPending || !isFirebaseConfigured}>
-                {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                Sign Up & Create Organization
+
+          {step === 1 && (
+            <div className="space-y-4">
+              <Button className="w-full" variant="outline" onClick={handleGoogleSignup} disabled={isPending || !isFirebaseConfigured}>
+                  {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
+                  Sign up with Google
               </Button>
-            </form>
-          </Form>
+              <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                      <Separator />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Or sign up with email</span>
+                  </div>
+              </div>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Jane Doe" {...field} disabled={isPending || !isFirebaseConfigured} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="organizationName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Acme Inc." {...field} disabled={isPending || !isFirebaseConfigured} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="you@company.com" {...field} disabled={isPending || !isFirebaseConfigured} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? 'text' : 'password'}
+                                    {...field}
+                                    disabled={isPending || !isFirebaseConfigured}
+                                    className="pr-10"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    disabled={isPending || !isFirebaseConfigured}
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button className="w-full" type="submit" disabled={isPending || !isFirebaseConfigured}>
+                    {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                    Sign Up & Create Organization
+                  </Button>
+                </form>
+              </Form>
+            </div>
+          )}
+          {step === 2 && (
+             <Form {...form}>
+                <form onSubmit={form.handleSubmit(onFinalGoogleSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="organizationName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Acme Inc." {...field} disabled={isPending || !isFirebaseConfigured} autoFocus />
+                        </FormControl>
+                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <Button className="w-full" type="submit" disabled={isPending || !isFirebaseConfigured}>
+                    {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                    Finish Signup
+                  </Button>
+                </form>
+             </Form>
+          )}
+
         </CardContent>
         <CardFooter>
           <p className="w-full text-center text-sm text-muted-foreground">
