@@ -28,10 +28,9 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isPending, startTransition] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
-  const [googleUser, setGoogleUser] = useState(null);
 
   const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -48,7 +47,7 @@ export default function SignupPage() {
   const onSubmit = (values: SignupFormValues) => {
     if (!isFirebaseConfigured) return;
 
-    startTransition(true);
+    setIsPending(true);
     signupAction(values)
       .then((result) => {
         if (result?.error) {
@@ -63,7 +62,7 @@ export default function SignupPage() {
             description: 'Your account has been created. Please check your email to verify your account before logging in.',
             duration: 8000,
           });
-          // Redirect is handled by the server action on success.
+          router.push('/login');
         }
       })
       .catch((err) => {
@@ -75,18 +74,17 @@ export default function SignupPage() {
           });
       })
       .finally(() => {
-        startTransition(false);
+        setIsPending(false);
       });
   };
 
   const handleGoogleSignup = async () => {
-    setPending(true);
+    setIsPending(true);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user already exists in our DB
       const appUser = await getUserById(user.uid);
       if (appUser) {
         toast({
@@ -97,10 +95,9 @@ export default function SignupPage() {
         return;
       }
       
-      // New user, proceed to create organization
       form.setValue('name', user.displayName || '');
       form.setValue('email', user.email || '');
-      setStep(2); // Move to organization details step
+      setStep(2);
       
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
@@ -113,7 +110,7 @@ export default function SignupPage() {
             });
         }
     } finally {
-        setPending(false);
+        setIsPending(false);
     }
   };
 
@@ -123,7 +120,7 @@ export default function SignupPage() {
         setStep(1);
         return;
     }
-    setPending(true);
+    setIsPending(true);
     createUserFromGoogle(auth.currentUser, values.organizationName)
         .then(() => {
             toast({
@@ -139,7 +136,7 @@ export default function SignupPage() {
               variant: 'destructive',
             });
         })
-        .finally(() => setPending(false));
+        .finally(() => setIsPending(false));
   };
 
 

@@ -113,13 +113,8 @@ export default function LoginPage() {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
 
-        // Check if user exists in Firestore
         const appUser = await getUserById(user.uid);
         if (!appUser) {
-            // This is a first-time Google sign-in for an existing user or new signup
-            // For login, we assume they should have an org. For signup, they're creating one.
-            // In a real multi-tenant app, this is where you'd direct them to create/join an org.
-            // For now, we'll deny login if they don't have a firestore record.
             await auth.signOut();
             toast({
                 title: "Login Failed",
@@ -170,7 +165,6 @@ export default function LoginPage() {
                   </Button>
               ),
           });
-          // Log out the user until they verify
           await auth.signOut();
           setLoading(false);
           return;
@@ -199,10 +193,9 @@ export default function LoginPage() {
       }
   }
 
-
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <Card className="w-full max-w-sm overflow-hidden">
+      <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-2 mb-4">
                 <Logo className="w-8 h-8" />
@@ -211,18 +204,19 @@ export default function LoginPage() {
           <CardTitle>Welcome Back!</CardTitle>
           <CardDescription>Enter your credentials to access your account.</CardDescription>
         </CardHeader>
-        <div className="relative p-6 pt-0">
-             <div className={cn("transition-transform duration-300", step === 2 && "-translate-x-[110%]")}>
+        <CardContent>
+            {!isFirebaseConfigured && (
+            <Alert variant="destructive" className="mb-4">
+                <TriangleAlert className="h-4 w-4" />
+                <AlertTitle>Configuration Error</AlertTitle>
+                <AlertDescription>
+                Your Firebase environment variables are not set. Please copy them from your Firebase project settings into your `.env` file.
+                </AlertDescription>
+            </Alert>
+            )}
+            
+            {step === 1 && (
                 <div className="space-y-4">
-                    {!isFirebaseConfigured && (
-                    <Alert variant="destructive">
-                        <TriangleAlert className="h-4 w-4" />
-                        <AlertTitle>Configuration Error</AlertTitle>
-                        <AlertDescription>
-                        Your Firebase environment variables are not set. Please copy them from your Firebase project settings into your `.env` file.
-                        </AlertDescription>
-                    </Alert>
-                    )}
                     <Button className="w-full" variant="outline" onClick={handleGoogleLogin} disabled={loading || !isFirebaseConfigured}>
                         {loading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
                         Sign in with Google
@@ -235,61 +229,63 @@ export default function LoginPage() {
                             <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                         </div>
                     </div>
-                    <form className="space-y-4">
+                    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleContinue(e as any); }}>
                         <div className="space-y-2">
                         <Label htmlFor="email">Email Address</Label>
                         <Input id="email" name="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading || !isFirebaseConfigured} />
                         </div>
-                        <Button className="w-full" type="button" onClick={handleContinue} disabled={loading || !isFirebaseConfigured || !email}>
+                        <Button className="w-full" type="submit" disabled={loading || !isFirebaseConfigured || !email}>
                             Continue
                         </Button>
                     </form>
                 </div>
-             </div>
+            )}
 
-             <div className={cn("absolute top-0 left-0 w-full p-6 pt-0 transition-transform duration-300", step === 1 && "translate-x-[110%]")}>
-                <button onClick={() => { setStep(1); setPassword(''); }} className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Back to email
-                </button>
-                <form onSubmit={handleEmailLogin} className="space-y-4">
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="password">Password</Label>
-                            <ResetPasswordDialog />
+             {step === 2 && (
+                <div className="space-y-4">
+                    <button onClick={() => { setStep(1); setPassword(''); }} className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-2">
+                        <ArrowLeft className="h-4 w-4 mr-1" />
+                        Back to email
+                    </button>
+                    <form onSubmit={handleEmailLogin} className="space-y-4">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="password">Password</Label>
+                                <ResetPasswordDialog />
+                            </div>
+                            <div className="relative">
+                                <Input 
+                                    id="password" 
+                                    name="password" 
+                                    type={showPassword ? "text" : "password"} 
+                                    required 
+                                    value={password} 
+                                    onChange={(e) => setPassword(e.target.value)} 
+                                    disabled={loading || !isFirebaseConfigured} 
+                                    className="pr-10"
+                                    autoFocus
+                                />
+                                <Button 
+                                    type="button" 
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    disabled={!isFirebaseConfigured}
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                            </div>
                         </div>
-                        <div className="relative">
-                            <Input 
-                                id="password" 
-                                name="password" 
-                                type={showPassword ? "text" : "password"} 
-                                required 
-                                value={password} 
-                                onChange={(e) => setPassword(e.target.value)} 
-                                disabled={loading || !isFirebaseConfigured} 
-                                className="pr-10"
-                                autoFocus
-                            />
-                            <Button 
-                                type="button" 
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
-                                onClick={() => setShowPassword(!showPassword)}
-                                disabled={!isFirebaseConfigured}
-                            >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                        </div>
-                    </div>
-                    <Button className="w-full" type="submit" disabled={loading || !isFirebaseConfigured}>
-                        {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                        Sign In
-                    </Button>
-                </form>
-             </div>
-        </div>
-         <CardFooter className="flex flex-col gap-4 pt-0">
+                        <Button className="w-full" type="submit" disabled={loading || !isFirebaseConfigured}>
+                            {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                            Sign In
+                        </Button>
+                    </form>
+                </div>
+             )}
+        </CardContent>
+         <CardFooter className="flex flex-col gap-4 pt-4">
             <p className="text-sm text-center text-muted-foreground">
               Don&apos;t have an account?{' '}
               <Link href="/signup" className="font-semibold text-primary hover:underline">
