@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
@@ -11,6 +12,7 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   refreshUser: () => Promise<void>;
+  clearUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   firebaseUser: null,
   loading: true,
   refreshUser: async () => {},
+  clearUser: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -33,8 +36,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (userDoc.exists()) {
           setUser({ id: userDoc.id, ...userDoc.data() } as AppUser);
         } else {
-          // This case can happen if the user exists in Auth but not in Firestore.
-          // This might be a sign of an incomplete signup.
           console.warn("User exists in Firebase Auth but not in Firestore.", fbUser.uid);
           setUser(null);
         }
@@ -59,13 +60,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [fetchAppUser]);
   
   const refreshUser = useCallback(async () => {
-    // Re-fetch the currently signed-in user from auth to ensure it's fresh
     const currentFbUser = auth.currentUser;
-    setFirebaseUser(currentFbUser);
-    await fetchAppUser(currentFbUser);
+    // Force a token refresh if the user exists
+    if (currentFbUser) {
+        await currentFbUser.getIdToken(true);
+    }
+    setFirebaseUser(auth.currentUser); // This will re-set the firebaseUser state
+    await fetchAppUser(auth.currentUser);
   }, [fetchAppUser]);
+  
+  const clearUser = useCallback(() => {
+    setUser(null);
+    setFirebaseUser(null);
+  }, []);
 
-  const value = { firebaseUser, user, loading, refreshUser };
+  const value = { firebaseUser, user, loading, refreshUser, clearUser };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

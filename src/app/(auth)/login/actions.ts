@@ -1,7 +1,14 @@
+
 'use server';
 
 import { auth } from '@/lib/firebase';
 import { sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import { getUserByEmail } from '@/lib/firestore';
+
+export async function checkUserExistsByEmail(email: string): Promise<boolean> {
+  const user = await getUserByEmail(email);
+  return !!user;
+}
 
 export async function sendPasswordResetEmailAction(email: string): Promise<{ success: boolean; error?: string; message?: string }> {
   try {

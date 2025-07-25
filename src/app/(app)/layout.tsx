@@ -18,7 +18,7 @@ import type { User } from "@/lib/data";
 import { updateUserPresence } from "@/lib/firestore";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, clearUser } = useAuth();
   const { 
     agentPanelEnabled, 
     clientPanelEnabled, 
@@ -31,10 +31,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [accountDisabled, setAccountDisabled] = React.useState(false);
 
   const handleLogout = React.useCallback((message?: string) => {
-    // Redirect immediately for a better user experience
+    clearUser();
     router.replace('/login');
     
-    // Perform sign out and other cleanup in the background
     if (user?.id) {
         updateUserPresence(user.id);
     }
@@ -51,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         variant: "destructive"
       });
     });
-  }, [router, toast, user?.id]);
+  }, [router, toast, user?.id, clearUser]);
   
   useInactivity(() => {
     handleLogout("You have been logged out due to inactivity.");
@@ -94,7 +93,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (!user?.id) return;
 
-    // Listen for status changes (e.g., being disabled by an admin)
     const userDocRef = doc(db, 'users', user.id);
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
       if (doc.exists()) {
@@ -105,12 +103,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Update 'lastSeen' timestamp every minute to indicate presence
     const presenceInterval = setInterval(() => {
       updateUserPresence(user.id);
-    }, 60 * 1000); // every 60 seconds
+    }, 60 * 1000); 
 
-    // Update presence on window close/blur as a last attempt
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         updateUserPresence(user.id);
@@ -118,12 +114,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
     window.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Cleanup on component unmount
     return () => {
       unsubscribe();
       clearInterval(presenceInterval);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
-      // Update one last time on cleanup
       if (user?.id) {
           updateUserPresence(user.id);
       }
@@ -131,7 +125,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   }, [user?.id, handleLogout]);
 
-  // Show loading while auth is loading or settings are loading
   if (authLoading || settingsLoading) {
      if (loadingScreenStyle === 'skeleton') {
         return (
@@ -147,7 +140,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Show account disabled screen
   if (accountDisabled) {
      return (
       <div className="flex h-screen w-full items-center justify-center bg-background p-4">
@@ -165,7 +157,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Show access denied screen
   if (accessDenied) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background p-4">

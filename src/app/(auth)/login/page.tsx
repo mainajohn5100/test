@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -16,10 +16,10 @@ import { Eye, EyeOff, Loader, TriangleAlert, Mail, ArrowLeft } from 'lucide-reac
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { sendPasswordResetEmailAction, sendVerificationEmailAction } from './actions';
-import { createUserFromGoogle, getUserById } from '@/lib/firestore';
+import { sendPasswordResetEmailAction, sendVerificationEmailAction, checkUserExistsByEmail } from './actions';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/auth-context';
 
 // Helper to handle Firebase errors and provide user-friendly messages
 const getFirebaseAuthErrorMessage = (error: any) => {
@@ -98,11 +98,14 @@ function ResetPasswordDialog() {
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   
   const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -110,20 +113,8 @@ export default function LoginPage() {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-
-        const appUser = await getUserById(user.uid);
-        if (!appUser) {
-            await auth.signOut();
-            toast({
-                title: "Login Failed",
-                description: "No organization associated with this Google account. Please sign up first.",
-                variant: 'destructive'
-            });
-            return;
-        }
-        
+        await signInWithPopup(auth, provider);
+        await refreshUser(); // Ensure user context is updated before redirect
         router.push('/dashboard');
         toast({ title: 'Login Successful', description: 'Welcome back!' });
 
@@ -146,7 +137,7 @@ export default function LoginPage() {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-
+      
       if (!userCredential.user.emailVerified) {
           toast({
               title: 'Email Not Verified',
@@ -169,7 +160,8 @@ export default function LoginPage() {
           setLoading(false);
           return;
       }
-
+      
+      await refreshUser();
       router.push('/dashboard');
        toast({
         title: 'Login Successful',
@@ -185,12 +177,22 @@ export default function LoginPage() {
         setLoading(false);
     }
   };
-
-  const handleContinue = (e: React.MouseEvent<HTMLButtonElement>) => {
+  
+  const handleContinue = async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      if(email) {
+      if (!email) return;
+      setLoading(true);
+      setEmailError(null);
+      
+      const userExists = await checkUserExistsByEmail(email);
+      
+      if (userExists) {
           setStep(2);
+      } else {
+          setEmailError("No account found with this email address.");
+          emailInputRef.current?.focus();
       }
+      setLoading(false);
   }
 
   return (
@@ -210,12 +212,12 @@ export default function LoginPage() {
                 <TriangleAlert className="h-4 w-4" />
                 <AlertTitle>Configuration Error</AlertTitle>
                 <AlertDescription>
-                Your Firebase environment variables are not set. Please copy them from your Firebase project settings into your `.env` file.
+                Your Firebase environment variables are not set. Please copy them from your `.env` file.
                 </AlertDescription>
             </Alert>
             )}
             
-            {step === 1 && (
+            {step === 1 ? (
                 <div className="space-y-4">
                     <Button className="w-full" variant="outline" onClick={handleGoogleLogin} disabled={loading || !isFirebaseConfigured}>
                         {loading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
@@ -229,19 +231,30 @@ export default function LoginPage() {
                             <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                         </div>
                     </div>
-                    <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleContinue(e as any); }}>
-                        <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input id="email" name="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading || !isFirebaseConfigured} />
+                    <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); handleContinue(e as any); }}>
+                        <div className="space-y-1">
+                          <Label htmlFor="email">Email Address</Label>
+                          <Input 
+                            id="email" 
+                            name="email" 
+                            type="email" 
+                            placeholder="you@example.com" 
+                            required 
+                            value={email} 
+                            onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                            disabled={loading || !isFirebaseConfigured} 
+                            ref={emailInputRef}
+                            className={cn(emailError && "border-destructive focus-visible:ring-destructive")}
+                          />
+                          {emailError && <p className="text-sm font-medium text-destructive">{emailError}</p>}
                         </div>
                         <Button className="w-full" type="submit" disabled={loading || !isFirebaseConfigured || !email}>
+                            {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                             Continue
                         </Button>
                     </form>
                 </div>
-            )}
-
-             {step === 2 && (
+            ) : (
                 <div className="space-y-4">
                     <button onClick={() => { setStep(1); setPassword(''); }} className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-2">
                         <ArrowLeft className="h-4 w-4 mr-1" />
