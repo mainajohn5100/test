@@ -110,8 +110,8 @@ export default function NewTicketPage() {
             getUsers(user)
           ]);
           setAllUsers(usersData);
-          // Filter projects to only include those where tickets are enabled
-          const enabledProjects = projectsData.filter(p => p.ticketsEnabled !== false);
+          // Filter projects to only include those where tickets are enabled AND project is not 'Completed'
+          const enabledProjects = projectsData.filter(p => p.ticketsEnabled !== false && p.status !== 'Completed');
           setProjects(enabledProjects);
           // Users who can be assigned tickets
           setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
