@@ -57,32 +57,14 @@ export async function signupAction(values: z.infer<typeof signupSchema>) {
         return { error: error.message || 'An unexpected error occurred during signup.' };
     }
     
-    redirect('/login');
+    // Don't redirect here, let the client-side handle it.
+    // The user needs to verify their email first.
 }
 
 
 export async function googleSignupAction(user: FirebaseUser, organizationName: string) {
     try {
-        const { uid, displayName, email, photoURL } = user;
-
-        const organizationId = await createOrganization(organizationName);
-
-        await setAuthUserClaims(uid, {
-            organizationId,
-            role: 'Admin',
-        });
-        
-        const newUser: Omit<AppUser, 'id'> = {
-            name: displayName || 'New User',
-            email: email || '',
-            role: 'Admin',
-            avatar: photoURL || `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=GU`,
-            organizationId,
-            activityIsPublic: false,
-            status: 'active',
-            phone: ''
-        };
-
+        // This function will now correctly create the user and organization
         await createUserFromGoogle(user, organizationName);
 
     } catch (error: any) {
@@ -90,6 +72,8 @@ export async function googleSignupAction(user: FirebaseUser, organizationName: s
         return { error: error.message || 'An unexpected error occurred during Google signup.' };
     }
 
+    // After successful signup and org creation, redirect to dashboard.
     redirect('/dashboard');
 }
+
 

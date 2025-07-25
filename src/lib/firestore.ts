@@ -422,6 +422,30 @@ export async function createUserInFirestore(userId: string, userData: Omit<User,
     }
 }
 
+export async function createUserFromGoogle(user: FirebaseUser, organizationName: string): Promise<void> {
+    const { uid, displayName, email, photoURL } = user;
+
+    const organizationId = await createOrganization(organizationName);
+
+    await setAuthUserClaims(uid, {
+        organizationId,
+        role: 'Admin',
+    });
+    
+    const newUser: Omit<User, 'id'> = {
+        name: displayName || 'New User',
+        email: email || '',
+        role: 'Admin',
+        avatar: photoURL || `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=GU`,
+        organizationId,
+        activityIsPublic: false,
+        status: 'active',
+        phone: ''
+    };
+
+    await createUserInFirestore(uid, newUser);
+}
+
 
 export async function updateUser(userId: string, userData: Partial<Omit<User, 'id'>>): Promise<void> {
     try {
