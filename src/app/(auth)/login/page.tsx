@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -39,15 +40,15 @@ function ResetPasswordDialog() {
 
     const handleReset = async () => {
         if (!email) return;
-        startTransition(true);
-        const result = await sendPasswordResetEmailAction(email);
-        startTransition(false);
-        if (result.success) {
-            toast({ title: "Check your email", description: result.message });
-            setOpen(false);
-        } else {
-            toast({ title: "Error", description: result.error, variant: 'destructive' });
-        }
+        startTransition(async () => {
+            const result = await sendPasswordResetEmailAction(email);
+            if (result.success) {
+                toast({ title: "Check your email", description: result.message });
+                setOpen(false);
+            } else {
+                toast({ title: "Error", description: result.error, variant: 'destructive' });
+            }
+        });
     };
 
     return (
