@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         const ticketToUpdate = openTickets[0];
         console.log(`Appending reply to existing open ticket: ${ticketToUpdate.id}`);
         
-        const content = `New Message From ---<br/><br/>${messageBody}`;
+        const content = `${messageBody}`;
         await addConversation(
             ticketToUpdate.id,
             { 

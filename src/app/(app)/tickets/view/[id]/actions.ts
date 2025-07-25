@@ -126,6 +126,35 @@ export async function updateTicketAction(
     }
 
     await updateTicket(ticketId, dataToUpdate);
+
+    // --- Notification Logic for Status/Priority Change ---
+    if (updates.status) {
+        const userIdsToNotify = new Set<string>();
+        // Notify reporter
+        const reporter = await getUserByEmail(currentTicket.reporterEmail);
+        if (reporter) userIdsToNotify.add(reporter.id);
+        // Notify assignee
+        if (currentTicket.assignee !== 'Unassigned') {
+            const assignee = await getUserByName(currentTicket.assignee);
+            if (assignee) userIdsToNotify.add(assignee.id);
+        }
+        
+        // Don't notify the person who made the change
+        userIdsToNotify.delete(currentUserId);
+        
+        if (userIdsToNotify.size > 0) {
+            const notificationPromises = Array.from(userIdsToNotify).map(userId => 
+                createNotification({
+                    userId: userId,
+                    title: `Ticket status changed: ${currentTicket.title}`,
+                    description: `Status changed to ${updates.status} by ${user.name}.`,
+                    link: `/tickets/view/${ticketId}`,
+                    type: 'status_change',
+                })
+            );
+            await Promise.all(notificationPromises);
+        }
+    }
     
     revalidatePath('/tickets', 'layout');
     revalidatePath('/dashboard');
