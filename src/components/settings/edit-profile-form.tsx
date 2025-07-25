@@ -110,6 +110,7 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                     className="mt-1" 
                     accept="image/png, image/jpeg, image/gif"
                     onChange={handleFileChange}
+                    disabled
                   />
                   <p className="text-xs text-muted-foreground pt-1">
                       Upload a new profile picture.
@@ -138,10 +139,10 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                 <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                    <Input type="email" {...field} />
+                    <Input type="email" {...field} disabled />
                     </FormControl>
                       <p className="text-xs text-muted-foreground pt-1">
-                      Changing email requires re-authentication and verification. This feature is not fully implemented on server actions.
+                      You cannot change your Email
                       </p>
                     <FormMessage />
                 </FormItem>
