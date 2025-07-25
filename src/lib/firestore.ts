@@ -4,7 +4,7 @@ import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task } from './data';
 import { cache } from 'react';
-import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, sendEmailVerification as firebaseSendVerificationEmail, User as FirebaseUser } from 'firebase/auth';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -795,5 +795,17 @@ export async function sendPasswordResetEmail(email: string) {
     } catch (error) {
         console.error("Error sending password reset email:", error);
         throw new Error("Failed to send password reset email.");
+    }
+}
+
+export async function sendVerificationEmail(userId: string) {
+    const user = auth.currentUser;
+    // This check is important because createUserWithEmailAndPassword auto-signs-in the user.
+    // We need to ensure the user we're acting on is the one we just created.
+    if (user && user.uid === userId) {
+        await firebaseSendVerificationEmail(user);
+    } else {
+        // This case should ideally not happen in the signup flow.
+        console.warn("Could not send verification email: current user does not match new user.");
     }
 }

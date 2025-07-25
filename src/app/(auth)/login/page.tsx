@@ -34,7 +34,7 @@ const getFirebaseAuthErrorMessage = (error: any) => {
 function ResetPasswordDialog() {
     const { toast } = useToast();
     const [email, setEmail] = useState('');
-    const [isPending, startTransition] = useState(false);
+    const [isPending, startTransition] = React.useTransition();
     const [open, setOpen] = useState(false);
 
     const handleReset = async () => {
@@ -105,44 +105,43 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      if (!userCredential.user.emailVerified) {
+          toast({
+              title: 'Email Not Verified',
+              description: 'Please verify your email address to log in.',
+              variant: 'destructive',
+              action: (
+                  <Button variant="secondary" onClick={async () => {
+                      const result = await sendVerificationEmailAction();
+                      if (result.success) {
+                          toast({ title: "Verification Email Sent", description: result.message });
+                      } else {
+                          toast({ title: "Error", description: result.error, variant: 'destructive' });
+                      }
+                  }}>
+                      Resend Email
+                  </Button>
+              ),
+          });
+          // Log out the user until they verify
+          await auth.signOut();
+          setLoading(false);
+          return;
+      }
+
       router.push('/dashboard');
        toast({
         title: 'Login Successful',
         description: 'Welcome back!',
       });
     } catch (error: any) {
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-            toast({
-                title: 'Login Failed',
-                description: 'Invalid email or password. Please try again.',
-                variant: 'destructive',
-            });
-        } else if (auth.currentUser && !auth.currentUser.emailVerified) {
-             toast({
-                title: 'Email Not Verified',
-                description: 'Please verify your email address to log in.',
-                variant: 'destructive',
-                action: (
-                    <Button variant="secondary" onClick={async () => {
-                        const result = await sendVerificationEmailAction();
-                        if (result.success) {
-                            toast({ title: "Verification Email Sent", description: result.message });
-                        } else {
-                            toast({ title: "Error", description: result.error, variant: 'destructive' });
-                        }
-                    }}>
-                        Resend
-                    </Button>
-                ),
-            });
-        } else {
-             toast({
-                title: 'Login Failed',
-                description: getFirebaseAuthErrorMessage(error),
-                variant: 'destructive',
-            });
-        }
+        toast({
+            title: 'Login Failed',
+            description: getFirebaseAuthErrorMessage(error),
+            variant: 'destructive',
+        });
     } finally {
         setLoading(false);
     }
