@@ -21,6 +21,7 @@ import { summarizeNewMessage } from '@/ai/flows/summarize-new-message';
 import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { htmlToText } from 'html-to-text';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -81,12 +82,8 @@ export default function DashboardPage() {
                 let recentMessageSummary: string | undefined = undefined;
                 const recentNotification = notificationsData[0];
                 if (recentNotification && !recentNotification.read && recentNotification.type === 'new_reply') {
-                    const summaryResult = await summarizeNewMessage({
-                        from: recentNotification.metadata?.from || 'Someone',
-                        message: recentNotification.description,
-                        ticketTitle: recentNotification.metadata?.ticketTitle || 'a ticket',
-                    });
-                    recentMessageSummary = summaryResult.summary;
+                     const plainTextContent = htmlToText(recentNotification.description, { wordwrap: 130 });
+                     recentMessageSummary = `${recentNotification.metadata?.from || 'Someone'} replied about "${recentNotification.metadata?.ticketTitle || 'a ticket'}"`;
                 }
 
                 generateDashboardGreeting({
@@ -94,7 +91,7 @@ export default function DashboardPage() {
                     openTickets: ticketsData.filter(t => t.status !== 'Closed' && t.status !== 'Terminated').length,
                     newTicketsToday: ticketsData.filter(t => t.createdAt && isToday(new Date(t.createdAt))).length,
                     totalProjects: projects.length,
-                    recentMessageSummary: recentMessageSummary,
+                    recentMessagesSummary: recentMessageSummary,
                 }).then(greetingResponse => {
                     setGreeting(greetingResponse.greeting);
                 }).catch(e => console.error("AI Greeting failed:", e));

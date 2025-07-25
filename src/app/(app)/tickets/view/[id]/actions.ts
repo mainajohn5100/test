@@ -18,9 +18,10 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
         throw new Error("Missing required data for reply.");
     }
 
-    const [ticket, author] = await Promise.all([
+    const [ticket, author, admins] = await Promise.all([
         getTicketById(ticketId),
-        getUserById(authorId)
+        getUserById(authorId),
+        getUsers({ organizationId: 'org_1', role: 'Admin' } as User) // Assuming a default org for now, needs refinement in multi-tenant setup
     ]);
     
     if (!ticket || !author) {
@@ -43,18 +44,14 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
     }
     
     // Notify all admins
-    const admins = await getUsers({ organizationId: ticket.organizationId, role: 'Admin' } as User);
     admins.forEach(admin => userIdsToNotify.add(admin.id));
 
     // Ensure the author doesn't get a notification for their own message
     userIdsToNotify.delete(author.id);
     
     if (userIdsToNotify.size > 0) {
-        const { summary } = await summarizeNewMessage({
-            from: author.name,
-            message: content,
-            ticketTitle: ticket.title,
-        });
+        const plainTextContent = htmlToText(content, { wordwrap: 130 });
+        const summary = plainTextContent.length > 100 ? `${plainTextContent.substring(0, 97)}...` : plainTextContent;
 
         const notificationPromises = Array.from(userIdsToNotify).map(userId => 
             createNotification({
@@ -129,7 +126,7 @@ export async function updateTicketAction(
     await updateTicket(ticketId, dataToUpdate);
 
     // --- Notification Logic for Status/Priority Change ---
-    if (updates.status) {
+    if (updates.status || updates.priority) {
         const userIdsToNotify = new Set<string>();
         // Notify reporter
         const reporter = await getUserByEmail(currentTicket.reporterEmail);
@@ -144,11 +141,21 @@ export async function updateTicketAction(
         userIdsToNotify.delete(currentUserId);
         
         if (userIdsToNotify.size > 0) {
+            let title = '';
+            let description = '';
+            if (updates.status) {
+                title = `Ticket status changed: ${currentTicket.title}`;
+                description = `Status changed to ${updates.status} by ${user.name}.`;
+            } else if (updates.priority) {
+                title = `Ticket priority changed: ${currentTicket.title}`;
+                description = `Priority changed to ${updates.priority} by ${user.name}.`;
+            }
+
             const notificationPromises = Array.from(userIdsToNotify).map(userId => 
                 createNotification({
                     userId: userId,
-                    title: `Ticket status changed: ${currentTicket.title}`,
-                    description: `Status changed to ${updates.status} by ${user.name}.`,
+                    title,
+                    description,
                     link: `/tickets/view/${ticketId}`,
                     type: 'status_change',
                 })

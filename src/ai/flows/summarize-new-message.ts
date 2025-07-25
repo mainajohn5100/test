@@ -1,11 +1,12 @@
+
 'use server';
 
 /**
- * @fileOverview Summarizes a new chat message for notifications.
+ * @fileOverview This flow is deprecated. Notification summaries are now handled with simple truncation.
  *
- * - summarizeNewMessage - A function that creates a summary for a new message.
- * - SummarizeNewMessageInput - The input type for the summarizeNewMessage function.
- * - SummarizeNewMessageOutput - The return type for the summarizeNewMessage function.
+ * - summarizeNewMessage - DEPRECATED
+ * - SummarizeNewMessageInput - DEPRECATED
+ * - SummarizeNewMessageOutput - DEPRECATED
  */
 
 import {ai} from '@/ai/genkit';
@@ -24,27 +25,9 @@ const SummarizeNewMessageOutputSchema = z.object({
 export type SummarizeNewMessageOutput = z.infer<typeof SummarizeNewMessageOutputSchema>;
 
 export async function summarizeNewMessage(input: SummarizeNewMessageInput): Promise<SummarizeNewMessageOutput> {
-  return summarizeNewMessageFlow(input);
+  // This is deprecated, return a simple response.
+  return { summary: "This feature has been deprecated." };
 }
-
-const prompt = ai.definePrompt({
-  name: 'summarizeNewMessagePrompt',
-  input: {schema: SummarizeNewMessageInputSchema},
-  output: {schema: SummarizeNewMessageOutputSchema},
-  prompt: `You are an AI assistant that writes concise notification summaries.
-  
-  Summarize the following message into a very short phrase (max 10 words).
-  The summary must start with the sender's name.
-
-  - Sender: {{{from}}}
-  - Ticket Title: {{{ticketTitle}}}
-  - Message: {{{message}}}
-  
-  Example: "Priya asked for an update on the Safari bug."
-  
-  Your response must be in the specified JSON format.
-  `,
-});
 
 const summarizeNewMessageFlow = ai.defineFlow(
   {
@@ -53,7 +36,6 @@ const summarizeNewMessageFlow = ai.defineFlow(
     outputSchema: SummarizeNewMessageOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    return { summary: "This feature has been deprecated." };
   }
 );

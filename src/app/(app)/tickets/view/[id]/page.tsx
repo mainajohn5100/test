@@ -475,9 +475,9 @@ export default function ViewTicketPage() {
   
   const canChangeStatus = currentUser.role === 'Admin' || (currentUser.role === 'Agent' && ticket.assignee === currentUser.name);
 
-  const isPriorityChangeByRoleAllowed = currentUser.role === 'Admin' || ticket.priorityLastSetBy !== 'Admin';
-  const canChangePriority = isPriorityChangeByRoleAllowed && !isTicketClosed;
-  const canChangeCategory = !isTicketClosed;
+  // Clients cannot change priority or category after creation.
+  const canChangePriority = currentUser.role !== 'Client' && !isTicketClosed;
+  const canChangeCategory = currentUser.role !== 'Client' && !isTicketClosed;
 
   const canChangeAssignee = currentUser.role === 'Admin' && !isTicketClosed;
 
