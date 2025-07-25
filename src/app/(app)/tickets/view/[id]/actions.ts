@@ -80,11 +80,12 @@ export async function addReplyAction(data: { ticketId: string; content: string; 
         try {
           const twilioClient = new Twilio(orgWhatsapp.accountSid, orgWhatsapp.authToken);
           const plainTextContent = htmlToText(content, { wordwrap: 130 });
+          const replyBody = `New reply from ${author.name}:\n\n${plainTextContent}`;
 
           await twilioClient.messages.create({
               from: `whatsapp:${orgWhatsapp.phoneNumber}`,
               to: `whatsapp:${ticket.reporterPhone}`,
-              body: plainTextContent,
+              body: replyBody,
           });
           console.log(`Successfully sent WhatsApp reply to ${ticket.reporterPhone} for ticket ${ticketId}`);
         } catch (twilioError) {
