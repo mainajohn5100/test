@@ -42,12 +42,15 @@ export async function signupAction(values: z.infer<typeof signupSchema>) {
             avatar,
             organizationId,
             activityIsPublic: false,
+            status: 'disabled',
+            phone: ''
         };
 
         await createUserInFirestore(newUserId, newUser);
 
         // Step 5: Log the user in after successful signup
-        await signInWithEmailAndPassword(auth, email, password);
+        // await signInWithEmailAndPassword(auth, email, password);
+        redirect('/login')
 
     } catch (error: any) {
         console.error("Error in signupAction:", error);

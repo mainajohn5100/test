@@ -31,7 +31,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [accountDisabled, setAccountDisabled] = React.useState(false);
 
   const handleLogout = React.useCallback((message?: string) => {
+    // Redirect immediately for a better user experience
     router.replace('/login');
+    
+    // Perform sign out and other cleanup in the background
     if (user?.id) {
         updateUserPresence(user.id);
     }

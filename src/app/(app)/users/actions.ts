@@ -3,7 +3,7 @@
 'use server';
 
 import { z } from 'zod';
-import { updateUser as updateFirestoreUser, createUserInAuth, createUserInFirestore, setAuthUserClaims, sendPasswordResetEmail } from '@/lib/firestore';
+import { updateUser as updateFirestoreUser, createUserInAuth, createUserInFirestore, setAuthUserClaims, sendPasswordResetEmail, getUserByEmail } from '@/lib/firestore';
 import { revalidatePath } from 'next/cache';
 import { storage, auth } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -30,6 +30,12 @@ export async function createUserAction(values: z.infer<typeof userCreateSchema>,
         
         const orgId = creatorUser.organizationId;
         
+        // Check if user already exists
+        const existingUser = await getUserByEmail(email);
+        if (existingUser && existingUser.organizationId === orgId) {
+            return { error: 'A user with this email already exists in your organization.' };
+        }
+
         const newUserId = await createUserInAuth(email, password);
         
         await setAuthUserClaims(newUserId, {
