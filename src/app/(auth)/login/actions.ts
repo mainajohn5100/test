@@ -1,8 +1,9 @@
 
+
 'use server';
 
 import { auth } from '@/lib/firebase';
-import { sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import { sendPasswordResetEmail as firebaseSendPasswordResetEmail, sendEmailVerification as firebaseSendEmailVerification, User } from 'firebase/auth';
 import { getUserByEmail } from '@/lib/firestore';
 
 export async function checkUserExistsByEmail(email: string): Promise<boolean> {
@@ -12,7 +13,7 @@ export async function checkUserExistsByEmail(email: string): Promise<boolean> {
 
 export async function sendPasswordResetEmailAction(email: string): Promise<{ success: boolean; error?: string; message?: string }> {
   try {
-    await sendPasswordResetEmail(auth, email);
+    await firebaseSendPasswordResetEmail(auth, email);
     return { success: true, message: 'Password reset link sent! Please check your email.' };
   } catch (error: any) {
     if (error.code === 'auth/user-not-found') {
@@ -31,7 +32,7 @@ export async function sendVerificationEmailAction(): Promise<{ success: boolean;
   }
   
   try {
-    await sendEmailVerification(user);
+    await firebaseSendEmailVerification(user);
     return { success: true, message: 'Verification email sent! Please check your inbox.' };
   } catch (error: any) {
     console.error("Error sending verification email:", error);

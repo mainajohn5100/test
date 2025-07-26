@@ -51,19 +51,25 @@ export async function signupAction(values: z.infer<typeof signupSchema>) {
         await createUserInFirestore(newUserId, newUser);
 
         // Step 5: Send verification email
-        await sendVerificationEmail(newUserId);
+        const user = auth.currentUser;
+        if(user && user.uid === newUserId) {
+            await firebaseSendVerificationEmail(user);
+        } else {
+            console.warn("Could not send verification email: current user does not match new user.");
+        }
+
 
     } catch (error: any) {
         console.error("Error in signupAction:", error);
         return { error: error.message || 'An unexpected error occurred during signup.' };
     }
-    
-    // Don't redirect here, let the client-side handle it.
-    // The user needs to verify their email first.
 }
 
-export async function googleSignupAction(user: FirebaseUser, organizationName: string) {
-    const { uid, displayName, email, photoURL } = user;
+export async function googleSignupAction(
+    userData: { uid: string; displayName: string | null; email: string | null; photoURL: string | null; },
+    organizationName: string
+) {
+    const { uid, displayName, email, photoURL } = userData;
 
     try {
         const appUser = await getUserById(uid);

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -10,7 +11,7 @@ import type { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { signupSchema } from './schema';
 import { googleSignupAction, signupAction } from './actions';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserById } from '@/lib/firestore';
 
@@ -33,7 +34,7 @@ export default function SignupPage() {
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
-  const [googleUser, setGoogleUser] = useState<any>(null);
+  const [googleUser, setGoogleUser] = useState<FirebaseUser | null>(null);
 
   const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -128,7 +129,15 @@ export default function SignupPage() {
         return;
     }
     setIsPending(true);
-    googleSignupAction(googleUser, values.organizationName)
+    
+    const simpleUserData = {
+        uid: googleUser.uid,
+        displayName: googleUser.displayName,
+        email: googleUser.email,
+        photoURL: googleUser.photoURL
+    };
+
+    googleSignupAction(simpleUserData, values.organizationName)
         .then(async (result) => {
             if (result?.error) {
                  toast({
