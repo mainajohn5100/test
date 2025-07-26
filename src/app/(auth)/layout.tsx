@@ -10,11 +10,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
 
   useEffect(() => {
+    // This effect now correctly handles redirecting an already logged-in user
+    // away from the auth pages (/login, /signup).
     if (!loading && user) {
       router.replace('/dashboard');
     }
   }, [user, loading, router]);
 
+  // While loading, or if the user is already authenticated (and about to be redirected),
+  // show a loading spinner. This prevents the login/signup form from flashing.
   if (loading || user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -23,5 +27,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
+  // If not loading and no user is found, render the auth pages (login/signup).
   return <div className="bg-muted/40">{children}</div>;
 }

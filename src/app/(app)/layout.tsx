@@ -31,12 +31,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [accountDisabled, setAccountDisabled] = React.useState(false);
 
   const handleLogout = React.useCallback((message?: string) => {
-    clearUser();
-    router.replace('/login');
-    
     if (user?.id) {
         updateUserPresence(user.id);
     }
+    // Clear the user state from the context immediately.
+    clearUser();
+    // Redirect to the login page.
+    router.replace('/login');
+    
+    // Sign out from Firebase in the background.
     signOut(auth).then(() => {
       toast({
         title: "Signed Out",
