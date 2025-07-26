@@ -9,10 +9,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { signupSchema } from './schema';
-import { signupAction } from './actions';
+import { googleSignupAction, signupAction } from './actions';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { createUserFromGoogle, getUserById } from '@/lib/firestore';
+import { getUserById } from '@/lib/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,15 +22,18 @@ import { Eye, EyeOff, Loader, TriangleAlert } from 'lucide-react';
 import { Logo, GoogleIcon } from '@/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/auth-context';
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
+  const [googleUser, setGoogleUser] = useState<any>(null);
 
   const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -87,16 +90,20 @@ export default function SignupPage() {
 
       const appUser = await getUserById(user.uid);
       if (appUser) {
-        toast({
-          title: "Account Exists",
-          description: "This Google account is already registered. Please log in instead.",
-        });
-        router.push('/login');
-        return;
+          // If user exists, treat it as a login
+          await refreshUser();
+          toast({
+            title: "Login Successful",
+            description: "Welcome back!",
+          });
+          router.push('/dashboard');
+          return;
       }
       
+      // If user does not exist, proceed to step 2 for org creation
       form.setValue('name', user.displayName || '');
       form.setValue('email', user.email || '');
+      setGoogleUser(user);
       setStep(2);
       
     } catch (error: any) {
@@ -115,14 +122,23 @@ export default function SignupPage() {
   };
 
   const onFinalGoogleSubmit = (values: SignupFormValues) => {
-    if (!auth.currentUser) {
+    if (!googleUser) {
         toast({ title: 'Error', description: 'Authentication session lost. Please try again.', variant: 'destructive'});
         setStep(1);
         return;
     }
     setIsPending(true);
-    createUserFromGoogle(auth.currentUser, values.organizationName)
-        .then(() => {
+    googleSignupAction(googleUser, values.organizationName)
+        .then(async (result) => {
+            if (result?.error) {
+                 toast({
+                    title: 'Signup Failed',
+                    description: result.error,
+                    variant: 'destructive',
+                });
+                return;
+            }
+            await refreshUser();
             toast({
               title: "Welcome!",
               description: "Your account and organization have been created."

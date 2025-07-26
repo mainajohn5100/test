@@ -5,9 +5,10 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { signupSchema } from './schema';
-import { createOrganization, createUserFromGoogle, createUserInAuth, createUserInFirestore, setAuthUserClaims, sendVerificationEmail } from '@/lib/firestore';
+import { createOrganization, createUserInFirestore, setAuthUserClaims, sendVerificationEmail, createUserInAuth, getUserById } from '@/lib/firestore';
 import type { User as AppUser } from '@/lib/data';
 import type { User as FirebaseUser } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export async function signupAction(values: z.infer<typeof signupSchema>) {
     const validatedFields = signupSchema.safeParse(values);
@@ -61,19 +62,39 @@ export async function signupAction(values: z.infer<typeof signupSchema>) {
     // The user needs to verify their email first.
 }
 
-
 export async function googleSignupAction(user: FirebaseUser, organizationName: string) {
+    const { uid, displayName, email, photoURL } = user;
+
     try {
-        // This function will now correctly create the user and organization
-        await createUserFromGoogle(user, organizationName);
+        const appUser = await getUserById(uid);
+        if (appUser) {
+            console.log(`User ${uid} already exists. Skipping creation.`);
+            return { success: true, message: "User already exists." };
+        }
+
+        const organizationId = await createOrganization(organizationName);
+
+        await setAuthUserClaims(uid, {
+            organizationId,
+            role: 'Admin',
+        });
+        
+        const newUser: Omit<AppUser, 'id'> = {
+            name: displayName || 'New User',
+            email: email || '',
+            role: 'Admin',
+            avatar: photoURL || `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=GU`,
+            organizationId,
+            activityIsPublic: false,
+            status: 'active',
+            phone: ''
+        };
+
+        await createUserInFirestore(uid, newUser);
+        return { success: true };
 
     } catch (error: any) {
         console.error("Error in googleSignupAction:", error);
         return { error: error.message || 'An unexpected error occurred during Google signup.' };
     }
-
-    // After successful signup and org creation, redirect to dashboard.
-    redirect('/dashboard');
 }
-
-
