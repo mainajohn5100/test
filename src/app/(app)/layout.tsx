@@ -1,5 +1,4 @@
 
-
 'use client';
 import React from "react";
 import { useRouter } from "next/navigation";
@@ -16,9 +15,10 @@ import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import { doc, onSnapshot } from "firebase/firestore";
 import type { User } from "@/lib/data";
 import { updateUserPresence } from "@/lib/firestore";
+import { CreateOrganizationFlow } from "@/components/auth/create-organization-flow";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading, clearUser } = useAuth();
+  const { user, loading: authLoading, clearUser, needsOrgCreation } = useAuth();
   const { 
     agentPanelEnabled, 
     clientPanelEnabled, 
@@ -34,12 +34,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (user?.id) {
         updateUserPresence(user.id);
     }
-    // Clear the user state from the context immediately.
     clearUser();
-    // Redirect to the login page.
     router.replace('/login');
     
-    // Sign out from Firebase in the background.
     signOut(auth).then(() => {
       toast({
         title: "Signed Out",
@@ -92,7 +89,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       handleLogout("Your account has been disabled.");
   }
   
-   // Real-time listener for current user's status and presence heartbeat
   React.useEffect(() => {
     if (!user?.id) return;
 
@@ -143,6 +139,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (needsOrgCreation && user) {
+    return <CreateOrganizationFlow user={user} />;
+  }
+  
   if (accountDisabled) {
      return (
       <div className="flex h-screen w-full items-center justify-center bg-background p-4">

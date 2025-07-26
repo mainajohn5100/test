@@ -11,6 +11,7 @@ interface AuthContextType {
   user: AppUser | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
+  needsOrgCreation: boolean;
   refreshUser: () => Promise<void>;
   clearUser: () => void;
 }
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   firebaseUser: null,
   loading: true,
+  needsOrgCreation: false,
   refreshUser: async () => {},
   clearUser: () => {},
 });
@@ -27,6 +29,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsOrgCreation, setNeedsOrgCreation] = useState(false);
 
   const fetchAppUser = useCallback(async (fbUser: FirebaseUser | null) => {
     if (fbUser) {
@@ -34,17 +37,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const userDocRef = doc(db, 'users', fbUser.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          setUser({ id: userDoc.id, ...userDoc.data() } as AppUser);
+          const appUserData = { id: userDoc.id, ...userDoc.data() } as AppUser;
+          setUser(appUserData);
+          // Check if the user has an organization ID
+          if (!appUserData.organizationId) {
+            setNeedsOrgCreation(true);
+          } else {
+            setNeedsOrgCreation(false);
+          }
         } else {
           console.warn("User exists in Firebase Auth but not in Firestore.", fbUser.uid);
           setUser(null);
+          setNeedsOrgCreation(false);
         }
       } catch (error) {
         console.error("Error fetching app user from Firestore:", error);
         setUser(null);
+        setNeedsOrgCreation(false);
       }
     } else {
       setUser(null);
+      setNeedsOrgCreation(false);
     }
   }, []);
 
@@ -61,20 +74,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const refreshUser = useCallback(async () => {
     const currentFbUser = auth.currentUser;
-    // Force a token refresh if the user exists
     if (currentFbUser) {
         await currentFbUser.getIdToken(true);
     }
-    setFirebaseUser(auth.currentUser); // This will re-set the firebaseUser state
+    setFirebaseUser(auth.currentUser);
     await fetchAppUser(auth.currentUser);
   }, [fetchAppUser]);
   
   const clearUser = useCallback(() => {
     setUser(null);
     setFirebaseUser(null);
+    setNeedsOrgCreation(false);
   }, []);
 
-  const value = { firebaseUser, user, loading, refreshUser, clearUser };
+  const value = { firebaseUser, user, loading, needsOrgCreation, refreshUser, clearUser };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
