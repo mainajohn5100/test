@@ -7,6 +7,7 @@ import { TicketTableToolbar } from "@/components/tickets/ticket-table-toolbar";
 import { TicketTable } from "@/components/tickets/ticket-table";
 import type { Ticket, User } from "@/lib/data";
 import { useSettings } from "@/contexts/settings-context";
+import { TicketTablePagination } from "./ticket-table-pagination";
 
 interface TicketClientProps {
   tickets: Ticket[];
@@ -36,11 +37,15 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [sortBy, setSortBy] = useState('updatedAt_desc');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [channelFilter, setChannelFilter] = useState('all'); // 'all', 'email', 'whatsapp', 'project'
+  const [channelFilter, setChannelFilter] = useState('all');
   const { excludeClosedTickets } = useSettings();
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   
   useEffect(() => {
       setSearchTerm(initialSearchTerm);
+      setCurrentPage(1); // Reset to first page on new search
   }, [initialSearchTerm]);
 
   const filteredAndSortedTickets = useMemo(() => {
@@ -101,6 +106,16 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
     return displayTickets;
   }, [tickets, searchTerm, sortBy, excludeClosedTickets, channelFilter, statusFilter]);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy, statusFilter, channelFilter, excludeClosedTickets, rowsPerPage]);
+
+  const paginatedTickets = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return filteredAndSortedTickets.slice(startIndex, endIndex);
+  }, [filteredAndSortedTickets, currentPage, rowsPerPage]);
 
   return (
     <Card>
@@ -117,8 +132,15 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
             setChannelFilter={setChannelFilter}
           />
           <TicketTable
-            tickets={filteredAndSortedTickets}
+            tickets={paginatedTickets}
             users={users}
+          />
+          <TicketTablePagination
+            totalRows={filteredAndSortedTickets.length}
+            rowsPerPage={rowsPerPage}
+            setRowsPerPage={setRowsPerPage}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
           />
         </div>
       </CardContent>
