@@ -19,6 +19,7 @@ import {
   Settings,
   PlusCircle,
   Link2,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -84,6 +85,12 @@ const menuItems: NavItem[] = [
     label: "Settings",
     href: "/settings",
     icon: Settings,
+    roles: ['Admin', 'Agent', 'Client'],
+  },
+  {
+    label: "Support",
+    href: "/support",
+    icon: LifeBuoy,
     roles: ['Admin', 'Agent', 'Client'],
   },
 ];
