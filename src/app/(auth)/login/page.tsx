@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, linkWithCredential } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -118,12 +118,32 @@ export default function LoginPage() {
         router.push('/dashboard');
         toast({ title: 'Login Successful', description: 'Welcome back!' });
 
-    } catch (error) {
-        toast({
-            title: 'Login Failed',
-            description: getFirebaseAuthErrorMessage(error),
-            variant: 'destructive',
-        });
+    } catch (error: any) {
+        if (error.code === 'auth/account-exists-with-different-credential' && auth.currentUser) {
+            // This is the key part for linking accounts.
+            // If the user is already signed in (from the initial failed popup), we can link.
+            const credential = GoogleAuthProvider.credentialFromError(error);
+            if (credential) {
+                try {
+                    await linkWithCredential(auth.currentUser, credential);
+                    await refreshUser();
+                    router.push('/dashboard');
+                    toast({ title: 'Account Linked', description: 'You can now sign in with Google.' });
+                } catch (linkError) {
+                    toast({
+                        title: 'Linking Failed',
+                        description: getFirebaseAuthErrorMessage(linkError),
+                        variant: 'destructive',
+                    });
+                }
+            }
+        } else {
+             toast({
+                title: 'Login Failed',
+                description: getFirebaseAuthErrorMessage(error),
+                variant: 'destructive',
+            });
+        }
     } finally {
         setLoading(false);
     }
@@ -184,14 +204,24 @@ export default function LoginPage() {
       setLoading(true);
       setEmailError(null);
       
-      const userExists = await checkUserExistsByEmail(email);
-      
-      if (userExists) {
-          setStep(2);
-      } else {
-          setEmailError("No account found with this email address.");
-          emailInputRef.current?.focus();
+      try {
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+        if (methods.includes(GoogleAuthProvider.PROVIDER_ID)) {
+            // If the email is associated with a Google account, initiate Google sign-in.
+            await handleGoogleLogin();
+        } else if (methods.length > 0) {
+            // If email exists but not with Google (e.g., password), proceed to password step.
+            setStep(2);
+        } else {
+            // No account found with this email.
+            setEmailError("No account found with this email address.");
+            emailInputRef.current?.focus();
+        }
+      } catch (error) {
+        console.error("Error checking sign-in methods:", error);
+        setEmailError("An error occurred. Please try again.");
       }
+      
       setLoading(false);
   }
 
