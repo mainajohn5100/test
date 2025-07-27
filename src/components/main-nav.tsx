@@ -146,7 +146,7 @@ export function MainNav() {
           item.subItems && item.subItems.length > 0 ? (
             <AccordionItem value={`item-${index}`} key={index} className="border-b-0">
               <AccordionTrigger className="py-2 px-3 rounded-md hover:bg-sidebar-accent hover:no-underline text-sm font-medium group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10">
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-5 group-data-[collapsible=icon]:justify-center">
                   <item.icon className="h-5 w-5" />
                   <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                 </div>
