@@ -4,9 +4,9 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { signupSchema } from './schema';
-import { createOrganization, createUserInFirestore, setAuthUserClaims, sendVerificationEmail, createUserInAuth, getUserById, updateUser } from '@/lib/firestore';
+import { createOrganization, createUserInAuth, createUserInFirestore, setAuthUserClaims, sendVerificationEmail, getUserById, updateUser } from '@/lib/firestore';
 import type { User as AppUser } from '@/lib/data';
-import type { User as FirebaseUser } from 'firebase/auth';
+import { User as FirebaseUser, sendEmailVerification as firebaseSendEmailVerification } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 export async function signupAction(values: z.infer<typeof signupSchema>) {
