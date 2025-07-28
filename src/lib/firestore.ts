@@ -2,9 +2,10 @@
 
 import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, or, arrayUnion } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task } from './data';
+import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task, SLAPolicy } from './data';
 import { cache } from 'react';
 import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, sendEmailVerification as firebaseSendVerificationEmail, User as FirebaseUser } from 'firebase/auth';
+import { addHours } from 'date-fns';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -449,8 +450,25 @@ export async function updateUserPresence(userId: string): Promise<void> {
 
 export async function addTicket(ticketData: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
   try {
+    const org = await getOrganizationById(ticketData.organizationId);
+    const slaPolicy = org?.settings?.slaPolicies?.[0]; // Get the first (default) policy
+    
+    let slaFields = {};
+    if (slaPolicy) {
+      const target = slaPolicy.targets.find(t => t.priority === ticketData.priority);
+      if (target) {
+        const now = new Date();
+        slaFields = {
+          slaPolicyId: slaPolicy.id,
+          firstResponseDue: addHours(now, target.firstResponseHours).toISOString(),
+          resolutionDue: addHours(now, target.resolutionHours).toISOString(),
+        }
+      }
+    }
+
     const docRef = await addDoc(collection(db, 'tickets'), {
       ...ticketData,
+      ...slaFields,
       status: 'New',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),

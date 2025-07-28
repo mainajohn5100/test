@@ -3,7 +3,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { Organization, WhatsAppSettings, CannedResponse } from '@/lib/data';
+import type { Organization, WhatsAppSettings, CannedResponse, SLAPolicy } from '@/lib/data';
 import { useAuth } from './auth-context';
 import { getOrganizationById, updateOrganizationSettings } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -28,9 +28,22 @@ const DEFAULT_CANNED_RESPONSES: CannedResponse[] = [
     { title: "Resolution Confirmation", content: "We've implemented a fix for the issue you reported. Can you please confirm that everything is working as expected now?" },
 ];
 
+const DEFAULT_SLA_POLICIES: SLAPolicy[] = [
+    {
+        id: 'default-sla',
+        name: 'Default Policy',
+        targets: [
+            { priority: 'Urgent', firstResponseHours: 1, resolutionHours: 4 },
+            { priority: 'High', firstResponseHours: 4, resolutionHours: 24 },
+            { priority: 'Medium', firstResponseHours: 8, resolutionHours: 72 },
+            { priority: 'Low', firstResponseHours: 24, resolutionHours: 168 },
+        ]
+    }
+];
+
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
-interface OrgSettings extends Omit<Required<Organization>['settings'], 'emailTemplates' | 'excludeClosedTickets' | 'loadingScreenStyle' | 'aiGreetingsEnabled' | 'ticketStatuses' | 'cannedResponses'> {}
+interface OrgSettings extends Omit<Required<Organization>['settings'], 'emailTemplates' | 'excludeClosedTickets' | 'loadingScreenStyle' | 'aiGreetingsEnabled' | 'ticketStatuses' | 'cannedResponses' | 'slaPolicies'> {}
 
 // Merging local settings with DB settings for a comprehensive context
 interface SettingsContextType extends OrgSettings {
@@ -55,6 +68,8 @@ interface SettingsContextType extends OrgSettings {
   setTicketStatuses: (statuses: string[]) => Promise<boolean>;
   cannedResponses: CannedResponse[];
   setCannedResponses: (responses: CannedResponse[]) => Promise<boolean>;
+  slaPolicies: SLAPolicy[];
+  setSlaPolicies: (policies: SLAPolicy[]) => Promise<boolean>;
   
   // New local/hybrid settings
   loadingScreenStyle: LoadingScreenStyle;
@@ -77,6 +92,7 @@ const defaultOrgSettings: Required<Organization>['settings'] = {
     excludeClosedTickets: false,
     ticketStatuses: DEFAULT_TICKET_STATUSES,
     cannedResponses: DEFAULT_CANNED_RESPONSES,
+    slaPolicies: DEFAULT_SLA_POLICIES,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -237,8 +253,10 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         whatsappSettings: orgSettings?.whatsapp ?? defaultOrgSettings.whatsapp,
         ticketStatuses: orgSettings?.ticketStatuses ?? DEFAULT_TICKET_STATUSES,
         cannedResponses: orgSettings?.cannedResponses ?? DEFAULT_CANNED_RESPONSES,
+        slaPolicies: orgSettings?.slaPolicies ?? DEFAULT_SLA_POLICIES,
         setTicketStatuses: (statuses: string[]) => updateOrgSetting({ ticketStatuses: statuses }),
         setCannedResponses: (responses: CannedResponse[]) => updateOrgSetting({ cannedResponses: responses }),
+        setSlaPolicies: (policies: SLAPolicy[]) => updateOrgSetting({ slaPolicies: policies }),
         setAgentPanelEnabled: (enabled: boolean) => updateOrgSetting({ agentPanelEnabled: enabled }),
         setClientPanelEnabled: (enabled: boolean) => updateOrgSetting({ clientPanelEnabled: enabled }),
         setProjectsEnabled: (enabled: boolean) => updateOrgSetting({ projectsEnabled: enabled }),

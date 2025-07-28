@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { PageHeader } from "@/components/page-header";
@@ -14,6 +15,7 @@ import { EmailTemplatesForm } from "@/components/settings/email-templates-form";
 import { Loader } from "lucide-react";
 import { StatusTagsForm } from "@/components/settings/status-tags-form";
 import { CannedResponsesForm } from "@/components/settings/canned-responses-form";
+import { SlaPoliciesForm } from "@/components/settings/sla-policies-form";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -204,6 +206,9 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <StatusTagsForm />
                     <CannedResponsesForm />
+                    <div className="lg:col-span-2">
+                        <SlaPoliciesForm />
+                    </div>
                 </div>
             </TabsContent>
         )}

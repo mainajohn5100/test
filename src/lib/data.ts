@@ -14,6 +14,18 @@ export type TicketConversation = {
     createdAt: string;
 }
 
+export type SLATarget = {
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  firstResponseHours: number;
+  resolutionHours: number;
+};
+
+export type SLAPolicy = {
+  id: string;
+  name: string;
+  targets: SLATarget[];
+};
+
 export type Ticket = {
   id: string;
   title: string;
@@ -36,6 +48,10 @@ export type Ticket = {
   clientCanReply?: boolean;
   statusLastSetBy?: 'Admin' | 'Agent' | 'Client' | 'System';
   priorityLastSetBy?: 'Admin' | 'Agent' | 'Client' | 'System';
+  // SLA Fields
+  slaPolicyId?: string;
+  firstResponseDue?: string;
+  resolutionDue?: string;
 };
 
 export type User = {
@@ -138,6 +154,7 @@ export type Organization = {
     whatsapp?: Partial<WhatsAppSettings>;
     ticketStatuses?: string[];
     cannedResponses?: CannedResponse[];
+    slaPolicies?: SLAPolicy[];
     // Hybrid / Org-level settings
     excludeClosedTickets?: boolean;
   }
