@@ -11,18 +11,20 @@ import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Dia
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { KeyRound, Loader } from "lucide-react";
+import { KeyRound, Loader, ExternalLink } from "lucide-react";
 import type { User } from "@/lib/data";
 import { updateUserSchema } from "@/app/(app)/users/schema";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserAction } from "@/app/(app)/users/actions";
 import { useAuth } from "@/contexts/auth-context";
 import { ChangePasswordForm } from "./change-password-form";
-import { sendPasswordResetEmail } from "@/lib/firestore";
+import { GoogleIcon } from "../icons";
+import Link from "next/link";
+
 
 export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open: boolean) => void }) {
   const { toast } = useToast();
-  const { refreshUser } = useAuth();
+  const { firebaseUser, refreshUser } = useAuth();
   const [isPending, startTransition] = React.useTransition();
   const [isPasswordDialogOpen, setPasswordDialogOpen] = React.useState(false);
 
@@ -36,6 +38,10 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
       email: user.email,
     },
   });
+  
+  const isGoogleSignIn = firebaseUser?.providerData.some(
+    (provider) => provider.providerId === 'google.com'
+  );
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -72,24 +78,6 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
           variant: "destructive",
         });
       }
-    });
-  };
-
-   const handlePasswordReset = () => {
-    startTransition(async () => {
-        try {
-            await sendPasswordResetEmail(user.email);
-            toast({
-                title: 'Password Reset Email Sent',
-                description: 'Please check your inbox to reset your password.',
-            });
-        } catch (error) {
-            toast({
-                title: 'Error',
-                description: 'Failed to send password reset email.',
-                variant: 'destructive',
-            });
-        }
     });
   };
 
@@ -157,7 +145,25 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
+              {isGoogleSignIn ? (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Change Password</DialogTitle>
+                    <DialogDescription>
+                      You are signed in with a Google account. To change your password, please visit your Google Account settings.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Button asChild>
+                    <Link href="https://myaccount.google.com/security" target="_blank">
+                       <GoogleIcon className="mr-2 h-4 w-4"/>
+                       Go to Google Settings
+                       <ExternalLink className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </>
+              ) : (
                 <ChangePasswordForm setOpen={setPasswordDialogOpen} />
+              )}
             </DialogContent>
           </Dialog>
         </div>
