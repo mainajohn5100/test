@@ -53,6 +53,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TipTapLink from '@tiptap/extension-link';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SlaStatus } from "@/components/tickets/sla-status";
 
 const categories: Ticket['category'][] = ['General', 'Support', 'Advertising', 'Billing'];
 
@@ -810,6 +811,7 @@ export default function ViewTicketPage() {
                                                     <div className="space-y-4 pt-4">
                                                     <TicketDetailsCard {...detailProps} />
                                                     <ClientDetailsCard ticket={ticket} reporter={reporter} reporterEmail={reporterEmail} />
+                                                    <SlaStatus ticket={ticket} />
                                                     </div>
                                                 </ScrollArea>
                                             </SheetContent>
@@ -950,6 +952,7 @@ export default function ViewTicketPage() {
             <div className="hidden md:block md:col-span-1 space-y-4">
                 <TicketDetailsCard {...detailProps} />
                 <ClientDetailsCard ticket={ticket} reporter={reporter} reporterEmail={reporterEmail} />
+                <SlaStatus ticket={ticket} />
             </div>
         </div>
       </div>

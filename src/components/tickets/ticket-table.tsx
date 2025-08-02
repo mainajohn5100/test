@@ -15,11 +15,13 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Ticket, User } from "@/lib/data";
 import { TicketTableRowActions } from "./ticket-table-row-actions";
-import { formatDistanceToNow, isValid } from "date-fns";
+import { formatDistanceToNow, isValid, differenceInMinutes } from "date-fns";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "../ui/tooltip";
+import { Clock } from "lucide-react";
 
 
 interface TicketTableProps {
@@ -46,6 +48,22 @@ const categoryVariantMap: { [key: string]: string } = {
   'Internal': 'text-violet-700 border-violet-500/50 bg-violet-500/10',
 };
 
+const getSlaStatus = (ticket: Ticket) => {
+    if (ticket.status === 'Closed' || ticket.status === 'Terminated' || !ticket.resolutionDue) {
+        return { status: 'Paused', color: 'text-gray-500', tooltip: 'SLA timer is paused' };
+    }
+    const now = new Date();
+    const resolutionDueDate = new Date(ticket.resolutionDue);
+    const minutesToResolution = differenceInMinutes(resolutionDueDate, now);
+
+    if (minutesToResolution < 0) {
+        return { status: 'Breached', color: 'text-red-500', tooltip: 'SLA has been breached' };
+    }
+    if (minutesToResolution < 60) {
+        return { status: 'At Risk', color: 'text-orange-500', tooltip: `SLA is at risk, due in ${minutesToResolution}m` };
+    }
+    return { status: 'On Track', color: 'text-green-500', tooltip: 'SLA is on track' };
+}
 
 export function TicketTable({ tickets, users }: TicketTableProps) {
   const router = useRouter();
@@ -78,9 +96,9 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
             <TableHead className="p-2 md:p-4">Reporter</TableHead>
             <TableHead className="p-2 md:p-4">Status</TableHead>
             <TableHead className="p-2 md:p-4">Priority</TableHead>
-            <TableHead className="p-2 md:p-4">Source</TableHead>
             <TableHead className="p-2 md:p-4">Assignee</TableHead>
             <TableHead className="p-2 md:p-4">Last Updated</TableHead>
+            <TableHead className="p-2 md:p-4">SLA</TableHead>
             <TableHead className="w-[50px] p-2 md:p-4"></TableHead>
             </TableRow>
         </TableHeader>
@@ -98,6 +116,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                   : '...';
 
                 const source = getTicketSource(ticket);
+                const sla = getSlaStatus(ticket);
 
                 return (
                 <TableRow key={ticket.id} onClick={() => router.push(`/tickets/view/${ticket.id}`)} className="cursor-pointer text-xs md:text-sm">
@@ -171,14 +190,6 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                         </Badge>
                     </TableCell>
                     <TableCell className="p-2 md:p-4">
-                        <Badge
-                          variant="outline"
-                          className={cn("capitalize", sourceVariantMap[source] || 'text-gray-700 border-gray-500/50 bg-gray-500/10')}
-                        >
-                          {source}
-                        </Badge>
-                    </TableCell>
-                    <TableCell className="p-2 md:p-4">
                     {assignee ? (
                         <Link href={`/users/${assignee.id}`} onClick={(e) => e.stopPropagation()} className="relative z-10">
                             <div className="flex items-center gap-2 hover:bg-muted p-1 rounded-md -m-1">
@@ -195,7 +206,21 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                     </TableCell>
                     <TableCell className="p-2 md:p-4">
                         {updatedAtDisplay}
-                    </TableCell> 
+                    </TableCell>
+                     <TableCell className="p-2 md:p-4">
+                        {sla && (
+                             <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Clock className={cn("h-4 w-4", sla.color)} />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{sla.tooltip}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                    </TableCell>
                     <TableCell className="p-2 md:p-4" onClick={(e) => e.stopPropagation()}>
                       <TicketTableRowActions ticket={ticket} />
                     </TableCell>
