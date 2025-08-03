@@ -44,11 +44,7 @@ const prompt = ai.definePrompt({
   - Recent Message: {{{recentMessagesSummary}}}
   {{else}}
     {{#if newTicketsToday}}
-        {{#if (eval "newTicketsToday === 1")}}
-            Looks like there's 1 new ticket for you to check out.
-        {{else}}
-            Looks like a busy day with {{newTicketsToday}} new tickets waiting for you.
-        {{/if}}
+        Looks like there's {{newTicketsToday}} new ticket{{#if (eval "newTicketsToday > 1")}}s{{/if}} waiting for you.
     {{else if openTickets}}
       The team is focused on clearing the {{openTickets}} open tickets.
     {{else if totalProjects}}
@@ -73,3 +69,4 @@ const generateDashboardGreetingFlow = ai.defineFlow(
     return output!;
   }
 );
+
