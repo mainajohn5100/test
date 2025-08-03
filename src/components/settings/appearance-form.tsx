@@ -46,8 +46,6 @@ export function AppearanceForm() {
     setLoadingScreenStyle,
     excludeClosedTickets,
     setExcludeClosedTickets,
-    aiGreetingsEnabled,
-    setAIGreetingsEnabled,
   } = settings;
 
   const form = useForm<AppearanceFormValues>({
@@ -265,28 +263,6 @@ export function AppearanceForm() {
                     onCheckedChange={setExcludeClosedTickets}
                     aria-label="Toggle excluding closed tickets"
                 />
-            </div>
-        </div>
-        <Separator />
-         <div className="space-y-4">
-            <h3 className="text-lg font-medium">AI Features</h3>
-            <FormDescription>
-                Manage AI-powered features for your personal account.
-            </FormDescription>
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">
-                  Enable AI Greetings
-                </FormLabel>
-                <FormDescription>
-                  Allow AI to generate a dynamic greeting on the dashboard.
-                </FormDescription>
-              </div>
-              <Switch
-                checked={aiGreetingsEnabled}
-                onCheckedChange={setAIGreetingsEnabled}
-                aria-label="Toggle AI greetings"
-              />
             </div>
         </div>
       </form>

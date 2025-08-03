@@ -43,7 +43,7 @@ const DEFAULT_SLA_POLICIES: SLAPolicy[] = [
 
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
-interface OrgSettings extends Omit<Required<Organization>['settings'], 'emailTemplates' | 'excludeClosedTickets' | 'loadingScreenStyle' | 'aiGreetingsEnabled' | 'ticketStatuses' | 'cannedResponses' | 'slaPolicies'> {}
+interface OrgSettings extends Omit<Required<Organization>['settings'], 'emailTemplates' | 'excludeClosedTickets' | 'loadingScreenStyle' | 'ticketStatuses' | 'cannedResponses' | 'slaPolicies'> {}
 
 // Merging local settings with DB settings for a comprehensive context
 interface SettingsContextType extends OrgSettings {
@@ -74,8 +74,6 @@ interface SettingsContextType extends OrgSettings {
   // New local/hybrid settings
   loadingScreenStyle: LoadingScreenStyle;
   setLoadingScreenStyle: (style: LoadingScreenStyle) => void;
-  aiGreetingsEnabled: boolean;
-  setAIGreetingsEnabled: (enabled: boolean) => void;
   excludeClosedTickets: boolean;
   setExcludeClosedTickets: (enabled: boolean) => void;
 }
@@ -124,7 +122,6 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const inAppNotifyKey = `in-app-notifications-${orgId}`;
     const emailNotifyKey = `email-notifications-${orgId}`;
     const loadingStyleKey = `loading-screen-style-${orgId}`;
-    const aiGreetingsKey = `ai-greetings-enabled-${orgId}`;
     const excludeClosedKey = `exclude-closed-tickets-${orgId}`;
 
     // Local-only settings that are not part of the organization document
@@ -132,7 +129,6 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [inAppNotifications, _setInAppNotifications] = useState(true);
     const [emailNotifications, _setEmailNotifications] = useState(false);
     const [loadingScreenStyle, _setLoadingScreenStyle] = useState<LoadingScreenStyle>('spinner');
-    const [aiGreetingsEnabled, _setAIGreetingsEnabled] = useState(false);
     const [excludeClosedTickets, _setExcludeClosedTickets] = useState(false);
 
     useEffect(() => {
@@ -141,9 +137,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setInAppNotifications(getItemFromStorage(inAppNotifyKey, true));
         _setEmailNotifications(getItemFromStorage(emailNotifyKey, false));
         _setLoadingScreenStyle(getItemFromStorage(loadingStyleKey, 'spinner'));
-        _setAIGreetingsEnabled(getItemFromStorage(aiGreetingsKey, false));
         _setExcludeClosedTickets(getItemFromStorage(excludeClosedKey, false));
-    }, [orgId, showFullScreenKey, inAppNotifyKey, emailNotifyKey, loadingStyleKey, aiGreetingsKey, excludeClosedKey]);
+    }, [orgId, showFullScreenKey, inAppNotifyKey, emailNotifyKey, loadingStyleKey, excludeClosedKey]);
     
     useEffect(() => {
         if (authLoading) return;
@@ -225,11 +220,6 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setLoadingScreenStyle(style);
         setLocalStorageItem(loadingStyleKey, style);
     };
-
-    const setAIGreetingsEnabled = (enabled: boolean) => {
-        _setAIGreetingsEnabled(enabled);
-        setLocalStorageItem(aiGreetingsKey, String(enabled));
-    };
     
     const value: SettingsContextType = {
         showFullScreenButton,
@@ -240,8 +230,6 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setEmailNotifications,
         loadingScreenStyle,
         setLoadingScreenStyle,
-        aiGreetingsEnabled,
-        setAIGreetingsEnabled,
         excludeClosedTickets,
         setExcludeClosedTickets: setExcludeClosedTicketsHandler,
         agentPanelEnabled: orgSettings?.agentPanelEnabled ?? defaultOrgSettings.agentPanelEnabled,
