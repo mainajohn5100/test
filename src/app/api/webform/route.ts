@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       organizationId,
       statusLastSetBy: 'Client',
       priorityLastSetBy: 'System',
+      status: 'New'
     };
 
     const newTicketId = await addTicket(ticketData);
