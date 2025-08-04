@@ -10,10 +10,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { signupSchema } from './schema';
-import { googleSignupAction, signupAction } from './actions';
+import { signupAction, completeOrgCreationAction } from './actions';
 import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { getUserById } from '@/lib/firestore';
+import { getUserById, createUserInFirestore } from '@/lib/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,8 +90,9 @@ export default function SignupPage() {
       const user = result.user;
 
       const appUser = await getUserById(user.uid);
-      if (appUser) {
-          // If user exists, treat it as a login
+      
+      if (appUser?.organizationId) {
+          // If user exists and has an org, treat it as a login
           await refreshUser();
           toast({
             title: "Login Successful",
@@ -101,7 +102,21 @@ export default function SignupPage() {
           return;
       }
       
-      // If user does not exist, proceed to step 2 for org creation
+      if (!appUser) {
+        // Create a shell user in Firestore if they don't exist at all
+        await createUserInFirestore(user.uid, {
+            name: user.displayName || 'New User',
+            email: user.email || '',
+            avatar: user.photoURL || '',
+            role: 'Admin',
+            status: 'active',
+            activityIsPublic: false,
+            organizationId: '', // To be filled in next step
+            phone: ''
+        });
+      }
+
+      // Proceed to step 2 for org creation
       form.setValue('name', user.displayName || '');
       form.setValue('email', user.email || '');
       setGoogleUser(user);
@@ -130,14 +145,7 @@ export default function SignupPage() {
     }
     setIsPending(true);
     
-    const simpleUserData = {
-        uid: googleUser.uid,
-        displayName: googleUser.displayName,
-        email: googleUser.email,
-        photoURL: googleUser.photoURL
-    };
-
-    googleSignupAction(simpleUserData, values.organizationName)
+    completeOrgCreationAction(googleUser.uid, values.organizationName)
         .then(async (result) => {
             if (result?.error) {
                  toast({

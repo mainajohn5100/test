@@ -57,50 +57,6 @@ export async function signupAction(values: z.infer<typeof signupSchema>) {
     }
 }
 
-export async function googleSignupAction(
-    userData: { uid: string; displayName: string | null; email: string | null; photoURL: string | null; },
-    organizationName: string
-) {
-    const { uid, displayName, email, photoURL } = userData;
-    try {
-        const appUser = await getUserById(uid);
-        if (appUser && appUser.organizationId) {
-            console.log(`User ${uid} already exists with an organization. Skipping creation.`);
-            return { success: true, message: "User already exists." };
-        }
-        
-        const organizationId = await createOrganization(organizationName);
-
-        const newUser: Omit<AppUser, 'id'> = {
-            name: displayName || 'New User',
-            email: email || '',
-            role: 'Admin', // Default role for new Google signups
-            avatar: photoURL || `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=GU`,
-            organizationId: organizationId,
-            activityIsPublic: false,
-            status: 'active',
-            phone: ''
-        };
-
-        if (appUser) { // User exists but without an org
-            await updateUser(uid, { organizationId });
-        } else { // New user
-            await createUserInFirestore(uid, newUser);
-        }
-
-        await setAuthUserClaims(uid, {
-            organizationId,
-            role: 'Admin',
-        });
-
-        return { success: true };
-
-    } catch (error: any) {
-        console.error("Error in googleSignupAction:", error);
-        return { error: error.message || 'An unexpected error occurred during Google signup.' };
-    }
-}
-
 export async function completeOrgCreationAction(userId: string, organizationName: string) {
     if (!userId || !organizationName) {
         return { error: "User ID and Organization Name are required." };
@@ -116,13 +72,32 @@ export async function completeOrgCreationAction(userId: string, organizationName
         }
 
         const organizationId = await createOrganization(organizationName);
+        
+        // This is crucial: Create the user in Firestore if they signed up with Google
+        // but didn't exist in our DB yet.
+        if (!user.name) { // A simple check to see if it's a shell user
+             const fbUser = auth.currentUser;
+             const newUser: Omit<AppUser, 'id'> = {
+                name: fbUser?.displayName || 'New User',
+                email: fbUser?.email || '',
+                role: 'Admin',
+                avatar: fbUser?.photoURL || `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=GU`,
+                organizationId: organizationId,
+                activityIsPublic: false,
+                status: 'active',
+                phone: ''
+            };
+            await createUserInFirestore(userId, newUser);
+        } else {
+            await updateUser(userId, { organizationId });
+        }
+
 
         await setAuthUserClaims(userId, {
             organizationId,
-            role: user.role,
+            role: user.role || 'Admin', // Default to Admin if role isn't set
         });
 
-        await updateUser(userId, { organizationId });
 
         return { success: true };
     } catch (error: any) {
