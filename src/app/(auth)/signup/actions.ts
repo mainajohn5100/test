@@ -58,28 +58,41 @@ export async function signupAction(values: z.infer<typeof signupSchema>) {
 }
 
 export async function googleSignupAction(
-    userData: { uid: string; displayName: string | null; email: string | null; photoURL: string | null; }
+    userData: { uid: string; displayName: string | null; email: string | null; photoURL: string | null; },
+    organizationName: string
 ) {
     const { uid, displayName, email, photoURL } = userData;
     try {
         const appUser = await getUserById(uid);
-        if (appUser) {
-            console.log(`User ${uid} already exists. Skipping creation.`);
+        if (appUser && appUser.organizationId) {
+            console.log(`User ${uid} already exists with an organization. Skipping creation.`);
             return { success: true, message: "User already exists." };
         }
         
+        const organizationId = await createOrganization(organizationName);
+
         const newUser: Omit<AppUser, 'id'> = {
             name: displayName || 'New User',
             email: email || '',
             role: 'Admin', // Default role for new Google signups
             avatar: photoURL || `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=GU`,
-            organizationId: '', // Will be set after org creation step
+            organizationId: organizationId,
             activityIsPublic: false,
             status: 'active',
             phone: ''
         };
 
-        await createUserInFirestore(uid, newUser);
+        if (appUser) { // User exists but without an org
+            await updateUser(uid, { organizationId });
+        } else { // New user
+            await createUserInFirestore(uid, newUser);
+        }
+
+        await setAuthUserClaims(uid, {
+            organizationId,
+            role: 'Admin',
+        });
+
         return { success: true };
 
     } catch (error: any) {
