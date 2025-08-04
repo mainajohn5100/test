@@ -98,7 +98,6 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                     className="mt-1" 
                     accept="image/png, image/jpeg, image/gif"
                     onChange={handleFileChange}
-                    disabled
                   />
                   <p className="text-xs text-muted-foreground pt-1">
                       Upload a new profile picture.
