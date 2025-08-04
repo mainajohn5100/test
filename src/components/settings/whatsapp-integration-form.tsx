@@ -18,13 +18,11 @@ export function WhatsAppIntegrationForm() {
     const { whatsappSettings, setWhatsappSettings } = useSettings();
     const [isSaving, startTransition] = React.useTransition();
     
-    // Safely initialize state, defaulting to empty strings if whatsappSettings is not yet available.
     const [sid, setSid] = useState('');
     const [token, setToken] = useState('');
     const [phone, setPhone] = useState('');
     const [template, setTemplate] = useState('');
     
-    // Effect to update local state once settings are loaded from context.
     useEffect(() => {
         if (whatsappSettings) {
             setSid(whatsappSettings.accountSid || '');
@@ -32,9 +30,8 @@ export function WhatsAppIntegrationForm() {
             setPhone(whatsappSettings.phoneNumber || '');
             setTemplate(whatsappSettings.newTicketTemplate || '');
         }
-    }, [whatsappSettings]); 
-    //TODO - replace the base URL with a custom one, after acquisition.
-    //TODO - add NEXT_PUBLIC_BASE_URL to .env
+    }, [whatsappSettings]);
+    
     const webhookUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://requestflow.netlify.app'}/api/inbound-whatsapp`;
 
     const handleSave = () => {
@@ -44,16 +41,16 @@ export function WhatsAppIntegrationForm() {
         }
 
         startTransition(async () => {
-            try {
-                await setWhatsappSettings({
-                    provider: 'twilio',
-                    accountSid: sid,
-                    authToken: token,
-                    phoneNumber: phone,
-                    newTicketTemplate: template,
-                });
+            const success = await setWhatsappSettings({
+                provider: 'twilio',
+                accountSid: sid,
+                authToken: token,
+                phoneNumber: phone,
+                newTicketTemplate: template,
+            });
+            if (success) {
                 toast({ title: "Settings Saved", description: "Your WhatsApp integration settings have been updated." });
-            } catch (error) {
+            } else {
                 toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
             }
         });
