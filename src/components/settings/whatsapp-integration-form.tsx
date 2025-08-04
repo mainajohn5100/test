@@ -76,12 +76,12 @@ export function WhatsAppIntegrationForm() {
                   <AlertTitle>How to Connect Your Number</AlertTitle>
                   <AlertDescription>
                     <ol className="list-decimal list-inside space-y-1 mt-2">
-                        <li>Ensure you have a <a href="https://business.facebook.com/overview" target="_blank" rel="noopener noreferrer" className="underline">Facebook Business Manager</a> account.</li>
-                        <li>Create or log in to your <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="underline">Twilio account</a>.</li>
-                        <li>Follow Twilio's guide to <a href="https://www.twilio.com/docs/whatsapp/self-sign-up" target="_blank" rel="noopener noreferrer" className="underline">connect your WhatsApp Business Profile</a>. You will verify ownership of your number during this process.</li>
-                        <li>Once complete, find your **Account SID** and **Auth Token** on your Twilio Console dashboard.</li>
+                        <li>Ensure you have a <b><a href="https://business.facebook.com/overview" target="_blank" rel="noopener noreferrer" className="underline">Facebook Business Manager</a></b> account.</li>
+                        <li>Create or log in to your <b><a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="underline">Twilio account</a></b>.</li>
+                        <li>Follow Twilio's guide to<b> <a href="https://www.twilio.com/docs/whatsapp/self-sign-up" target="_blank" rel="noopener noreferrer" className="underline">connect your WhatsApp Business Profile</a></b>. You will verify ownership of your number during this process.</li>
+                        <li>Once complete, find your <b>Account SID</b> and <b>Auth Token</b> on your Twilio Console dashboard.</li>
                         <li>Enter your credentials and phone number below.</li>
-                        <li>Copy the webhook URL below and paste it into your Twilio phone number's messaging configuration for "A MESSAGE COMES IN".</li>
+                        <li>Copy the webhook URL below and paste it into your Twilio's phone number messaging configuration for "A MESSAGE COMES IN".</li>
                     </ol>
                   </AlertDescription>
                 </Alert>

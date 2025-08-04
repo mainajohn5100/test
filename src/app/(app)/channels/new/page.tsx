@@ -4,7 +4,7 @@
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, MessageCircle } from "lucide-react";
+import { Mail, MessageCircle, FileText } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -22,6 +22,13 @@ const channels = [
         icon: MessageCircle,
         href: '/channels/setup/whatsapp',
         tags: ['Twilio']
+    },
+    {
+        name: 'Web Form',
+        description: 'Embed a ticket submission form directly on your own website.',
+        icon: FileText,
+        href: '/channels/setup/webform',
+        tags: ['Embed']
     }
 ]
 
