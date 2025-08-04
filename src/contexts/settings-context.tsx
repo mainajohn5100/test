@@ -72,8 +72,6 @@ interface SettingsContextType extends OrgSettings {
   setSlaPolicies: (policies: SLAPolicy[]) => Promise<boolean>;
   
   // New local/hybrid settings
-  loadingScreenStyle: LoadingScreenStyle;
-  setLoadingScreenStyle: (style: LoadingScreenStyle) => void;
   excludeClosedTickets: boolean;
   setExcludeClosedTickets: (enabled: boolean) => void;
 }
@@ -121,14 +119,12 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const showFullScreenKey = `show-fullscreen-button-${orgId}`;
     const inAppNotifyKey = `in-app-notifications-${orgId}`;
     const emailNotifyKey = `email-notifications-${orgId}`;
-    const loadingStyleKey = `loading-screen-style-${orgId}`;
     const excludeClosedKey = `exclude-closed-tickets-${orgId}`;
 
     // Local-only settings that are not part of the organization document
     const [showFullScreenButton, _setShowFullScreenButton] = useState(true);
     const [inAppNotifications, _setInAppNotifications] = useState(true);
     const [emailNotifications, _setEmailNotifications] = useState(false);
-    const [loadingScreenStyle, _setLoadingScreenStyle] = useState<LoadingScreenStyle>('spinner');
     const [excludeClosedTickets, _setExcludeClosedTickets] = useState(false);
 
     useEffect(() => {
@@ -136,9 +132,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         _setShowFullScreenButton(getItemFromStorage(showFullScreenKey, true));
         _setInAppNotifications(getItemFromStorage(inAppNotifyKey, true));
         _setEmailNotifications(getItemFromStorage(emailNotifyKey, false));
-        _setLoadingScreenStyle(getItemFromStorage(loadingStyleKey, 'spinner'));
         _setExcludeClosedTickets(getItemFromStorage(excludeClosedKey, false));
-    }, [orgId, showFullScreenKey, inAppNotifyKey, emailNotifyKey, loadingStyleKey, excludeClosedKey]);
+    }, [orgId, showFullScreenKey, inAppNotifyKey, emailNotifyKey, excludeClosedKey]);
     
     useEffect(() => {
         if (authLoading) return;
@@ -216,11 +211,6 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setLocalStorageItem(emailNotifyKey, String(enabled));
     };
     
-    const setLoadingScreenStyle = (style: LoadingScreenStyle) => {
-        _setLoadingScreenStyle(style);
-        setLocalStorageItem(loadingStyleKey, style);
-    };
-    
     const value: SettingsContextType = {
         showFullScreenButton,
         setShowFullScreenButton,
@@ -228,8 +218,6 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         setInAppNotifications,
         emailNotifications,
         setEmailNotifications,
-        loadingScreenStyle,
-        setLoadingScreenStyle,
         excludeClosedTickets,
         setExcludeClosedTickets: setExcludeClosedTicketsHandler,
         agentPanelEnabled: orgSettings?.agentPanelEnabled ?? defaultOrgSettings.agentPanelEnabled,

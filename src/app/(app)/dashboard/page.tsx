@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -15,7 +16,6 @@ import { format, differenceInHours, isToday, eachDayOfInterval, subDays, isValid
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { useSettings } from '@/contexts/settings-context';
-import { DashboardSkeleton } from '@/components/dashboard-skeleton';
 import { collection, query, where, onSnapshot, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,7 @@ import { htmlToText } from 'html-to-text';
 export default function DashboardPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { excludeClosedTickets, loadingScreenStyle } = useSettings();
+  const { excludeClosedTickets } = useSettings();
   const [loading, setLoading] = React.useState(true);
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
@@ -90,9 +90,6 @@ export default function DashboardPage() {
   }, [tickets, excludeClosedTickets]);
 
   if (loading || !user) {
-    if (loadingScreenStyle === 'skeleton') {
-        return <DashboardSkeleton />;
-    }
     return (
       <div className="flex h-full items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />

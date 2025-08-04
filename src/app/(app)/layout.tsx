@@ -1,4 +1,5 @@
 
+
 'use client';
 import React from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
 import { Loader, ShieldAlert } from "lucide-react";
 import { useInactivity } from "@/hooks/use-inactivity";
-import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import { doc, onSnapshot } from "firebase/firestore";
 import type { User } from "@/lib/data";
 import { updateUserPresence } from "@/lib/firestore";
@@ -23,7 +23,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     agentPanelEnabled, 
     clientPanelEnabled, 
     loading: settingsLoading,
-    loadingScreenStyle 
   } = useSettings();
   const router = useRouter();
   const { toast } = useToast();
@@ -125,13 +124,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user?.id, handleLogout]);
 
   if (authLoading || settingsLoading) {
-     if (loadingScreenStyle === 'skeleton') {
-        return (
-          <AppShell>
-            <DashboardSkeleton />
-          </AppShell>
-        );
-    }
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin" />
