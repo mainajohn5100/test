@@ -9,8 +9,8 @@ export default function WhatsAppSetupPage() {
     return (
         <div className="flex flex-col gap-6 max-w-2xl mx-auto">
             <PageHeader
-                title="Configure WhatsApp Channel"
-                description="Enable two-way conversations with your clients via WhatsApp using Twilio."
+                title="Connect Your WhatsApp Number"
+                description="Follow the steps below to connect your business's existing WhatsApp number using the Twilio API."
             />
             <WhatsAppIntegrationForm />
         </div>

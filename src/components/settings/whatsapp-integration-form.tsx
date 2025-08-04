@@ -66,19 +66,24 @@ export function WhatsAppIntegrationForm() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>WhatsApp Integration (Twilio)</CardTitle>
+                <CardTitle>Twilio Configuration</CardTitle>
                 <CardDescription>
-                    Receive tickets from WhatsApp by connecting your Twilio account.
+                    Connect your WhatsApp number via the Twilio API.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                  <Alert>
                   <CircleHelp className="h-4 w-4" />
-                  <AlertTitle>Setup Instructions</AlertTitle>
+                  <AlertTitle>How to Connect Your Number</AlertTitle>
                   <AlertDescription>
-                    1. Get a Twilio account and a WhatsApp-enabled phone number. <br />
-                    2. Enter your Account SID, Auth Token, and Twilio number below. <br />
-                    3. In your Twilio console, configure the webhook for incoming messages to point to the URL provided.
+                    <ol className="list-decimal list-inside space-y-1 mt-2">
+                        <li>Ensure you have a <a href="https://business.facebook.com/overview" target="_blank" rel="noopener noreferrer" className="underline">Facebook Business Manager</a> account.</li>
+                        <li>Create or log in to your <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="underline">Twilio account</a>.</li>
+                        <li>Follow Twilio's guide to <a href="https://www.twilio.com/docs/whatsapp/self-sign-up" target="_blank" rel="noopener noreferrer" className="underline">connect your WhatsApp Business Profile</a>. You will verify ownership of your number during this process.</li>
+                        <li>Once complete, find your **Account SID** and **Auth Token** on your Twilio Console dashboard.</li>
+                        <li>Enter your credentials and phone number below.</li>
+                        <li>Copy the webhook URL below and paste it into your Twilio phone number's messaging configuration for "A MESSAGE COMES IN".</li>
+                    </ol>
                   </AlertDescription>
                 </Alert>
 
@@ -132,7 +137,7 @@ export function WhatsAppIntegrationForm() {
                 </div>
                 
                  <div className="space-y-2">
-                    <Label htmlFor="twilio-phone">Your Business's Twilio WhatsApp Number</Label>
+                    <Label htmlFor="twilio-phone">Your Business's WhatsApp Number</Label>
                     <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
@@ -143,6 +148,9 @@ export function WhatsAppIntegrationForm() {
                             className="pl-9"
                         />
                     </div>
+                     <p className="text-sm text-muted-foreground">
+                        The number you registered on the WhatsApp Business Platform.
+                    </p>
                 </div>
                 
                  <div className="flex justify-end">
