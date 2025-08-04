@@ -11,6 +11,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Textarea } from '../ui/textarea';
 
 export function WhatsAppIntegrationForm() {
     const { toast } = useToast();
@@ -21,6 +22,7 @@ export function WhatsAppIntegrationForm() {
     const [sid, setSid] = useState('');
     const [token, setToken] = useState('');
     const [phone, setPhone] = useState('');
+    const [template, setTemplate] = useState('');
     
     // Effect to update local state once settings are loaded from context.
     useEffect(() => {
@@ -28,6 +30,7 @@ export function WhatsAppIntegrationForm() {
             setSid(whatsappSettings.accountSid || '');
             setToken(whatsappSettings.authToken || '');
             setPhone(whatsappSettings.phoneNumber || '');
+            setTemplate(whatsappSettings.newTicketTemplate || '');
         }
     }, [whatsappSettings]); 
     //TODO - replace the base URL with a custom one, after acquisition.
@@ -36,7 +39,7 @@ export function WhatsAppIntegrationForm() {
 
     const handleSave = () => {
         if (!sid || !token || !phone) {
-            toast({ title: 'Missing Information', description: 'Please fill out all fields.', variant: 'destructive' });
+            toast({ title: 'Missing Information', description: 'Please fill out all API credential fields.', variant: 'destructive' });
             return;
         }
 
@@ -47,6 +50,7 @@ export function WhatsAppIntegrationForm() {
                     accountSid: sid,
                     authToken: token,
                     phoneNumber: phone,
+                    newTicketTemplate: template,
                 });
                 toast({ title: "Settings Saved", description: "Your WhatsApp integration settings have been updated." });
             } catch (error) {
@@ -150,6 +154,20 @@ export function WhatsAppIntegrationForm() {
                     </div>
                      <p className="text-sm text-muted-foreground">
                         The number you registered on the WhatsApp Business Platform.
+                    </p>
+                </div>
+
+                 <div className="space-y-2">
+                    <Label htmlFor="whatsapp-template">New Ticket Auto-Reply Template</Label>
+                     <Textarea
+                        id="whatsapp-template"
+                        placeholder="Your auto-reply message..."
+                        value={template}
+                        onChange={(e) => setTemplate(e.target.value)}
+                        rows={4}
+                     />
+                    <p className="text-sm text-muted-foreground">
+                        Use placeholders like `{{user.name}}` and `{{ticket.id}}` to customize the message.
                     </p>
                 </div>
                 

@@ -137,6 +137,7 @@ export type WhatsAppSettings = {
   accountSid: string;
   authToken: string;
   phoneNumber: string; // The Twilio WhatsApp-enabled number
+  newTicketTemplate?: string;
 };
 
 export type Organization = {
