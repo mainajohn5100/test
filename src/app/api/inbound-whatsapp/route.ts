@@ -154,8 +154,7 @@ export async function POST(request: NextRequest) {
         // 6. Send confirmation reply via Twilio ONLY for new tickets
         const twilioClient = new Twilio(organization.settings.whatsapp.accountSid, organization.settings.whatsapp.authToken);
         
-        const defaultTemplate = `Thanks for contacting us, {{user.name}}! We've received your message and created ticket #{{ticket.id}}. An agent will be with you shortly.`;
-        const template = organization.settings.whatsapp.newTicketTemplate || defaultTemplate;
+        const template = `Thanks for contacting us, {{user.name}}! We've received your message and created ticket #{{ticket.id}}. An agent will be with you shortly.`;
         
         const replyBody = replacePlaceholders(template, {
             user: user,

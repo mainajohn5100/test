@@ -41,8 +41,6 @@ const DEFAULT_SLA_POLICIES: SLAPolicy[] = [
     }
 ];
 
-const DEFAULT_WHATSAPP_TEMPLATE = `Thanks for contacting us, {{user.name}}! We've received your message and created ticket #{{ticket.id}}. An agent will be with you shortly.`;
-
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
 interface OrgSettings extends Omit<Required<Organization>['settings'], 'emailTemplates' | 'excludeClosedTickets' | 'loadingScreenStyle' | 'ticketStatuses' | 'cannedResponses' | 'slaPolicies'> {}
@@ -88,9 +86,7 @@ const defaultOrgSettings: Required<Organization>['settings'] = {
     inactivityTimeout: 15,
     supportEmail: '',
     emailTemplates: {},
-    whatsapp: {
-        newTicketTemplate: DEFAULT_WHATSAPP_TEMPLATE,
-    },
+    whatsapp: {},
     excludeClosedTickets: false,
     ticketStatuses: DEFAULT_TICKET_STATUSES,
     cannedResponses: DEFAULT_CANNED_RESPONSES,

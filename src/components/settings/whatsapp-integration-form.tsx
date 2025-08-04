@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -11,7 +12,6 @@ import { useSettings } from '@/contexts/settings-context';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Textarea } from '../ui/textarea';
 
 export function WhatsAppIntegrationForm() {
     const { toast } = useToast();
@@ -21,14 +21,12 @@ export function WhatsAppIntegrationForm() {
     const [sid, setSid] = useState('');
     const [token, setToken] = useState('');
     const [phone, setPhone] = useState('');
-    const [template, setTemplate] = useState('');
     
     useEffect(() => {
         if (whatsappSettings) {
             setSid(whatsappSettings.accountSid || '');
             setToken(whatsappSettings.authToken || '');
             setPhone(whatsappSettings.phoneNumber || '');
-            setTemplate(whatsappSettings.newTicketTemplate || '');
         }
     }, [whatsappSettings]);
     
@@ -46,7 +44,6 @@ export function WhatsAppIntegrationForm() {
                 accountSid: sid,
                 authToken: token,
                 phoneNumber: phone,
-                newTicketTemplate: template,
             });
             if (success) {
                 toast({ title: "Settings Saved", description: "Your WhatsApp integration settings have been updated." });
@@ -65,11 +62,12 @@ export function WhatsAppIntegrationForm() {
     };
 
     return (
+        <>
         <Card>
             <CardHeader>
                 <CardTitle>Twilio Configuration</CardTitle>
                 <CardDescription>
-                    Connect your WhatsApp number via the Twilio API.
+                Connect your WhatsApp number via the Twilio API.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -153,20 +151,6 @@ export function WhatsAppIntegrationForm() {
                         The number you registered on the WhatsApp Business Platform.
                     </p>
                 </div>
-
-                 <div className="space-y-2">
-                    <Label htmlFor="whatsapp-template">New Ticket Auto-Reply Template</Label>
-                     <Textarea
-                        id="whatsapp-template"
-                        placeholder="Your auto-reply message..."
-                        value={template}
-                        onChange={(e) => setTemplate(e.target.value)}
-                        rows={4}
-                     />
-                    <p className="text-sm text-muted-foreground">
-                        Use placeholders like `{{user.name}}` and `{{ticket.id}}` to customize the message.
-                    </p>
-                </div>
                 
                  <div className="flex justify-end">
                     <Button onClick={handleSave} disabled={isSaving}>
@@ -176,5 +160,6 @@ export function WhatsAppIntegrationForm() {
                 </div>
             </CardContent>
         </Card>
+        </>
     );
 }
