@@ -75,7 +75,7 @@ export default function SupportPage() {
             </CardHeader>
             <CardContent className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="./ONBOARDING.md" target="_blank">
+                    <Link href="/ONBOARDING.md" target="_blank">
                         <BookOpen className="mr-2" />
                         Onboarding Guide
                     </Link>

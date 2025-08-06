@@ -1,4 +1,3 @@
-
 # RequestFlow Onboarding Guide
 
 Welcome to RequestFlow! This guide will help you get started, whether you're an Administrator setting up your organization, an Agent managing support tickets, or a Client submitting requests.
@@ -7,10 +6,16 @@ Welcome to RequestFlow! This guide will help you get started, whether you're an 
 
 ## Table of Contents
 1.  [For Administrators](#for-administrators)
-    *   [Initial Setup: Creating Your Organization](#initial-setup-creating-your-organization)
+    *   [Initial Setup](#initial-setup)
     *   [Managing Users](#managing-users)
     *   [Managing Projects](#managing-projects)
-    *   [Understanding the Settings Panel](#understanding-the-settings-panel-admin)
+    *   [Settings Overview](#settings-overview)
+        *   [Personalization](#1-personalization)
+        *   [Notifications](#2-notifications)
+        *   [Access Control](#3-access-control)
+        *   [Account Settings](#4-account)
+        *   [Email Templates](#5-email-templates)
+        *   [Workflow Settings](#6-workflow)
 2.  [For Agents](#for-agents)
     *   [Your First Login](#your-first-login)
     *   [Managing Tickets](#managing-tickets)
@@ -26,7 +31,7 @@ Welcome to RequestFlow! This guide will help you get started, whether you're an 
 
 As an Administrator, you have full control over your organization's instance of RequestFlow. Your primary responsibilities are setting up the application, managing users, and overseeing all activity.
 
-### Initial Setup: Creating Your Organization
+### Initial Setup
 Your journey begins at the signup page.
 1.  **Navigate to Signup**: Go to the application's signup page.
 2.  **Fill in Details**:
@@ -47,12 +52,11 @@ You can create and oversee all projects.
 *   **Navigate to Projects**: Click on "Projects" in the main navigation.
 *   **Create Project**: Click "Create New Project", fill in the details (name, description, manager, budget, deadline), and assign team members.
 
-### Understanding the Settings Panel (Admin)
+### Settings Overview
 The Settings page gives you granular control over your organization.
 
 #### **1. Personalization**
 *   **Mode**: Choose between `Light`, `Dark`, or `System` themes for the application's appearance. This setting is local to your browser.
-*   **Loading Screen**: Choose between a `Spinner` or `Skeleton` placeholder for loading screens. This is a personal preference.
 *   **Interface Elements**:
     *   **Show Full Screen Button**: Toggles the visibility of the full-screen mode button in the header.
     *   **Exclude Closed Tickets**: When checked, all default ticket and project views will hide items with a "Closed" or "Terminated" status. As an Admin, changing this sets the default for the entire organization.
@@ -61,23 +65,38 @@ The Settings page gives you granular control over your organization.
 *   **In-App Notifications**: Enable or disable the bell icon notifications in the app header.
 *   **Email Notifications**: Enable or disable receiving notifications via email.
 
-#### **3. Integrations**
-*   **Email-to-Ticket**: Configure automatic ticket creation from emails sent to a support address.
-    *   **Enable Email-to-Ticket**: Master switch to turn the feature on or off.
-    *   **Your Public Support Email**: The email address your clients will use (e.g., `support@yourcompany.com`).
-    *   **Your Unique Inbound Address**: The address you must forward emails *to*. You will need to set up this forwarding rule in your email provider's settings.
-*   **Email Templates**: Customize the content of all automated emails sent by the system. You can use placeholders like `{{user.name}}` or `{{ticket.title}}` to personalize messages.
-
-#### **4. Access Control**
+#### **3. Access Control**
 These are global settings for your entire organization.
 *   **Agent Panel / Client Panel**: Master switches to enable or disable access for all users with the "Agent" or "Client" role. Disabling a panel will prevent those users from logging in.
 *   **Enable Projects Module**: Globally turns the entire Projects feature on or off for all users.
 *   **Client Can Select Project**: If Projects are enabled, this allows clients to assign a new ticket to one of their associated projects during creation.
 
-#### **5. Account**
+#### **4. Account**
 *   **Edit Profile & Security**: Change your personal details (name, avatar) and update your password.
 *   **Public Activity**: If checked, other users can see the tickets and projects you're associated with on your public profile page.
 *   **Inactivity Timeout**: Set an organization-wide automatic logout time for inactive users.
+
+#### **5. Email Templates**
+Customize the content of all automated emails sent by the system.
+*   **How it Works**: The system uses a simple placeholder syntax. Any text enclosed in double curly braces `{{...}}` will be replaced with real data from the relevant ticket, project, or user.
+*   **Example**: The template `Hi {{user.name}}, your ticket "{{ticket.title}}" was updated.` will become `Hi Priya Patel, your ticket "Login button not working on Safari" was updated.`.
+*   **Available Placeholders**:
+    *   `{{ticket.id}}`: The ticket's unique ID.
+    *   `{{ticket.title}}`: The title of the ticket.
+    *   `{{ticket.status}}`: The new status of the ticket.
+    *   `{{ticket.priority}}`: The new priority of the ticket.
+    *   `{{user.name}}`: The full name of the email recipient.
+    *   `{{project.name}}`: The name of the associated project.
+    *   `{{replier.name}}`: The name of the person who replied to a ticket.
+    *   `{{inviter.name}}`: The name of the person who sent a project invitation.
+    *   `{{content}}`: The content of a reply in a ticket conversation.
+    *   `{{link}}`: A direct URL to the relevant ticket or project.
+
+#### **6. Workflow**
+This section allows you to customize core operational logic.
+*   **Ticket Statuses**: Add or remove custom statuses to perfectly match your team's workflow (e.g., "Awaiting Customer", "Escalated"). These statuses will appear in the dropdown menu on the ticket details page.
+*   **Canned Responses**: Create pre-written templates for common replies. Agents can access these from the ticket details page to respond to frequent inquiries quickly and consistently.
+*   **SLA Policies**: Define Service Level Agreement (SLA) goals for ticket response and resolution times based on priority. The system will automatically track these deadlines and display the status on each ticket.
 
 ---
 
@@ -88,7 +107,7 @@ As an Agent, your primary role is to manage and resolve support tickets and cont
 ### Your First Login
 An Administrator will create your account and provide you with an initial password.
 1.  Log in with your email and the provided password.
-2.  It is highly recommended to change your password immediately by going to `Settings` > `Account` > `Edit Profile & Security`.
+2.  It is highly recommended to change your password immediately by going to `Settings` > `Account`.
 3.  Customize your profile by adding an avatar.
 
 ### Managing Tickets
@@ -118,7 +137,7 @@ An Administrator from the organization you are working with will create an accou
 3.  Feel free to upload a profile photo to personalize your account.
 
 ### Submitting and Viewing Tickets
-*   **Create a Ticket**: Click "Tickets" > "Create Ticket" from the main menu. Fill in the title and a detailed description of your issue. You can also add attachments like screenshots.
+*   **Create a Ticket**: Click "Tickets" from the main menu and then "New Ticket". Fill in the title and a detailed description of your issue. You can also drag and drop attachments like screenshots directly into the form.
 *   **View Your Tickets**: The "Tickets" section will show you a list of all tickets you have submitted. You can filter them by status.
 *   **Reply to Tickets**: Click on any ticket to view the conversation. You can add a reply to provide more information or respond to an agent, as long as the ticket is not closed.
 
