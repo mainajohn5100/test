@@ -11,20 +11,42 @@ import type { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { signupSchema } from './schema';
 import { signupAction } from './actions';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useAuth } from '@/contexts/auth-context';
+import { getUserById, createUserInFirestore } from '@/lib/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Loader, TriangleAlert } from 'lucide-react';
-import { Logo } from '@/components/icons';
+import { Logo, GoogleIcon } from '@/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '../ui/separator';
 
 type SignupFormValues = z.infer<typeof signupSchema>;
+
+const getFirebaseAuthErrorMessage = (error: any) => {
+    if (error.code === 'auth/email-already-in-use') {
+        return 'An account already exists with this email. Please log in.';
+    }
+    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        return 'Sign-up process was cancelled.';
+    }
+     if (error.code === 'auth/account-exists-with-different-credential') {
+        return 'An account already exists with this email address using a different sign-in method.';
+    }
+    if (error.code === 'auth/invalid-api-key') {
+        return 'Invalid Firebase API Key. Please check your environment variables.'
+    }
+    return error.message || 'An unexpected error occurred. Please try again.';
+}
 
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -39,6 +61,48 @@ export default function SignupPage() {
       password: '',
     },
   });
+
+  const handleGoogleLogin = async () => {
+    setIsPending(true);
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const fbUser = result.user;
+
+        const appUser = await getUserById(fbUser.uid);
+
+        if (appUser && appUser.organizationId) {
+            toast({ title: 'Login Successful', description: 'Welcome back!' });
+        } else {
+            if (!appUser) {
+                await createUserInFirestore(fbUser.uid, {
+                    name: fbUser.displayName || 'New User',
+                    email: fbUser.email || '',
+                    avatar: fbUser.photoURL || '',
+                    role: 'Admin',
+                    status: 'active',
+                    activityIsPublic: false,
+                    organizationId: '',
+                    phone: ''
+                });
+            }
+            toast({ title: 'Welcome!', description: 'Just one more step to get started.' });
+        }
+
+        await refreshUser();
+        router.push('/dashboard');
+
+    } catch (error: any) {
+         toast({
+            title: 'Signup Failed',
+            description: getFirebaseAuthErrorMessage(error),
+            variant: 'destructive',
+        });
+    } finally {
+        setIsPending(false);
+    }
+  }
+
 
   const onSubmit = (values: SignupFormValues) => {
     if (!isFirebaseConfigured) return;
@@ -97,12 +161,19 @@ export default function SignupPage() {
           )}
 
             <div className="space-y-4">
-              <p className="text-center text-sm text-muted-foreground">
-                To sign up with Google, please go to the{' '}
-                <Link href="/login" className="font-semibold text-primary hover:underline">
-                  Login Page
-                </Link>.
-              </p>
+              <Button className="w-full" variant="outline" onClick={handleGoogleLogin} disabled={isPending || !isFirebaseConfigured}>
+                  {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
+                  Continue with Google
+              </Button>
+              <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                      <Separator />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                  </div>
+              </div>
+
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
