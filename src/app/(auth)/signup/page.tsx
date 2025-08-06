@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -23,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Loader, TriangleAlert } from 'lucide-react';
 import { Logo, GoogleIcon } from '@/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '../ui/separator';
+import { Separator } from '@/components/ui/separator';
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
