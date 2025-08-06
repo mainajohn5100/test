@@ -26,6 +26,8 @@ const defaultTemplates: EmailTemplate = {
   adminReplyToAgent: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
   clientReplyToAdmin: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
   agentReplyToAdmin: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
+  slaAtRisk: `Hi {{user.name}},\n\nThis is a notification that your assigned ticket "{{ticket.title}}" is at risk of breaching its SLA.\n\nPlease take action to resolve it soon.\n\n- The Support Team`,
+  slaBreached: `Hi {{user.name}},\n\nThis is a notification that your assigned ticket "{{ticket.title}}" has breached its SLA.\n\nPlease prioritize this ticket immediately.\n\n- The Support Team`,
 };
 
 export function EmailTemplatesForm() {
@@ -53,6 +55,8 @@ export function EmailTemplatesForm() {
           adminReplyToAgent: currentTemplates.adminReplyToAgent || defaultTemplates.adminReplyToAgent,
           clientReplyToAdmin: currentTemplates.clientReplyToAdmin || defaultTemplates.clientReplyToAdmin,
           agentReplyToAdmin: currentTemplates.agentReplyToAdmin || defaultTemplates.agentReplyToAdmin,
+          slaAtRisk: currentTemplates.slaAtRisk || defaultTemplates.slaAtRisk,
+          slaBreached: currentTemplates.slaBreached || defaultTemplates.slaBreached,
         });
       });
     }
@@ -218,9 +222,36 @@ export function EmailTemplatesForm() {
                 </div>
               </AccordionContent>
             </AccordionItem>
+             <AccordionItem value="item-4">
+              <AccordionTrigger className="hover:no-underline font-semibold">SLA Notifications</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                 <div>
+                  <h4 className="font-medium text-sm mb-1">SLA "At Risk" Warning</h4>
+                  <p className="text-sm text-muted-foreground pb-2">Sent to an agent when their assigned ticket is close to breaching its SLA.</p>
+                  <Controller
+                    name="slaAtRisk"
+                    control={control}
+                    render={({ field }) => (
+                      <Textarea {...field} rows={6} className="font-mono text-xs"/>
+                    )}
+                  />
+                </div>
+                 <div>
+                  <h4 className="font-medium text-sm mb-1">SLA "Breached" Notification</h4>
+                  <p className="text-sm text-muted-foreground pb-2">Sent to an agent when their assigned ticket has breached its SLA.</p>
+                  <Controller
+                    name="slaBreached"
+                    control={control}
+                    render={({ field }) => (
+                      <Textarea {...field} rows={6} className="font-mono text-xs"/>
+                    )}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
           <div className="flex justify-end">
-            <Button type="submit" disabled>{/*disabled={isPending || !isDirty}*/}
+            <Button type="submit" disabled={isPending || !isDirty}>
               {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
               Save Templates
             </Button>

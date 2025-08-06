@@ -107,7 +107,7 @@ export type Notification = {
   createdAt: string;
   read: boolean;
   link: string;
-  type?: 'new_assignee' | 'status_change' | 'priority_change' | 'new_reply';
+  type?: 'new_assignee' | 'status_change' | 'priority_change' | 'new_reply' | 'sla_warning';
   metadata?: Record<string, any>;
 };
 
@@ -123,6 +123,8 @@ export type EmailTemplate = {
   adminReplyToAgent: string;
   clientReplyToAdmin: string;
   agentReplyToAdmin: string;
+  slaAtRisk: string;
+  slaBreached: string;
 };
 
 export type LoadingScreenStyle = 'spinner' | 'skeleton';

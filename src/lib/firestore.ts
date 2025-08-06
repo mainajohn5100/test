@@ -5,7 +5,7 @@ import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task, SLAPolicy } from './data';
 import { cache } from 'react';
 import { EmailAuthProvider, reauthenticateWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail as firebaseSendPasswordResetEmail, sendEmailVerification as firebaseSendVerificationEmail, User as FirebaseUser } from 'firebase/auth';
-import { addHours } from 'date-fns';
+import { addHours, differenceInMinutes } from 'date-fns';
 
 // Helper to process raw document data, converting Timestamps
 function processDocData(data: DocumentData) {
@@ -207,6 +207,33 @@ export const getTicketsByReporter = cache(async (reporterName: string): Promise<
         console.error("Error fetching tickets by reporter:", error);
         return [];
     }
+});
+
+export const getTicketsNearingSla = cache(async (): Promise<Ticket[]> => {
+  try {
+    const ticketsCol = collection(db, 'tickets');
+    const now = new Date();
+    // Fetch tickets that are active and have a resolution due date in the future
+    const q = query(
+        ticketsCol,
+        where("status", "in", ['New', 'Active', 'Pending']),
+        where("resolutionDue", ">", now.toISOString())
+    );
+    const ticketSnapshot = await getDocs(q);
+    
+    // Further filter in code for "at risk" (e.g., due within the next hour)
+    // Firestore can't do date arithmetic in queries like "due date < now + 1 hour"
+    return snapshotToData<Ticket>(ticketSnapshot).filter(ticket => {
+        if (!ticket.resolutionDue) return false;
+        const resolutionDueDate = new Date(ticket.resolutionDue);
+        const minutesToResolution = differenceInMinutes(resolutionDueDate, now);
+        return minutesToResolution > 0 && minutesToResolution <= 60; // "At Risk" is within 60 minutes
+    });
+
+  } catch (error) {
+    console.error("Error fetching tickets nearing SLA:", error);
+    return [];
+  }
 });
 
 
