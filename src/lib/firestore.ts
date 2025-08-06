@@ -209,29 +209,25 @@ export const getTicketsByReporter = cache(async (reporterName: string): Promise<
     }
 });
 
-export const getTicketsNearingSla = cache(async (): Promise<Ticket[]> => {
+export const getActionableSlaTickets = cache(async (): Promise<Ticket[]> => {
   try {
     const ticketsCol = collection(db, 'tickets');
-    const now = new Date();
-    // Fetch tickets that are active and have a resolution due date in the future
+    
+    // Fetch all tickets that are active and have an SLA policy applied.
+    // The previous logic was flawed because it didn't fetch tickets that had already breached.
     const q = query(
         ticketsCol,
         where("status", "in", ['New', 'Active', 'Pending']),
-        where("resolutionDue", ">", now.toISOString())
+        // We only need to know that resolutionDue is set, not its value.
+        // A simple inequality check works well for this "existence" check.
+        where("resolutionDue", "!=", null) 
     );
     const ticketSnapshot = await getDocs(q);
     
-    // Further filter in code for "at risk" (e.g., due within the next hour)
-    // Firestore can't do date arithmetic in queries like "due date < now + 1 hour"
-    return snapshotToData<Ticket>(ticketSnapshot).filter(ticket => {
-        if (!ticket.resolutionDue) return false;
-        const resolutionDueDate = new Date(ticket.resolutionDue);
-        const minutesToResolution = differenceInMinutes(resolutionDueDate, now);
-        return minutesToResolution > 0 && minutesToResolution <= 60; // "At Risk" is within 60 minutes
-    });
+    return snapshotToData<Ticket>(ticketSnapshot);
 
   } catch (error) {
-    console.error("Error fetching tickets nearing SLA:", error);
+    console.error("Error fetching actionable SLA tickets:", error);
     return [];
   }
 });

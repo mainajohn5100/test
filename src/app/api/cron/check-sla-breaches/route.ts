@@ -1,7 +1,7 @@
 
 
 import { NextResponse } from 'next/server';
-import { getTicketsNearingSla, getUserByName, createNotification, getOrganizationById } from '@/lib/firestore';
+import { getActionableSlaTickets, getUserByName, createNotification, getOrganizationById } from '@/lib/firestore';
 import { sendEmail } from '@/lib/email';
 import { differenceInMinutes } from 'date-fns';
 
@@ -17,11 +17,11 @@ export async function GET(request: Request) {
     console.log("CRON JOB: Checking for SLA breaches...");
 
     try {
-        const atRiskTickets = await getTicketsNearingSla();
+        const actionableTickets = await getActionableSlaTickets();
         const now = new Date();
         const notificationsCreated: string[] = [];
         
-        for (const ticket of atRiskTickets) {
+        for (const ticket of actionableTickets) {
             // This check prevents sending duplicate notifications if the cron job runs frequently.
             // A more robust solution might involve storing the last notification timestamp on the ticket.
             const hasExistingSlaWarning = false; // Placeholder for more advanced logic
@@ -37,8 +37,10 @@ export async function GET(request: Request) {
             const minutesToBreach = differenceInMinutes(resolutionDueDate, now);
 
             const isBreached = minutesToBreach <= 0;
-            const notificationType = isBreached ? 'breached' : 'at_risk';
+            const isAtRisk = minutesToBreach > 0 && minutesToBreach <= 60;
             
+            if (!isBreached && !isAtRisk) continue; // Skip if not breached or at risk
+
             let title: string;
             let description: string;
             let emailTemplate: string | undefined;
@@ -47,7 +49,7 @@ export async function GET(request: Request) {
                 title = `SLA Breached: ${ticket.title}`;
                 description = `Resolution time for this ticket has been exceeded.`;
                 emailTemplate = org.settings.emailTemplates.slaBreached;
-            } else {
+            } else { // At risk
                 title = `SLA Warning: ${ticket.title}`;
                 description = `This ticket is due for resolution in ${minutesToBreach} minutes.`;
                 emailTemplate = org.settings.emailTemplates.slaAtRisk;
@@ -60,7 +62,7 @@ export async function GET(request: Request) {
                 description,
                 link: `/tickets/view/${ticket.id}`,
                 type: 'sla_warning',
-                metadata: { ticketId: ticket.id, status: notificationType }
+                metadata: { ticketId: ticket.id, status: isBreached ? 'breached' : 'at_risk' }
             });
 
             // 2. Send Email Notification
@@ -79,7 +81,7 @@ export async function GET(request: Request) {
             notificationsCreated.push(ticket.id);
         }
 
-        const message = `SLA Check Complete. Found ${atRiskTickets.length} tickets at risk or breached. Processed notifications for: ${notificationsCreated.join(', ') || 'None'}.`;
+        const message = `SLA Check Complete. Found ${actionableTickets.length} tickets. Processed notifications for: ${notificationsCreated.join(', ') || 'None'}.`;
         console.log(message);
         return NextResponse.json({ success: true, message });
 
