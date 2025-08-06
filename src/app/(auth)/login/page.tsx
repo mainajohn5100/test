@@ -16,7 +16,7 @@ import { Eye, EyeOff, Loader, TriangleAlert, Mail, ArrowLeft } from 'lucide-reac
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { sendPasswordResetEmailAction, sendVerificationEmailAction } from './actions';
+import { sendPasswordResetEmailAction, sendVerificationEmailAction, checkUserExistsByEmail } from './actions';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
@@ -210,18 +210,22 @@ export default function LoginPage() {
       setEmailError(null);
       
       try {
-        const methods = await fetchSignInMethodsForEmail(auth, email);
-        if (methods.includes(GoogleAuthProvider.PROVIDER_ID)) {
-             toast({ title: "Account Found", description: "This email is linked to a Google account. Please sign in with Google.", duration: 5000 });
-             return;
-        } else if (methods.length > 0) {
+        const userExists = await checkUserExistsByEmail(email);
+        
+        if (userExists) {
+            // Before advancing, check if this email is a Google account to avoid confusion
+            const methods = await fetchSignInMethodsForEmail(auth, email);
+            if (methods.includes(GoogleAuthProvider.PROVIDER_ID)) {
+                toast({ title: "Use Google Sign-In", description: "This email is linked to a Google account. Please use the 'Continue with Google' button.", duration: 7000 });
+                return;
+            }
             setStep(2);
         } else {
             setEmailError("No account found. Please sign up first.");
             emailInputRef.current?.focus();
         }
       } catch (error) {
-        console.error("Error checking sign-in methods:", error);
+        console.error("Error checking user existence:", error);
         setEmailError("An error occurred. Please try again.");
       }
       
