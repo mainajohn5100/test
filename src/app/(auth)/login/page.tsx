@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail, linkWithCredential } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,10 +16,11 @@ import { Eye, EyeOff, Loader, TriangleAlert, Mail, ArrowLeft } from 'lucide-reac
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { sendPasswordResetEmailAction, sendVerificationEmailAction, checkUserExistsByEmail } from './actions';
+import { sendPasswordResetEmailAction, sendVerificationEmailAction } from './actions';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
+import { createUserInFirestore, getUserById } from '@/lib/firestore';
 
 // Helper to handle Firebase errors and provide user-friendly messages
 const getFirebaseAuthErrorMessage = (error: any) => {
@@ -113,37 +114,41 @@ export default function LoginPage() {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-        await signInWithPopup(auth, provider);
-        await refreshUser(); // Ensure user context is updated before redirect
+        const result = await signInWithPopup(auth, provider);
+        const fbUser = result.user;
+
+        // Check if user exists in our Firestore DB
+        const appUser = await getUserById(fbUser.uid);
+
+        if (appUser && appUser.organizationId) {
+            // User exists and has an org, proceed to dashboard
+             toast({ title: 'Login Successful', description: 'Welcome back!' });
+        } else {
+             // New user or user without an org. Create a shell user if they don't exist.
+            if (!appUser) {
+                await createUserInFirestore(fbUser.uid, {
+                    name: fbUser.displayName || 'New User',
+                    email: fbUser.email || '',
+                    avatar: fbUser.photoURL || '',
+                    role: 'Admin', // Default new signups to Admin
+                    status: 'active',
+                    activityIsPublic: false,
+                    organizationId: '', // This will be filled in the next step
+                    phone: ''
+                });
+            }
+            toast({ title: 'Welcome!', description: 'Just one more step to get started.' });
+        }
+
+        await refreshUser(); // This will update the auth context and trigger the CreateOrganizationFlow if needed
         router.push('/dashboard');
-        toast({ title: 'Login Successful', description: 'Welcome back!' });
 
     } catch (error: any) {
-        if (error.code === 'auth/account-exists-with-different-credential' && auth.currentUser) {
-            // This is the key part for linking accounts.
-            // If the user is already signed in (from the initial failed popup), we can link.
-            const credential = GoogleAuthProvider.credentialFromError(error);
-            if (credential) {
-                try {
-                    await linkWithCredential(auth.currentUser, credential);
-                    await refreshUser();
-                    router.push('/dashboard');
-                    toast({ title: 'Account Linked', description: 'You can now sign in with Google.' });
-                } catch (linkError) {
-                    toast({
-                        title: 'Linking Failed',
-                        description: getFirebaseAuthErrorMessage(linkError),
-                        variant: 'destructive',
-                    });
-                }
-            }
-        } else {
-             toast({
-                title: 'Login Failed',
-                description: getFirebaseAuthErrorMessage(error),
-                variant: 'destructive',
-            });
-        }
+         toast({
+            title: 'Login Failed',
+            description: getFirebaseAuthErrorMessage(error),
+            variant: 'destructive',
+        });
     } finally {
         setLoading(false);
     }
@@ -207,14 +212,12 @@ export default function LoginPage() {
       try {
         const methods = await fetchSignInMethodsForEmail(auth, email);
         if (methods.includes(GoogleAuthProvider.PROVIDER_ID)) {
-            // If the email is associated with a Google account, initiate Google sign-in.
-            await handleGoogleLogin();
+             toast({ title: "Account Found", description: "This email is linked to a Google account. Please sign in with Google.", duration: 5000 });
+             return;
         } else if (methods.length > 0) {
-            // If email exists but not with Google (e.g., password), proceed to password step.
             setStep(2);
         } else {
-            // No account found with this email.
-            setEmailError("No account found with this email address.");
+            setEmailError("No account found. Please sign up first.");
             emailInputRef.current?.focus();
         }
       } catch (error) {
@@ -251,7 +254,7 @@ export default function LoginPage() {
                 <div className="space-y-4">
                     <Button className="w-full" variant="outline" onClick={handleGoogleLogin} disabled={loading || !isFirebaseConfigured}>
                         {loading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
-                        Sign in with Google
+                        Continue with Google
                     </Button>
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">

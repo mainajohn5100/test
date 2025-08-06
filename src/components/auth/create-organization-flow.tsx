@@ -72,7 +72,7 @@ export function CreateOrganizationFlow({ user }: { user: User }) {
                         <FormItem>
                         <FormLabel>Organization Name</FormLabel>
                         <FormControl>
-                            <Input placeholder="e.g., Acme Inc." {...field} disabled={isPending} />
+                            <Input placeholder="e.g., Acme Inc." {...field} disabled={isPending} autoFocus/>
                         </FormControl>
                         <FormMessage />
                         </FormItem>

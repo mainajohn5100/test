@@ -73,25 +73,7 @@ export async function completeOrgCreationAction(userId: string, organizationName
 
         const organizationId = await createOrganization(organizationName);
         
-        // This is crucial: Create the user in Firestore if they signed up with Google
-        // but didn't exist in our DB yet.
-        if (!user.name) { // A simple check to see if it's a shell user
-             const fbUser = auth.currentUser;
-             const newUser: Omit<AppUser, 'id'> = {
-                name: fbUser?.displayName || 'New User',
-                email: fbUser?.email || '',
-                role: 'Admin',
-                avatar: fbUser?.photoURL || `https://placehold.co/32x32/BDE0FE/4A4A4A.png?text=GU`,
-                organizationId: organizationId,
-                activityIsPublic: false,
-                status: 'active',
-                phone: ''
-            };
-            await createUserInFirestore(userId, newUser);
-        } else {
-            await updateUser(userId, { organizationId });
-        }
-
+        await updateUser(userId, { organizationId });
 
         await setAuthUserClaims(userId, {
             organizationId,
