@@ -21,24 +21,13 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "../ui/tooltip";
-import { Clock } from "lucide-react";
+import { Clock, Mail, Briefcase, MessageCircle, FileText } from "lucide-react";
 
 
 interface TicketTableProps {
     tickets: Ticket[];
     users: User[];
 }
-
-const sourceVariantMap: { [key: string]: string } = {
-  'Project': 'text-purple-700 border-purple-500/50 bg-purple-500/10',
-  'Client Inquiry': 'text-sky-700 border-sky-500/50 bg-sky-500/10',
-  'Internal': 'text-gray-700 border-gray-500/50 bg-gray-500/10',
-  'Partner': 'text-rose-700 border-rose-500/50 bg-rose-500/10',
-  'Vendor': 'text-amber-700 border-amber-500/50 bg-amber-500/10',
-  'General Inquiry': 'text-cyan-700 border-cyan-500/50 bg-cyan-500/10',
-  'WhatsApp': 'text-green-700 border-green-500/50 bg-green-500/10',
-  'Email': 'text-sky-700 border-sky-500/50 bg-sky-500/10', // Generic email
-};
 
 const categoryVariantMap: { [key: string]: string } = {
   'Support': 'text-blue-700 border-blue-500/50 bg-blue-500/10',
@@ -65,18 +54,25 @@ const getSlaStatus = (ticket: Ticket) => {
     return { status: 'On Track', color: 'text-green-500', tooltip: 'SLA is on track' };
 }
 
+const getTicketSourceInfo = (ticket: Ticket) => {
+    switch (ticket.source) {
+        case 'Project':
+            return { name: 'Project', icon: Briefcase, color: 'text-purple-700' };
+        case 'WhatsApp':
+            return { name: 'WhatsApp', icon: MessageCircle, color: 'text-green-700' };
+        case 'General Inquiry':
+             // This source is used by the webform
+            return { name: 'Web Form', icon: FileText, color: 'text-cyan-700' };
+        default:
+            return { name: 'Email', icon: Mail, color: 'text-sky-700' };
+    }
+};
+
 export function TicketTable({ tickets, users }: TicketTableProps) {
   const router = useRouter();
   const { user } = useAuth();
   const userMapByName = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
   const userMapByEmail = React.useMemo(() => new Map(users.filter(u => u.email).map(u => [u.email, u])), [users]);
-
-  const getTicketSource = (ticket: Ticket) => {
-    if (ticket.source === 'WhatsApp' || ticket.source === 'Project') {
-      return ticket.source;
-    }
-    return 'Email';
-  }
 
   const filteredTickets = React.useMemo(() => {
     if (user?.role === 'Client') {
@@ -98,6 +94,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
             <TableHead className="p-2 md:p-4">Priority</TableHead>
             <TableHead className="p-2 md:p-4">Assignee</TableHead>
             <TableHead className="p-2 md:p-4">Last Updated</TableHead>
+            <TableHead className="p-2 md:p-4">Source</TableHead>
             <TableHead className="p-2 md:p-4">SLA</TableHead>
             <TableHead className="w-[50px] p-2 md:p-4"></TableHead>
             </TableRow>
@@ -115,7 +112,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                   ? formatDistanceToNow(updatedAtDate, { addSuffix: true })
                   : '...';
 
-                const source = getTicketSource(ticket);
+                const source = getTicketSourceInfo(ticket);
                 const sla = getSlaStatus(ticket);
 
                 return (
@@ -207,6 +204,18 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
                     <TableCell className="p-2 md:p-4">
                         {updatedAtDisplay}
                     </TableCell>
+                    <TableCell className="p-2 md:p-4">
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <source.icon className={cn("h-4 w-4", source.color)} />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{source.name}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </TableCell>
                      <TableCell className="p-2 md:p-4">
                         {sla && (
                              <TooltipProvider>
@@ -229,7 +238,7 @@ export function TicketTable({ tickets, users }: TicketTableProps) {
             })
             ) : (
             <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
+                <TableCell colSpan={10} className="h-24 text-center">
                 No tickets found.
                 </TableCell>
             </TableRow>

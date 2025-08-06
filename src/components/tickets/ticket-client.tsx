@@ -31,7 +31,7 @@ const priorityOrder: { [key in Ticket['priority']]: number } = {
   'Urgent': 3 
 };
 
-const EMAIL_SOURCES: Ticket['source'][] = ['Client Inquiry', 'Partner', 'Vendor', 'General Inquiry', 'Internal'];
+const EMAIL_SOURCES: Ticket['source'][] = ['Client Inquiry', 'Partner', 'Vendor', 'Internal'];
 
 export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
@@ -66,6 +66,8 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
         displayTickets = displayTickets.filter(t => t.source === 'WhatsApp');
       } else if (channelFilter === 'project') {
         displayTickets = displayTickets.filter(t => t.source === 'Project');
+      } else if (channelFilter === 'webform') {
+        displayTickets = displayTickets.filter(t => t.source === 'General Inquiry');
       }
     }
 

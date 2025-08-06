@@ -3,7 +3,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, MoreVertical, ListOrdered, Mail, MessageCircle, NotebookText, Briefcase, Filter } from "lucide-react";
+import { X, MoreVertical, ListOrdered, Mail, MessageCircle, NotebookText, Briefcase, Filter, FileText } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Label } from "../ui/label";
@@ -94,6 +94,16 @@ export function TicketTableToolbar({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Project</p>
+                </TooltipContent>
+              </Tooltip>
+               <Tooltip>
+                <TooltipTrigger asChild>
+                  <ToggleGroupItem value="webform" aria-label="Toggle web form channel">
+                    <FileText className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Web Form</p>
                 </TooltipContent>
               </Tooltip>
             </ToggleGroup>
