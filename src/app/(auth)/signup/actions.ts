@@ -46,7 +46,7 @@ export async function signupAction(values: z.infer<typeof signupSchema>) {
 
         const user = auth.currentUser;
         if(user && user.uid === newUserId) {
-            await firebaseSendVerificationEmail(user);
+            await firebaseSendEmailVerification(user);
         } else {
             console.warn("Could not send verification email: current user does not match new user.");
         }
