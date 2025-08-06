@@ -222,9 +222,7 @@ export function TiptapEditor({ editor, content, onChange, placeholder }: TiptapE
           </Tooltip>
         </div>
       </TooltipProvider>
-      <div className="w-full border border-gray-300 dark:border-gray-600 rounded-md focus-within:ring-2 focus-within:ring-[#a4d2ff] focus-within:border-[#a4d2ff]">
-        <EditorContent editor={editor} />
-      </div>
+      <EditorContent editor={editor} />
     </div>
   );
 }
