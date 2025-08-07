@@ -8,6 +8,7 @@ Welcome to RequestFlow! This guide will help you get started, whether you're an 
 1.  [For Administrators](#for-administrators)
     *   [Initial Setup](#initial-setup)
     *   [Managing Users](#managing-users)
+    *   [Managing Channels](#managing-channels)
     *   [Managing Projects](#managing-projects)
     *   [Settings Overview](#settings-overview)
         *   [Personalization](#1-personalization)
@@ -40,15 +41,30 @@ Your journey begins at the signup page.
     *   **Email & Password**: These will be your credentials for logging in.
 3.  **Create Organization**: Clicking "Sign Up & Create Organization" will create your new organization, set you as the first Administrator, and take you directly to your dashboard.
 
+`Alternatively, you can use Google. The process is still the same.`
+
 ### Managing Users
-You are responsible for creating accounts for all Agents and Clients in your organization.
+You are responsible for creating accounts for all Agents and Clients (managed) in your organization.
 *   **Navigate to User Accounts**: Click on "User Accounts" in the main navigation.
 *   **Create User**: Click the "Create User" button.
 *   **Fill in Details**: Provide the user's full name, email, an initial password, and assign them a role (`Agent` or `Client`).
 *   **Communicate Credentials**: You must securely provide the new user with their initial password so they can log in for the first time.
 
+` NB: You don't need to create all your clients if you don't intend to manage them. When they reach out to your organization via configured channels, they will be added automatically.
+`
+
+Managed clients are marked with `Managed`besides their names.
+
+### Managing Channels
+For the system to work, you need to add channels from where your tickets will come from. Currently supported channels are: `WhatsApp`, `Web Forms` and `Email`.
+To cofigure your channels:
+* **Navigate to Channels**: Click on the `Channels` tab in the Main navigation
+* **Add a New Channel**: Click on New Channel and configure form the available options. Each channel has a guide on how to set it up.
+
+Configured channels will appear in the main tab in Channels.
+
 ### Managing Projects
-You can create and oversee all projects.
+You can create and oversee all projects. You will first need to activate Projects in `Settings > Access Control`
 *   **Navigate to Projects**: Click on "Projects" in the main navigation.
 *   **Create Project**: Click "Create New Project", fill in the details (name, description, manager, budget, deadline), and assign team members.
 
@@ -126,7 +142,7 @@ An Administrator will create your account and provide you with an initial passwo
 
 ---
 
-## For Clients
+## For Clients (Managed)
 
 As a Client, you can submit support requests, track their progress, and interact with the support team.
 
