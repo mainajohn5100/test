@@ -99,6 +99,7 @@ export async function updateUserAction(userId: string, formData: FormData) {
     if (name) {
         updateData.name = name;
     }
+    
 
     // Handle avatar change with validation
     const avatarFile = formData.get('avatar') as File | null;
@@ -178,8 +179,11 @@ export async function changePasswordAction(userId: string, newPasswordB64: strin
 }
 
 
-export async function updateUserRoleAction(userId: string, role: User['role']) {
+export async function updateUserRoleAction(formData: FormData) {
   try {
+    const userId = formData.get('userId') as string;
+    const role = formData.get('role') as User['role'];
+
     if (!userId || !role) {
       throw new Error("User ID and role are required.");
     }
@@ -221,5 +225,6 @@ export async function updateUserPrivacyAction(userId: string, activityIsPublic: 
     return { success: false, error: 'Failed to update privacy settings.' };
   }
 }
+
 
 
