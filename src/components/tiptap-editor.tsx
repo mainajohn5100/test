@@ -24,8 +24,12 @@ import {
 } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from './ui/separator';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 interface TiptapEditorProps {
   editor: Editor | null;
@@ -35,15 +39,39 @@ interface TiptapEditorProps {
 }
 
 export function TiptapEditor({ editor, content, onChange, placeholder }: TiptapEditorProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editor || !event.target.files || event.target.files.length === 0 || !user) {
+      return;
+    }
+
+    const file = event.target.files[0];
+    const toastId = toast({ title: 'Uploading image...', description: 'Please wait.' }).id;
+
+    try {
+      const storageRef = ref(storage, `editor-uploads/${user.id}/${Date.now()}-${file.name}`);
+      const uploadResult = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+      
+      editor.chain().focus().setImage({ src: downloadURL }).run();
+      toast.update({ id: toastId, title: 'Upload complete!', description: 'Image has been inserted.' });
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      toast.update({ id: toastId, title: 'Upload failed', description: 'Could not upload the image.', variant: 'destructive' });
+    } finally {
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const addImage = useCallback(() => {
-    if (!editor) return;
-    const url = window.prompt('Image URL');
-
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  }, [editor]);
+    fileInputRef.current?.click();
+  }, []);
 
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -66,6 +94,13 @@ export function TiptapEditor({ editor, content, onChange, placeholder }: TiptapE
 
   return (
     <div className="flex flex-col gap-2 w-full max-w-4xl">
+       <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="image/*"
+      />
       <TooltipProvider>
         <div className="flex flex-wrap items-center gap-1 rounded-md border p-1">
           <Tooltip>
