@@ -73,60 +73,6 @@ export async function createUserAction(values: z.infer<typeof userCreateSchema>,
     }
 }
 
-// export async function updateUserAction(userId: string, formData: FormData) {
-//   try {
-//     const updateData: {[key: string]: any} = {};
-    
-//     // We get user from the client now, but still need to find them in firestore
-//     const name = formData.get('name') as string;
-//     const email = formData.get('email') as string;
-//     const currentEmail = formData.get('currentEmail') as string;
-
-//     // Handle email change securely
-//     if (email && email !== currentEmail) {
-//       // This part can't be done on the server.
-//       // The client should handle re-authentication and then call a more specific server action.
-//       // For now, we will just update firestore.
-//       // In a real app, this flow would be more complex.
-//       updateData.email = email;
-//     }
-
-//     // Handle name change
-//     if (name) {
-//         updateData.name = name;
-//     }
-
-//     // Handle avatar change
-//     const avatarFile = formData.get('avatar') as File | null;
-//     if (avatarFile && avatarFile.size > 0) {
-//       const filePath = `avatars/${userId}/${Date.now()}_${avatarFile.name}`;
-//       const storageRef = ref(storage, filePath);
-      
-//       await uploadBytes(storageRef, avatarFile);
-//       const avatarUrl = await getDownloadURL(storageRef);
-//       updateData.avatar = avatarUrl;
-//     }
-
-//     // Update Firestore only if there are changes
-//     if (Object.keys(updateData).length > 0) {
-//         await updateFirestoreUser(userId, updateData);
-//     }
-    
-//     revalidatePath(`/users/${userId}`);
-//     revalidatePath('/settings');
-//     revalidatePath('/(app)', 'layout'); // Revalidate layout to update user info in sidebar
-
-//     let message = "Profile updated successfully.";
-//     if (updateData.email) {
-//       message += ` To change your sign-in email, please use the dedicated 'Change Email' flow which requires re-authentication.`
-//     }
-//     return { success: true, message };
-
-//   } catch (error) {
-//     console.error("Error updating user:", error);
-//     return { success: false, error: 'Failed to update profile.' };
-//   }
-// }
 
 export async function updateUserAction(userId: string, formData: FormData) {
   try {
@@ -134,22 +80,19 @@ export async function updateUserAction(userId: string, formData: FormData) {
     
     // Get form data
     const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const currentEmail = formData.get('currentEmail') as string;
     const currentUserId = formData.get('currentUserId') as string;
-
-    // Verify authorization - user can only update their own profile
-    if (currentUserId !== userId) {
-      return { success: false, error: 'Unauthorized: You can only update your own profile.' };
+    
+    if (!currentUserId) {
+        return { success: false, error: 'Authentication error: Missing current user ID.' };
     }
 
-    // Handle email change securely
-    if (email && email !== currentEmail) {
-      // This part can't be done on the server.
-      // The client should handle re-authentication and then call a more specific server action.
-      // For now, we will just update firestore.
-      // In a real app, this flow would be more complex.
-      updateData.email = email;
+    // Authorize the action
+    const currentUser = await getUserById(currentUserId);
+    const isOwner = currentUserId === userId;
+    const isAdmin = currentUser?.role === 'Admin';
+    
+    if (!isOwner && !isAdmin) {
+        return { success: false, error: 'Unauthorized: You do not have permission to perform this action.' };
     }
 
     // Handle name change
@@ -160,19 +103,17 @@ export async function updateUserAction(userId: string, formData: FormData) {
     // Handle avatar change with validation
     const avatarFile = formData.get('avatar') as File | null;
     if (avatarFile && avatarFile.size > 0) {
-      // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       if (!allowedTypes.includes(avatarFile.type)) {
         return { success: false, error: 'Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.' };
       }
       
-      // Validate file size (5MB limit)
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (avatarFile.size > maxSize) {
         return { success: false, error: 'File too large. Please upload an image under 5MB.' };
       }
 
-      // Use the correct path that matches your Storage rules
+      // The user ID for the path should always be the ID of the user being edited.
       const timestamp = Date.now();
       const sanitizedFileName = avatarFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filePath = `avatars/${userId}/${timestamp}-${sanitizedFileName}`;
@@ -183,23 +124,11 @@ export async function updateUserAction(userId: string, formData: FormData) {
         const avatarUrl = await getDownloadURL(storageRef);
         updateData.avatar = avatarUrl;
         
-        console.log(`Avatar uploaded successfully to: ${filePath}`);
-      } catch (storageError) {
+      } catch (storageError: any) {
         console.error("Storage upload error:", storageError);
-        
-        // Provide specific error messages based on Firebase Storage errors
-        if (storageError instanceof Error) {
-          if (storageError.message.includes('storage/unauthorized')) {
-            return { success: false, error: 'Not authorized to upload files. Please check your account permissions.' };
-          }
-          if (storageError.message.includes('storage/quota-exceeded')) {
-            return { success: false, error: 'Storage quota exceeded. Please contact support.' };
-          }
-          if (storageError.message.includes('storage/invalid-format')) {
-            return { success: false, error: 'Invalid image format. Please try a different image.' };
-          }
+        if (storageError.code === 'storage/unauthorized') {
+            return { success: false, error: 'Not authorized to upload files. Please check your Storage security rules.' };
         }
-        
         return { success: false, error: 'Failed to upload avatar. Please try again.' };
       }
     }
@@ -207,20 +136,15 @@ export async function updateUserAction(userId: string, formData: FormData) {
     // Update Firestore only if there are changes
     if (Object.keys(updateData).length > 0) {
         await updateFirestoreUser(userId, updateData);
-        console.log(`User ${userId} updated with:`, Object.keys(updateData));
     } else {
         return { success: true, message: "No changes to save." };
     }
     
-    // Revalidate relevant paths
     revalidatePath(`/users/${userId}`);
     revalidatePath('/settings');
-    revalidatePath('/(app)', 'layout'); // Revalidate layout to update user info in sidebar
+    revalidatePath('/(app)', 'layout');
 
     let message = "Profile updated successfully.";
-    if (updateData.email) {
-      message += ` To change your sign-in email, please use the dedicated 'Change Email' flow which requires re-authentication.`
-    }
     if (updateData.avatar) {
       message += " Avatar updated.";
     }
@@ -229,17 +153,9 @@ export async function updateUserAction(userId: string, formData: FormData) {
 
   } catch (error) {
     console.error("Error updating user:", error);
-    
-    // Provide more specific error messages
-    if (error instanceof Error) {
-      if (error.message.includes('permission-denied')) {
-        return { success: false, error: 'Permission denied. Please check your account permissions.' };
-      }
-      if (error.message.includes('not-found')) {
-        return { success: false, error: 'User not found.' };
-      }
+    if (error instanceof Error && error.message.includes('permission-denied')) {
+        return { success: false, error: 'Permission denied. Please check your Firestore security rules.' };
     }
-    
     return { success: false, error: 'Failed to update profile. Please try again.' };
   }
 }
@@ -305,4 +221,5 @@ export async function updateUserPrivacyAction(userId: string, activityIsPublic: 
     return { success: false, error: 'Failed to update privacy settings.' };
   }
 }
+
 
