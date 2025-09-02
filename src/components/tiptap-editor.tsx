@@ -39,12 +39,12 @@ interface TiptapEditorProps {
 }
 
 export function TiptapEditor({ editor, content, onChange, placeholder }: TiptapEditorProps) {
-  const { user } = useAuth();
+  const { firebaseUser } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!editor || !event.target.files || event.target.files.length === 0 || !user) {
+    if (!editor || !event.target.files || event.target.files.length === 0 || !firebaseUser) {
       return;
     }
 
@@ -52,7 +52,7 @@ export function TiptapEditor({ editor, content, onChange, placeholder }: TiptapE
     const toastId = toast({ title: 'Uploading image...', description: 'Please wait.' }).id;
 
     try {
-      const storageRef = ref(storage, `editor-uploads/${user.id}/${Date.now()}-${file.name}`);
+      const storageRef = ref(storage, `editor-uploads/${firebaseUser.uid}/${Date.now()}-${file.name}`);
       const uploadResult = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(uploadResult.ref);
       
