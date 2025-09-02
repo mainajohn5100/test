@@ -53,11 +53,18 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
   };
 
   const handleFormSubmit = (values: z.infer<typeof updateUserSchema>) => {
+    if (!firebaseUser) {
+      toast({ title: 'Not authenticated', description: 'You must be logged in to update your profile.', variant: 'destructive'});
+      return;
+    }
+
     startTransition(async () => {
       const formData = new FormData();
       formData.append('name', values.name || '');
       formData.append('email', values.email || '');
       formData.append('currentEmail', user.email);
+      // Pass the Firebase Auth UID to the server action
+      formData.append('currentUserId', firebaseUser.uid);
 
       if (selectedFile) {
           formData.append('avatar', selectedFile);
@@ -97,11 +104,11 @@ export function EditProfileForm({ user, setOpen }: { user: User; setOpen: (open:
                     id="avatar-file" 
                     type="file" 
                     className="mt-1" 
-                    accept="image/png, image/jpeg, image/gif"
+                    accept="image/png, image/jpeg, image/gif, image/webp"
                     onChange={handleFileChange}
                   />
                   <p className="text-xs text-muted-foreground pt-1">
-                      Upload a new profile picture.
+                      Upload a new profile picture. Max 5MB.
                   </p>
               </div>
           </div>
