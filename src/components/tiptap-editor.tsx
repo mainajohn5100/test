@@ -57,10 +57,10 @@ export function TiptapEditor({ editor, content, onChange, placeholder }: TiptapE
       const downloadURL = await getDownloadURL(uploadResult.ref);
       
       editor.chain().focus().setImage({ src: downloadURL }).run();
-      toast.update({ id: toastId, title: 'Upload complete!', description: 'Image has been inserted.' });
+      toast({ id: toastId, title: 'Upload complete!', description: 'Image has been inserted.' });
     } catch (error) {
       console.error("Image upload failed:", error);
-      toast.update({ id: toastId, title: 'Upload failed', description: 'Could not upload the image.', variant: 'destructive' });
+      toast({ id: toastId, title: 'Upload failed', description: 'Could not upload the image.', variant: 'destructive' });
     } finally {
       // Reset file input
       if (fileInputRef.current) {

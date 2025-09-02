@@ -50,6 +50,7 @@ import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import TipTapLink from '@tiptap/extension-link';
+import TipTapImage from '@tiptap/extension-image';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SlaStatus } from "@/components/tickets/sla-status";
@@ -373,6 +374,9 @@ export default function ViewTicketPage() {
       StarterKit,
       Placeholder.configure({ placeholder: "Type your reply here..." }),
       TipTapLink.configure({ openOnClick: false, autolink: true }),
+      TipTapImage.configure({
+        inline: false,
+      }),
     ],
     editorProps: {
       attributes: {
@@ -836,7 +840,7 @@ export default function ViewTicketPage() {
                                             <span className="text-xs text-muted-foreground">{reporter?.name || ticket.reporter}</span>
                                         </div>
                                         <div className="rounded-lg p-3 text-sm w-fit max-w-[80%] break-words bg-muted/60 border">
-                                            <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: ticket.description }} />
+                                            <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: ticket.description }} />
                                             {ticket.attachments && ticket.attachments.length > 0 && (
                                                 <>
                                                     <Separator className="my-3"/>
@@ -877,7 +881,7 @@ export default function ViewTicketPage() {
                                                 <span className="text-xs text-muted-foreground">{author?.name || 'Unknown User'}</span>
                                             </div>
                                             <div className={cn('rounded-lg p-2 text-sm w-fit max-w-[80%] break-all', isCurrentUserAuthor ? 'bg-primary text-primary-foreground dark:bg-[#0066ff]' : 'bg-muted')}>
-                                                <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: conv.content }} />
+                                                <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: conv.content }} />
                                             </div>
                                             <div className="text-xs text-muted-foreground mt-1">
                                                 {formatDistanceToNow(new Date(conv.createdAt), { addSuffix: true })}
