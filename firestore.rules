@@ -1,9 +1,9 @@
-rules_version = '2';
 
+rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // Allow authenticated users to read and write to their own avatar folder.
+    // Allow any authenticated user to upload their own avatar.
+    // Anyone can read avatars (e.g., to display them in the UI).
     match /avatars/{userId}/{allPaths=**} {
       allow read;
       allow write: if request.auth != null && request.auth.uid == userId;
@@ -16,10 +16,11 @@ service firebase.storage {
     }
 
     // Allow any authenticated user to upload images to the editor's upload path.
-    // The application code ensures files are placed in a user-specific subfolder.
     match /editor-uploads/{userId}/{allPaths=**} {
       allow read;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
+
+    
