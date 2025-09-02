@@ -180,6 +180,7 @@ export async function changePasswordAction(userId: string, newPasswordB64: strin
 
 
 export async function updateUserRoleAction(formData: FormData) {
+  'use server';
   try {
     const userId = formData.get('userId') as string;
     const role = formData.get('role') as User['role'];
@@ -190,11 +191,11 @@ export async function updateUserRoleAction(formData: FormData) {
     await updateFirestoreUser(userId, { role });
     revalidatePath('/users');
     revalidatePath(`/users/${userId}`);
-    return { success: true };
+    // We cannot toast from a server action directly, success is handled by revalidation.
   } catch (error) {
     console.error("Error in updateUserRoleAction:", error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { success: false, error: errorMessage };
+    // In a real app, you might want to return an error object
+    // to be handled by the client form state.
   }
 }
 
@@ -225,6 +226,7 @@ export async function updateUserPrivacyAction(userId: string, activityIsPublic: 
     return { success: false, error: 'Failed to update privacy settings.' };
   }
 }
+
 
 
 

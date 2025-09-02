@@ -100,16 +100,7 @@ export default function UserProfilePage() {
   const [managedProjects, setManagedProjects] = React.useState<Project[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isEditDialogOpen, setEditDialogOpen] = React.useState(false);
-  const [isUpdating, startTransition] = React.useTransition();
-
-  const [optimisticRole, setOptimisticRole] = React.useState<User['role'] | undefined>();
-
-  React.useEffect(() => {
-    if (user) {
-      setOptimisticRole(user.role);
-    }
-  }, [user]);
-
+  
   React.useEffect(() => {
     if (!params.id) return;
     
@@ -146,30 +137,6 @@ export default function UserProfilePage() {
     fetchData();
   }, [params.id, isEditDialogOpen, refreshUser]);
   
-  const handleRoleChange = async (formData: FormData) => {
-    if (!user || !currentUser || currentUser.id === user.id) return;
-    
-    const newRole = formData.get('role') as User['role'];
-    const previousRole = optimisticRole;
-    
-    startTransition(async () => {
-      setOptimisticRole(newRole);
-      const result = await updateUserRoleAction(formData);
-      if (result?.error) {
-        setOptimisticRole(previousRole);
-        toast({
-          title: "Update Failed",
-          description: result.error,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Role Updated",
-          description: `User role has been successfully changed to ${newRole}.`,
-        });
-      }
-    });
-  };
 
   if (loading || !currentUser) {
     return (
@@ -363,42 +330,23 @@ export default function UserProfilePage() {
                       <CardDescription>Assign or change the user's role.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                      <form action={handleRoleChange}>
-                        <input type="hidden" name="userId" value={user.id} />
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-muted-foreground">User Role</span>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="min-w-[120px]" disabled={isUpdating || currentUser.id === user.id}>
-                                        {isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        {optimisticRole}
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onSelect={() => document.getElementById('role-form-Admin')?.requestSubmit()}>Admin</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => document.getElementById('role-form-Agent')?.requestSubmit()}>Agent</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => document.getElementById('role-form-Client')?.requestSubmit()}>Client</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                      </form>
-                      {/* Hidden forms for each role option */}
-                      <form id="role-form-Admin" action={handleRoleChange} className="hidden">
-                          <input type="hidden" name="userId" value={user.id} />
-                          <input type="hidden" name="role" value="Admin" />
-                      </form>
-                      <form id="role-form-Agent" action={handleRoleChange} className="hidden">
-                          <input type="hidden" name="userId" value={user.id} />
-                          <input type="hidden" name="role" value="Agent" />
-                      </form>
-                      <form id="role-form-Client" action={handleRoleChange} className="hidden">
-                          <input type="hidden" name="userId" value={user.id} />
-                          <input type="hidden" name="role" value="Client" />
-                      </form>
-
+                    <form action={updateUserRoleAction} className="space-y-4">
+                      <input type="hidden" name="userId" value={user.id} />
+                      <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">User Role</span>
+                          <select name="role" defaultValue={user.role} className="p-2 border rounded-md" disabled={currentUser.id === user.id}>
+                            <option value="Admin">Admin</option>
+                            <option value="Agent">Agent</option>
+                            <option value="Client">Client</option>
+                          </select>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={currentUser.id === user.id}>
+                        Save Role
+                      </Button>
                       {currentUser.id === user.id && (
                           <p className="text-xs text-muted-foreground mt-2 text-center">You cannot change your own role.</p>
                       )}
+                    </form>
                   </CardContent>
               </Card>
             )}
