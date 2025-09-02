@@ -75,7 +75,10 @@ export default function NewTicketPage() {
       StarterKit,
       Placeholder.configure({ placeholder: "Provide a detailed description of the issue..." }),
       Link.configure({ openOnClick: false, autolink: true }),
-      Image,
+      Image.configure({
+        inline: false,
+        allowBase64: true,
+      }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     content: form.watch('description'),

@@ -51,6 +51,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import TipTapLink from '@tiptap/extension-link';
 import TipTapImage from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SlaStatus } from "@/components/tickets/sla-status";
@@ -376,7 +377,9 @@ export default function ViewTicketPage() {
       TipTapLink.configure({ openOnClick: false, autolink: true }),
       TipTapImage.configure({
         inline: false,
+        allowBase64: true,
       }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     editorProps: {
       attributes: {
