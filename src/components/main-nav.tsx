@@ -20,6 +20,7 @@ import {
   PlusCircle,
   Link2,
   LifeBuoy,
+  Building,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -73,6 +74,12 @@ const menuItems: NavItem[] = [
     label: "Analytics",
     href: "/analytics",
     icon: BarChart2,
+    roles: ['Admin'],
+  },
+  {
+    label: "Organization",
+    href: "/organization",
+    icon: Building,
     roles: ['Admin'],
   },
   {
