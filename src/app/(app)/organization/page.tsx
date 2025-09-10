@@ -85,7 +85,8 @@ function OrganizationSettingsCard({ org, users }: { org: Organization, users: Us
                             <div className="relative">
                                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input id="subdomain" name="subdomain" placeholder="your-org" defaultValue={org.subdomain} className="pl-9 pr-36" disabled={isPending} />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.requestflow.app</span>
+                                {/* TODO - change the requestflow.netlify.app to use a local env variable */}
+                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.requestflow.netlify.app</span>
                             </div>
                         </div>
                         <div className="space-y-2">

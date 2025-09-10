@@ -1,4 +1,5 @@
 
+
 'use client'; 
 
 import { notFound, useRouter, useParams } from "next/navigation";
@@ -753,7 +754,7 @@ export default function ViewTicketPage() {
             </div>
           }
           className={cn(
-            "transition-all duration-300 hidden md:flex",
+            "transition-all duration-300",
             isHeaderShrunk && !isMobile && "pb-2 [&>div>h1]:text-xl [&>div>div]:opacity-0"
           )}
         >
@@ -767,191 +768,123 @@ export default function ViewTicketPage() {
         
         <div className="grid flex-1 grid-cols-1 md:grid-cols-3 md:gap-6 overflow-hidden mt-4 md:mt-0">
             {/* Left Column (Main content) */}
-            <div className="md:col-span-2 flex flex-col overflow-hidden h-full">
-                
-                {/* Conversation Card */}
-                <Card className="flex flex-col flex-1 overflow-hidden shadow-md">
-                    <CardHeader className="flex flex-row items-start justify-between">
-                        <div className="flex-1">
-                            {/* Mobile Title */}
-                            <div className="md:hidden">
-                                <h1 className="font-headline text-xl font-bold tracking-tight">{ticket.title}</h1>
-                            </div>
-                            {/* Desktop Title */}
-                            <CardTitle className="hidden md:block">Conversation</CardTitle>
-                        </div>
-                        {(currentUser.role === 'Admin' || currentUser.role === 'Agent') && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 flex-shrink-0">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="p-0 focus:bg-transparent">
-                                        <label htmlFor="client-reply-toggle" className="flex w-full cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent focus:bg-accent">
-                                            <span>Client Can Reply</span>
-                                            <Switch
-                                                id="client-reply-toggle"
-                                                checked={clientCanReply}
-                                                onCheckedChange={handleClientReplyToggle}
-                                                disabled={isPending}
-                                                aria-label="Toggle client replies"
-                                            />
-                                        </label>
-                                    </DropdownMenuItem>
-                                    {isMobile && <DropdownMenuSeparator />}
-                                    {isMobile && 
-                                        <Sheet>
-                                            <SheetTrigger asChild>
-                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                    <NotebookText className="mr-2 h-4 w-4" />
-                                                    <span>View Details</span>
-                                                </DropdownMenuItem>
-                                            </SheetTrigger>
-                                            <SheetContent side="bottom" className="h-[90svh]">
-                                                <SheetHeader>
-                                                    <SheetTitle>Ticket Details</SheetTitle>
-                                                </SheetHeader>
-                                                <ScrollArea className="h-full pb-10">
-                                                    <div className="space-y-4 pt-4">
-                                                    <TicketDetailsCard {...detailProps} />
-                                                    <ClientDetailsCard ticket={ticket} reporter={reporter} reporterEmail={reporterEmail} />
-                                                    <SlaStatus ticket={ticket} />
-                                                    </div>
-                                                </ScrollArea>
-                                            </SheetContent>
-                                        </Sheet>
-                                    }
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
+            <div className="md:col-span-2 flex flex-col gap-6 overflow-y-auto">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Description</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex-1 overflow-hidden pt-0 px-2 md:px-4 space-y-4">
-                        <ScrollArea className="h-full pr-4 -mr-4">
-                            <div className="space-y-6">
-                                {/* Initial Description */}
-                                <div className="flex w-full gap-2 md:gap-4 justify-start">
-                                    <div className="flex flex-col gap-1 w-full items-start">
-                                        <div className="flex items-center gap-2 flex-row">
-                                            {reporter && (
-                                                <Avatar className="h-6 w-6">
-                                                    <AvatarImage src={reporter.avatar} />
-                                                    <AvatarFallback>{reporter.name.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                            )}
-                                            <span className="text-xs text-muted-foreground">{reporter?.name || ticket.reporter}</span>
-                                        </div>
-                                        <div className="rounded-lg p-3 text-sm w-fit max-w-[80%] break-words bg-muted/60 border">
-                                            <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: ticket.description }} />
-                                            {ticket.attachments && ticket.attachments.length > 0 && (
-                                                <>
-                                                    <Separator className="my-3"/>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {ticket.attachments.map((file) => (
-                                                            <a href={file.url} target="_blank" rel="noopener noreferrer" key={file.name}>
-                                                                <Button variant="outline" size="sm" className="h-auto py-1 px-2">
-                                                                    {file.type.startsWith('image/') ? <ImageIcon className="mr-2 h-3.5 w-3.5"/> : <FileIcon className="mr-2 h-3.5 w-3.5"/>}
-                                                                    {file.name}
-                                                                </Button>
-                                                            </a>
-                                                        ))}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground mt-1">
-                                            {formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}
-                                        </div>
-                                    </div>
+                    <CardContent>
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: ticket.description }} />
+                        {ticket.attachments && ticket.attachments.length > 0 && (
+                            <>
+                                <Separator className="my-4"/>
+                                <div className="flex flex-wrap gap-2">
+                                    {ticket.attachments.map((file) => (
+                                        <a href={file.url} target="_blank" rel="noopener noreferrer" key={file.name}>
+                                            <Button variant="outline" size="sm" className="h-auto py-1 px-2">
+                                                {file.type.startsWith('image/') ? <ImageIcon className="mr-2 h-3.5 w-3.5"/> : <FileIcon className="mr-2 h-3.5 w-3.5"/>}
+                                                {file.name}
+                                            </Button>
+                                        </a>
+                                    ))}
                                 </div>
-
-                                {conversations.length > 0 && <Separator />}
-                                
-                                {conversations.map((conv, idx) => {
-                                    const author = userMapById.get(conv.authorId);
-                                    const isCurrentUserAuthor = author?.id === currentUser.id;
-                                    return (
-                                    <div key={idx} className={cn('flex w-full gap-2 md:gap-4', isCurrentUserAuthor ? 'justify-end' : 'justify-start')}>
-                                        <div className={cn("flex flex-col gap-1 w-full", isCurrentUserAuthor ? "items-end" : "items-start")}>
-                                            <div className={cn("flex items-center gap-2", isCurrentUserAuthor ? "flex-row-reverse" : "flex-row")}>
-                                                {author && (
-                                                    <Avatar className="h-6 w-6">
-                                                        <AvatarImage src={author.avatar} />
-                                                        <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                )}
-                                                <span className="text-xs text-muted-foreground">{author?.name || 'Unknown User'}</span>
-                                            </div>
-                                            <div className={cn('rounded-lg p-2 text-sm w-fit max-w-[80%] break-all', isCurrentUserAuthor ? 'bg-primary text-primary-foreground dark:bg-[#0066ff]' : 'bg-muted')}>
-                                                <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: conv.content }} />
-                                            </div>
-                                            <div className="text-xs text-muted-foreground mt-1">
-                                                {formatDistanceToNow(new Date(conv.createdAt), { addSuffix: true })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    )
-                                })}
-                                {conversations.length === 0 && !ticket.description && (
-                                    <p className="text-sm text-center text-muted-foreground py-4">No replies yet.</p>
-                                )}
-                            </div>
-                        </ScrollArea>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Reply Section */}
-                <div className={cn("bg-background/95 backdrop-blur-sm z-10", isMobile ? "sticky bottom-0 border-t" : "static")}>
-                    <div className={cn("p-4", isMobile ? "flex-col items-stretch" : "")}>
-                    {canReply ? (
-                        <div className="w-full space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Add Reply</h4>
-                            {(currentUser.role === 'Admin' || currentUser.role === 'Agent') && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm">
-                                            <MessageSquarePlus className="mr-2 h-4 w-4" />
-                                            Templates
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-80">
-                                        <DropdownMenuLabel>Select a Template</DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        {cannedResponses.length > 0 ? (
-                                            cannedResponses.map((res, index) => (
-                                                <DropdownMenuItem key={index} onSelect={() => handleTemplateSelect(res.content)}>
-                                                    <p className="font-medium truncate">{res.title}</p>
-                                                </DropdownMenuItem>
-                                            ))
-                                        ) : (
-                                            <DropdownMenuItem disabled>No templates found.</DropdownMenuItem>
-                                        )}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
-                        </div>
-                        <TiptapEditor 
-                            editor={editor}
-                            content={reply}
-                            onChange={setReply}
-                            placeholder="Type your reply here..."
-                        />
-                        <div className="flex justify-end">
-                            <Button onClick={handleAddReply} disabled={isPending || !reply.trim()}>
-                            {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                            Add Reply
-                            </Button>
-                        </div>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground text-center w-full">
-                            This ticket is {currentStatus.toLowerCase()}. Replying has been disabled.
-                        </p>
-                    )}
-                    </div>
-                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Conversation History</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {conversations.length > 0 ? (
+                            conversations.map((conv, idx) => {
+                                const author = userMapById.get(conv.authorId);
+                                const isCurrentUserAuthor = author?.id === currentUser.id;
+                                return (
+                                <div key={idx} className={cn('flex w-full gap-2 md:gap-4', isCurrentUserAuthor ? 'justify-end' : 'justify-start')}>
+                                    <div className={cn("flex flex-col gap-1 w-full", isCurrentUserAuthor ? "items-end" : "items-start")}>
+                                        <div className={cn("flex items-center gap-2", isCurrentUserAuthor ? "flex-row-reverse" : "flex-row")}>
+                                            {author && (
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={author.avatar} />
+                                                    <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                            )}
+                                            <span className="text-xs text-muted-foreground">{author?.name || 'Unknown User'}</span>
+                                        </div>
+                                        <div className={cn('rounded-lg p-3 text-sm w-fit max-w-[80%] break-words', isCurrentUserAuthor ? 'bg-primary text-primary-foreground dark:bg-[#0066ff]' : 'bg-muted border')}>
+                                            <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: conv.content }} />
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                            {formatDistanceToNow(new Date(conv.createdAt), { addSuffix: true })}
+                                        </div>
+                                    </div>
+                                </div>
+                                )
+                            })
+                        ) : (
+                            <p className="text-sm text-center text-muted-foreground py-4">No replies yet.</p>
+                        )}
+                    </CardContent>
+                </Card>
+                
+                {canReply && (
+                    <Card>
+                         <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>Add Reply</CardTitle>
+                                {(currentUser.role === 'Admin' || currentUser.role === 'Agent') && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm">
+                                                <MessageSquarePlus className="mr-2 h-4 w-4" />
+                                                Templates
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-80">
+                                            <DropdownMenuLabel>Select a Template</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            {cannedResponses.length > 0 ? (
+                                                cannedResponses.map((res, index) => (
+                                                    <DropdownMenuItem key={index} onSelect={() => handleTemplateSelect(res.content)}>
+                                                        <p className="font-medium truncate">{res.title}</p>
+                                                    </DropdownMenuItem>
+                                                ))
+                                            ) : (
+                                                <DropdownMenuItem disabled>No templates found.</DropdownMenuItem>
+                                            )}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                             <TiptapEditor 
+                                editor={editor}
+                                content={reply}
+                                onChange={setReply}
+                                placeholder="Type your reply here..."
+                            />
+                            <div className="flex justify-end mt-4">
+                                <Button onClick={handleAddReply} disabled={isPending || !reply.trim()}>
+                                {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                Add Reply
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+                 {!canReply && (
+                    <Card>
+                        <CardContent className="p-6">
+                            <p className="text-sm text-muted-foreground text-center w-full">
+                                This ticket is {currentStatus?.toLowerCase()}. Replying has been disabled.
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             {/* Right Column (Details) - hidden on mobile */}
@@ -965,3 +898,4 @@ export default function ViewTicketPage() {
     </>
   );
 }
+
