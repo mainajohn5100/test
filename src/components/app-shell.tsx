@@ -44,7 +44,6 @@ import { markAllUserNotificationsAsRead, updateNotificationReadStatus, getOrgani
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "./ui/scroll-area";
-import { onSnapshot, query, collection, where, Timestamp, orderBy, limit } from "firebase/firestore";
 import { SheetTitle } from "./ui/sheet";
 
 export const dynamic = 'force-dynamic'
@@ -67,12 +66,6 @@ function OrganizationSelector({ org }: { org: Organization | null }) {
         );
     }
 
-    // Placeholder for multi-tenant functionality
-    const otherOrgs = [
-        { id: 'org_2', name: 'Globex Corporation' },
-        { id: 'org_3', name: 'Stark Industries' },
-    ];
-
     return (
         <div className="hidden md:flex items-center mr-4">
             <span className="text-sm text-gray-500 mr-2">Organization:</span>
@@ -84,19 +77,12 @@ function OrganizationSelector({ org }: { org: Organization | null }) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                    <DropdownMenuLabel>Switch Organization</DropdownMenuLabel>
+                    <DropdownMenuLabel>Current Organization</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {/* The current organization */}
                     <DropdownMenuItem disabled>
                         <Building className="mr-2 h-4 w-4" />
                         <span>{org.name}</span>
                     </DropdownMenuItem>
-                    {/* Placeholder for other organizations */}
-                    {otherOrgs.map(o => (
-                         <DropdownMenuItem key={o.id} disabled>
-                            <span>{o.name}</span>
-                         </DropdownMenuItem>
-                    ))}
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
