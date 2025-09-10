@@ -797,15 +797,14 @@ export default function ViewTicketPage() {
                     <CardHeader>
                         <CardTitle>Conversation History</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-4">
                         {conversations.length > 0 ? (
                             conversations.map((conv, idx) => {
                                 const author = userMapById.get(conv.authorId);
-                                const isCurrentUserAuthor = author?.id === currentUser.id;
                                 return (
-                                <div key={idx} className={cn('flex w-full gap-2 md:gap-4', isCurrentUserAuthor ? 'justify-end' : 'justify-start')}>
-                                    <div className={cn("flex flex-col gap-1 w-full", isCurrentUserAuthor ? "items-end" : "items-start")}>
-                                        <div className={cn("flex items-center gap-2", isCurrentUserAuthor ? "flex-row-reverse" : "flex-row")}>
+                                <div key={idx} className="flex w-full justify-end">
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="flex items-center flex-row-reverse gap-2">
                                             {author && (
                                                 <Avatar className="h-6 w-6">
                                                     <AvatarImage src={author.avatar} />
@@ -814,7 +813,7 @@ export default function ViewTicketPage() {
                                             )}
                                             <span className="text-xs text-muted-foreground">{author?.name || 'Unknown User'}</span>
                                         </div>
-                                        <div className={cn('rounded-lg p-3 text-sm w-fit max-w-[80%] break-words', isCurrentUserAuthor ? 'bg-primary text-primary-foreground dark:bg-[#0066ff]' : 'bg-muted border')}>
+                                        <div className="rounded-lg p-2 text-[11px] bg-primary text-primary-foreground dark:bg-[#0066ff] w-fit max-w-[80%] break-words">
                                             <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: conv.content }} />
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-1">
@@ -898,4 +897,3 @@ export default function ViewTicketPage() {
     </>
   );
 }
-
