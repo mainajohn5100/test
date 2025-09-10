@@ -802,9 +802,9 @@ export default function ViewTicketPage() {
                             conversations.map((conv, idx) => {
                                 const author = userMapById.get(conv.authorId);
                                 return (
-                                <div key={idx} className="flex w-full justify-end">
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="flex items-center flex-row-reverse gap-2">
+                                <div key={idx} className="flex w-full justify-start">
+                                    <div className="flex flex-col items-start gap-1">
+                                        <div className="flex items-center flex-row gap-2">
                                             {author && (
                                                 <Avatar className="h-6 w-6">
                                                     <AvatarImage src={author.avatar} />
@@ -813,7 +813,7 @@ export default function ViewTicketPage() {
                                             )}
                                             <span className="text-xs text-muted-foreground">{author?.name || 'Unknown User'}</span>
                                         </div>
-                                        <div className="rounded-lg p-2 text-[11px] bg-primary text-primary-foreground dark:bg-[#0066ff] w-fit max-w-[80%] break-words">
+                                        <div className="rounded-lg p-2 text-[11px] bg-muted w-fit max-w-[80%] break-words">
                                             <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: conv.content }} />
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-1">
