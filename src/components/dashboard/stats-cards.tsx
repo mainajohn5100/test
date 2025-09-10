@@ -36,9 +36,9 @@ export function StatsCards({ tickets, projects }: StatsCardsProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="mt-5">
+            <div>
               <div className={cn("text-2xl font-bold", stat.disabled && "text-muted-foreground")}>{stat.value}</div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-5">
                   <span className={cn(stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600', stat.disabled && "text-muted-foreground")}>
                       {stat.changeType === 'increase' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                       {stat.change}
