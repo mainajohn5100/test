@@ -105,6 +105,10 @@
   .ProseMirror {
     @apply min-h-[180px] max-h-[400px] overflow-y-auto w-full rounded-md border border-[#bfdefd] bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
   }
+  
+  .tiptap-content img {
+    @apply cursor-pointer;
+  }
 
   .ProseMirror:focus {
     @apply outline-none ring-2 ring-ring;

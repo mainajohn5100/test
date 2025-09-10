@@ -346,15 +346,41 @@ const TicketEvent = ({ event, userMapById }: { event: TicketConversation, userMa
                 <AvatarFallback>{author?.name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                     <p className="font-sans font-bold text-[14px]">{author?.name || event.authorName}</p>
-                    <p className="font-sans text-xs text-muted-foreground">{format(new Date(event.createdAt), "PP 'at' p")}</p>
+                    <p className="font-sans text-[12px] text-muted-foreground">{format(new Date(event.createdAt), "PP 'at' p")}</p>
                 </div>
-                <div className="font-sans text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: event.content }}></div>
+                <div 
+                    className="font-sans text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none tiptap-content" 
+                    dangerouslySetInnerHTML={{ __html: event.content }}
+                />
             </div>
         </div>
     )
 }
+
+function ImageAttachment({ src }: { src: string }) {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <img
+            src={src}
+            alt="Attachment"
+            width={100}
+            height={75}
+            className="rounded-md object-cover cursor-pointer"
+          />
+        </DialogTrigger>
+        <DialogContent className="max-w-4xl p-2">
+          <img
+            src={src}
+            alt="Attachment"
+            className="rounded-md object-contain max-h-[80vh] w-full"
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
 export default function ViewTicketPage() {
   const router = useRouter();
@@ -799,12 +825,16 @@ export default function ViewTicketPage() {
                                 <Separator className="my-4"/>
                                 <div className="flex flex-wrap gap-2">
                                     {ticket.attachments.map((file) => (
+                                       file.type.startsWith('image/') ? (
+                                        <ImageAttachment key={file.name} src={file.url} />
+                                       ) : (
                                         <a href={file.url} target="_blank" rel="noopener noreferrer" key={file.name}>
                                             <Button variant="outline" size="sm" className="h-auto py-1 px-2">
-                                                {file.type.startsWith('image/') ? <ImageIcon className="mr-2 h-3.5 w-3.5"/> : <FileIcon className="mr-2 h-3.5 w-3.5"/>}
+                                                <FileIcon className="mr-2 h-3.5 w-3.5"/>
                                                 {file.name}
                                             </Button>
                                         </a>
+                                       )
                                     ))}
                                 </div>
                             </>
