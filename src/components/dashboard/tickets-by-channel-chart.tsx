@@ -8,7 +8,7 @@ import type { Ticket } from "@/lib/data"
 
 const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
-const EMAIL_SOURCES: Ticket['source'][] = ['Client Inquiry', 'Partner', 'Vendor', 'Internal', 'General Inquiry'];
+const EMAIL_SOURCES: (Ticket['source'])[] = ['Client Inquiry', 'Partner', 'Vendor', 'Internal', 'General Inquiry'];
 
 interface TicketsByChannelChartProps {
     tickets: Ticket[];
@@ -70,7 +70,7 @@ export function TicketsByChannelChart({ tickets }: TicketsByChannelChartProps) {
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Pie>
-              <Legend iconSize={10} />
+              <Legend iconSize={10} wrapperStyle={{fontSize: '0.8rem'}} />
             </PieChart>
           </ResponsiveContainer>
         ) : (

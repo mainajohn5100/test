@@ -6,11 +6,11 @@ import React from 'react';
 import { PageHeader } from "@/components/page-header";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
-import { TicketsOverviewChart } from "@/components/dashboard/tickets-overview-chart";
+import { TicketsByChannelChart } from "@/components/dashboard/tickets-by-channel-chart";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader } from "lucide-react";
 import Link from "next/link";
-import { AvgResolutionTimeChart } from "@/components/dashboard/avg-resolution-time-chart";
+import { TicketVolumeChart } from "@/components/dashboard/ticket-volume-chart";
 import { getProjects, getUsers, getRecentNotifications } from "@/lib/firestore";
 import { format, differenceInHours, isToday, eachDayOfInterval, subDays, isValid } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
@@ -97,56 +97,10 @@ export default function DashboardPage() {
     );
   }
   
-  const userMap = new Map(users.map(u => [u.id, u.name]));
   const userMapByName = new Map(users.map(u => [u.name, u]));
 
-  const ticketsByStatus = displayedTickets.reduce((acc, ticket) => {
-    acc[ticket.status] = (acc[ticket.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const ticketsOverviewData = Object.entries(ticketsByStatus).map(([name, value]) => ({ name, value }));
-  
-  const closedTickets = tickets.filter(t => t.status === 'Closed' || t.status === 'Terminated');
-  const dailyResolutionTimes: { [key: string]: { totalHours: number; count: number } } = {};
-  
-  const last30Days = eachDayOfInterval({
-      start: subDays(new Date(), 29),
-      end: new Date()
-  });
-
-  closedTickets.forEach(ticket => {
-    if (!ticket.updatedAt || !ticket.createdAt) return;
-
-    const resolvedAt = new Date(ticket.updatedAt);
-    const createdAt = new Date(ticket.createdAt);
-
-    if (!isValid(resolvedAt) || !isValid(createdAt)) return;
-
-    const dayKey = format(resolvedAt, 'MMM d');
-
-    if (last30Days.some(d => format(d, 'MMM d') === dayKey)) {
-        const resolutionHours = differenceInHours(resolvedAt, createdAt);
-        
-        if (!dailyResolutionTimes[dayKey]) {
-            dailyResolutionTimes[dayKey] = { totalHours: 0, count: 0 };
-        }
-        dailyResolutionTimes[dayKey].totalHours += resolutionHours;
-        dailyResolutionTimes[dayKey].count++;
-    }
-  });
-
-  const avgResolutionTimeData = last30Days.map(day => {
-    const dayKey = format(day, 'MMM d');
-    if (dailyResolutionTimes[dayKey] && dailyResolutionTimes[dayKey].count > 0) {
-      const avg = dailyResolutionTimes[dayKey].totalHours / dailyResolutionTimes[dayKey].count;
-      return { name: dayKey, hours: parseFloat(avg.toFixed(1)) };
-    }
-    return { name: dayKey, hours: null };
-  });
-
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader title={`Welcome, ${user.name}!`} description={greeting}>
         <div className="flex items-center gap-2">
             <Link href="/tickets/new" passHref>
@@ -160,15 +114,18 @@ export default function DashboardPage() {
       
       <StatsCards tickets={displayedTickets} projects={projects} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <RecentTickets tickets={displayedTickets} userMap={userMapByName} />
+           <TicketVolumeChart tickets={tickets} />
         </div>
-        <div className="flex flex-col gap-4">
-          <TicketsOverviewChart data={ticketsOverviewData} />
-          <AvgResolutionTimeChart data={avgResolutionTimeData} />
+        <div className="lg:col-span-1">
+          <TicketsByChannelChart tickets={tickets} />
         </div>
       </div>
+      
+       <div className="grid grid-cols-1">
+        <RecentTickets tickets={displayedTickets} userMap={userMapByName} />
+       </div>
     </div>
   );
 }

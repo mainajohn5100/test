@@ -1,3 +1,4 @@
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { Ticket, Project } from "@/lib/data";
 import { Ticket as TicketIcon, BarChart2, FilePlus2, Briefcase } from "lucide-react";
@@ -25,15 +26,15 @@ export function StatsCards({ tickets, projects }: StatsCardsProps) {
   ];
 
   return (
-    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
       {statItems.map((stat, index) => (
         <Card key={index} className={cn(stat.disabled && "bg-muted/50")}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader>
             <CardTitle className={cn("text-sm font-medium", stat.disabled && "text-muted-foreground")}>{stat.title}</CardTitle>
-            <stat.icon className={cn("h-4 w-4 text-muted-foreground", !stat.disabled && stat.color)} />
           </CardHeader>
-          <CardContent>
-            <div className={cn("text-2xl font-bold", stat.disabled && "text-muted-foreground")}>{stat.value}</div>
+          <CardContent className="flex justify-between items-end">
+            <div className={cn("text-3xl font-bold", stat.disabled && "text-muted-foreground")}>{stat.value}</div>
+            <stat.icon className={cn("h-6 w-6 text-muted-foreground", !stat.disabled && stat.color)} />
           </CardContent>
         </Card>
       ))}
