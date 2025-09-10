@@ -36,6 +36,7 @@ import { differenceInMinutes } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { getTickets } from "@/lib/firestore";
+import { Badge } from "./ui/badge";
 
 type NavItem = {
     label: string;
