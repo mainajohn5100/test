@@ -21,6 +21,7 @@ import {
   Link2,
   LifeBuoy,
   Building,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -37,7 +38,7 @@ type NavItem = {
     setting?: string;
 };
 
-const menuItems: NavItem[] = [
+const generalMenuItems: NavItem[] = [
   {
     label: "Dashboard",
     href: "/dashboard",
@@ -64,18 +65,9 @@ const menuItems: NavItem[] = [
     ],
     setting: "projectsEnabled",
   },
-   {
-    label: "Channels",
-    href: "/channels",
-    icon: Link2,
-    roles: ['Admin'],
-  },
-  {
-    label: "Analytics",
-    href: "/analytics",
-    icon: BarChart2,
-    roles: ['Admin'],
-  },
+];
+
+const adminMenuItems: NavItem[] = [
   {
     label: "Organization",
     href: "/organization",
@@ -88,6 +80,21 @@ const menuItems: NavItem[] = [
     icon: Users,
     roles: ['Admin'],
   },
+  {
+    label: "Channels",
+    href: "/channels",
+    icon: Link2,
+    roles: ['Admin'],
+  },
+  {
+    label: "Analytics",
+    href: "/analytics",
+    icon: BarChart2,
+    roles: ['Admin'],
+  },
+];
+
+const bottomMenuItems: NavItem[] = [
   {
     label: "Settings",
     href: "/settings",
@@ -102,27 +109,13 @@ const menuItems: NavItem[] = [
   },
 ];
 
+
 const clientProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
     { label: "All Projects", href: "/projects/all" },
 ];
 
-export function MainNav() {
-  const pathname = usePathname();
-  const { user } = useAuth();
-  const { projectsEnabled } = useSettings();
-  const { isMobile, setOpenMobile } = useSidebar();
-
-  const handleLinkClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
-  };
-
-  if (!user) {
-    return null;
-  }
-  
-  const accessibleMenuItems = menuItems
+function NavItems({ items, user, projectsEnabled, pathname, handleLinkClick }: { items: NavItem[], user: User, projectsEnabled: boolean, pathname: string, handleLinkClick: () => void }) {
+    const accessibleMenuItems = items
     .filter(item => {
         if (!item.roles.includes(user.role)) return false;
         if (item.setting === 'projectsEnabled' && !projectsEnabled) return false;
@@ -146,9 +139,8 @@ export function MainNav() {
       return { ...item, subItems: finalSubItems };
     });
 
-  return (
-    <nav className="flex flex-col p-4 space-y-32">
-      <Accordion type="multiple" className="w-full">
+    return (
+         <Accordion type="multiple" className="w-full">
         {accessibleMenuItems.map((item, index) =>
           item.subItems && item.subItems.length > 0 ? (
             <AccordionItem value={`item-${index}`} key={index} className="border-b-0">
@@ -193,6 +185,41 @@ export function MainNav() {
           )
         )}
       </Accordion>
+    )
+}
+
+export function MainNav() {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const { projectsEnabled } = useSettings();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  if (!user) {
+    return null;
+  }
+  
+  return (
+    <nav className="flex flex-col p-2 space-y-2 h-full">
+      <div className="flex-1">
+        <NavItems items={generalMenuItems} user={user} projectsEnabled={projectsEnabled} pathname={pathname} handleLinkClick={handleLinkClick} />
+        {user.role === 'Admin' && (
+            <div className="mt-4">
+                <div className="px-3 py-2">
+                    <h2 className="text-sm font-semibold text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">Admin</h2>
+                </div>
+                <NavItems items={adminMenuItems} user={user} projectsEnabled={projectsEnabled} pathname={pathname} handleLinkClick={handleLinkClick} />
+            </div>
+        )}
+      </div>
+       <div className="mt-auto">
+        <NavItems items={bottomMenuItems} user={user} projectsEnabled={projectsEnabled} pathname={pathname} handleLinkClick={handleLinkClick} />
+      </div>
     </nav>
   );
 }
