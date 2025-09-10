@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, formatDistanceToNow, isValid } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail, Link as LinkIcon, KeyRound, Flag, NotebookText, MessageCircleQuestion, MessageSquarePlus } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail, Link as LinkIcon, KeyRound, Flag, NotebookText, MessageCircleQuestion, MessageSquarePlus, Paperclip } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -56,6 +56,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SlaStatus } from "@/components/tickets/sla-status";
+import { Textarea } from "@/components/ui/textarea";
 
 const categories: Ticket['category'][] = ['General', 'Support', 'Advertising', 'Billing'];
 
@@ -336,6 +337,24 @@ function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket
     );
 }
 
+const TicketEvent = ({ event, userMapById }: { event: TicketConversation, userMapById: Map<string, User>}) => {
+    const author = userMapById.get(event.authorId);
+    return (
+        <div className="flex items-start gap-4">
+            <Avatar className="h-8 w-8 border">
+                {author?.avatar && <AvatarImage src={author.avatar} />}
+                <AvatarFallback>{author?.name?.charAt(0) || '?'}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+                <div className="flex items-center justify-between">
+                    <p className="font-semibold text-sm">{author?.name || event.authorName}</p>
+                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(event.createdAt), { addSuffix: true })}</p>
+                </div>
+                <div className="text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: event.content }}></div>
+            </div>
+        </div>
+    )
+}
 
 export default function ViewTicketPage() {
   const router = useRouter();
@@ -766,9 +785,9 @@ export default function ViewTicketPage() {
           </div>
         </PageHeader>
         
-        <div className="grid flex-1 grid-cols-1 md:grid-cols-3 md:gap-6 overflow-hidden mt-4 md:mt-0">
+        <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-8 overflow-hidden mt-4 md:mt-0">
             {/* Left Column (Main content) */}
-            <div className="md:col-span-2 flex flex-col gap-6 overflow-y-auto">
+            <div className="lg:col-span-2 flex flex-col gap-6 overflow-y-auto">
                 <Card>
                     <CardHeader>
                         <CardTitle>Description</CardTitle>
@@ -795,34 +814,13 @@ export default function ViewTicketPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Conversation History</CardTitle>
+                        <CardTitle>History</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6">
                         {conversations.length > 0 ? (
-                            conversations.map((conv, idx) => {
-                                const author = userMapById.get(conv.authorId);
-                                return (
-                                <div key={idx} className="flex w-full justify-start">
-                                    <div className="flex flex-col items-start gap-1">
-                                        <div className="flex items-center flex-row gap-2">
-                                            {author && (
-                                                <Avatar className="h-6 w-6">
-                                                    <AvatarImage src={author.avatar} />
-                                                    <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                            )}
-                                            <span className="text-xs text-muted-foreground">{author?.name || 'Unknown User'}</span>
-                                        </div>
-                                        <div className="rounded-lg p-2 text-[11px] bg-muted w-fit max-w-[80%] break-words">
-                                            <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: conv.content }} />
-                                        </div>
-                                        <div className="text-xs text-muted-foreground mt-1">
-                                            {formatDistanceToNow(new Date(conv.createdAt), { addSuffix: true })}
-                                        </div>
-                                    </div>
-                                </div>
-                                )
-                            })
+                            conversations.map((conv) => (
+                                <TicketEvent key={conv.id} event={conv} userMapById={userMapById}/>
+                            ))
                         ) : (
                             <p className="text-sm text-center text-muted-foreground py-4">No replies yet.</p>
                         )}
@@ -831,46 +829,19 @@ export default function ViewTicketPage() {
                 
                 {canReply && (
                     <Card>
-                         <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Add Reply</CardTitle>
-                                {(currentUser.role === 'Admin' || currentUser.role === 'Agent') && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm">
-                                                <MessageSquarePlus className="mr-2 h-4 w-4" />
-                                                Templates
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-80">
-                                            <DropdownMenuLabel>Select a Template</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            {cannedResponses.length > 0 ? (
-                                                cannedResponses.map((res, index) => (
-                                                    <DropdownMenuItem key={index} onSelect={() => handleTemplateSelect(res.content)}>
-                                                        <p className="font-medium truncate">{res.title}</p>
-                                                    </DropdownMenuItem>
-                                                ))
-                                            ) : (
-                                                <DropdownMenuItem disabled>No templates found.</DropdownMenuItem>
-                                            )}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                            </div>
+                        <CardHeader>
+                            <CardTitle>Add a Reply</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             <TiptapEditor 
-                                editor={editor}
-                                content={reply}
-                                onChange={setReply}
-                                placeholder="Type your reply here..."
-                            />
-                            <div className="flex justify-end mt-4">
-                                <Button onClick={handleAddReply} disabled={isPending || !reply.trim()}>
-                                {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                Add Reply
-                                </Button>
+                            <div className="space-y-4">
+                                <Textarea placeholder="Type your message here..." rows={5} value={reply} onChange={(e) => setReply(e.target.value)}/>
+                                <div className="flex justify-between items-center">
+                                    <Button variant="outline" size="sm"><Paperclip className="mr-2 h-4 w-4"/>Attach File</Button>
+                                    <Button style={{ backgroundColor: "hsl(var(--accent))", color: "hsl(var(--accent-foreground))" }} onClick={handleAddReply} disabled={isPending || !reply.trim()}>
+                                        {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Send Reply
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
