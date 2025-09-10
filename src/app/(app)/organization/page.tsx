@@ -5,7 +5,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Loader, ShieldAlert, Users, Building, LinkIcon, Save, Image as ImageIcon } from 'lucide-react';
+import { Loader, ShieldAlert, Users, Building, LinkIcon, Save, Image as ImageIcon, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getOrganizationById, getUsers } from '@/lib/firestore';
@@ -79,11 +79,21 @@ function OrganizationSettingsCard({ org, users }: { org: Organization, users: Us
                         <Label htmlFor="name">Organization Name</Label>
                         <Input id="name" name="name" defaultValue={org.name} disabled={isPending} />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="domain">Website Domain (Optional)</Label>
-                        <div className="relative">
-                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="domain" name="domain" placeholder="example.com" defaultValue={org.domain} className="pl-9" disabled={isPending} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="subdomain">Subdomain</Label>
+                            <div className="relative">
+                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input id="subdomain" name="subdomain" placeholder="your-org" defaultValue={org.subdomain} className="pl-9 pr-36" disabled={isPending} />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.requestflow.app</span>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="domain">Custom Domain (Optional)</Label>
+                            <div className="relative">
+                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input id="domain" name="domain" placeholder="example.com" defaultValue={org.domain} className="pl-9" disabled={isPending} />
+                            </div>
                         </div>
                     </div>
                     <div className="flex justify-end pt-2">
@@ -199,4 +209,3 @@ export default function OrganizationPage() {
         </div>
     );
 }
-

@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { updateOrganization } from '@/lib/firestore';
+import { updateOrganization, getOrganizationBySubdomain } from '@/lib/firestore';
 
 export async function updateOrganizationAction(orgId: string, formData: FormData) {
   try {
@@ -12,8 +12,23 @@ export async function updateOrganizationAction(orgId: string, formData: FormData
 
     const name = formData.get('name') as string;
     const domain = formData.get('domain') as string;
+    const subdomain = formData.get('subdomain') as string;
+
     if (name) updateData.name = name;
     if (domain) updateData.domain = domain;
+    
+    if (subdomain) {
+        const subdomainRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+        if (!subdomainRegex.test(subdomain)) {
+            return { success: false, error: 'Subdomain can only contain lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen.' };
+        }
+        
+        const existingOrg = await getOrganizationBySubdomain(subdomain);
+        if (existingOrg && existingOrg.id !== orgId) {
+            return { success: false, error: 'This subdomain is already taken. Please choose another one.' };
+        }
+        updateData.subdomain = subdomain;
+    }
 
     const logoFile = formData.get('logo') as File | null;
     if (logoFile && logoFile.size > 0) {
