@@ -19,6 +19,7 @@ export default {
       fontFamily: {
         body: ['var(--font-raleway)', 'sans-serif'],
         headline: ['var(--font-montserrat)', 'sans-serif'],
+        sans: ['var(--font-pt-sans)', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {

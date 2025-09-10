@@ -340,17 +340,17 @@ function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket
 const TicketEvent = ({ event, userMapById }: { event: TicketConversation, userMapById: Map<string, User>}) => {
     const author = userMapById.get(event.authorId);
     return (
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-3">
             <Avatar className="h-8 w-8 border">
                 {author?.avatar && <AvatarImage src={author.avatar} />}
                 <AvatarFallback>{author?.name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
                 <div className="flex items-center justify-between">
-                    <p className="font-semibold text-sm">{author?.name || event.authorName}</p>
-                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(event.createdAt), { addSuffix: true })}</p>
+                    <p className="font-sans font-bold text-[14px]">{author?.name || event.authorName}</p>
+                    <p className="font-sans text-xs text-muted-foreground">{format(new Date(event.createdAt), "PP 'at' p")}</p>
                 </div>
-                <div className="text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: event.content }}></div>
+                <div className="font-sans text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: event.content }}></div>
             </div>
         </div>
     )
@@ -816,7 +816,7 @@ export default function ViewTicketPage() {
                     <CardHeader>
                         <CardTitle>History</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-4">
                         {conversations.length > 0 ? (
                             conversations.map((conv) => (
                                 <TicketEvent key={conv.id} event={conv} userMapById={userMapById}/>
