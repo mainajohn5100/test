@@ -22,12 +22,19 @@ import {
   LifeBuoy,
   Building,
   Shield,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import type { User } from "@/lib/data";
 import { useSidebar } from "./ui/sidebar";
 import { useSettings } from "@/contexts/settings-context";
+import React from "react";
+import { collection, onSnapshot, query, where, Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { differenceInMinutes } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 
 type NavItem = {
     label: string;
@@ -188,6 +195,85 @@ function NavItems({ items, user, projectsEnabled, pathname, handleLinkClick }: {
     )
 }
 
+function ActiveAgentsGlimpse({ handleLinkClick }: { handleLinkClick: () => void }) {
+    const { user } = useAuth();
+    const [agents, setAgents] = React.useState<User[]>([]);
+    
+    const isUserOnline = (lastSeen?: string) => {
+        if (!lastSeen) return false;
+        return differenceInMinutes(new Date(), new Date(lastSeen)) < 3;
+    };
+    
+    React.useEffect(() => {
+        if (!user || user.role !== 'Admin' || !user.organizationId) {
+            setAgents([]);
+            return;
+        };
+
+        const usersCol = collection(db, 'users');
+        const q = query(
+            usersCol, 
+            where("organizationId", "==", user.organizationId),
+            where("role", "in", ["Admin", "Agent"]),
+            where("status", "==", "active")
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const usersData = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const lastSeen = data.lastSeen as Timestamp;
+                return { 
+                    id: doc.id,
+                    ...data,
+                    lastSeen: lastSeen ? lastSeen.toDate().toISOString() : undefined,
+                 } as User;
+            });
+            const activeUsers = usersData.filter(u => isUserOnline(u.lastSeen));
+            setAgents(activeUsers);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    if (!user || user.role !== 'Admin') return null;
+
+    return (
+        <div className="group-data-[collapsible=icon]:hidden px-2 pt-2">
+            <h3 className="px-1 py-1 text-xs font-semibold text-sidebar-foreground/70 flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Active Agents
+            </h3>
+            {agents.length > 0 ? (
+                <div className="flex flex-col gap-1 mt-1">
+                    {agents.map(agent => (
+                        <TooltipProvider key={agent.id}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Link href={`/users/${agent.id}`} onClick={handleLinkClick} className="w-full">
+                                        <Button variant="ghost" className="w-full justify-start gap-2 h-auto p-2">
+                                            <Avatar className="h-6 w-6">
+                                                <AvatarImage src={agent.avatar} />
+                                                <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-sm font-normal truncate">{agent.name}</span>
+                                        </Button>
+                                    </Link>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" align="center">
+                                    <p>{agent.name} is online</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-xs text-muted-foreground px-2 py-1">No agents currently active.</p>
+            )}
+        </div>
+    );
+}
+
+
 export function MainNav() {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -210,10 +296,11 @@ export function MainNav() {
         <NavItems items={generalMenuItems} user={user} projectsEnabled={projectsEnabled} pathname={pathname} handleLinkClick={handleLinkClick} />
         {user.role === 'Admin' && (
             <div className="mt-4">
-                <div className="px-3 py-2">
-                    <h2 className="text-sm font-semibold text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">Admin</h2>
+                <div className="px-3 py-2 group-data-[collapsible=icon]:hidden">
+                    <h2 className="text-sm font-semibold text-sidebar-foreground/70">Admin</h2>
                 </div>
                 <NavItems items={adminMenuItems} user={user} projectsEnabled={projectsEnabled} pathname={pathname} handleLinkClick={handleLinkClick} />
+                <ActiveAgentsGlimpse handleLinkClick={handleLinkClick} />
             </div>
         )}
       </div>
