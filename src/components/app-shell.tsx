@@ -329,10 +329,10 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
             <div className="flex items-center">
                  <SidebarTrigger className="hidden md:block" />
-                 {currentUser?.role === 'Admin' && <OrganizationSelector org={organization} />}
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {currentUser?.role === 'Admin' && <OrganizationSelector org={organization} />}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
