@@ -144,6 +144,8 @@ export type WhatsAppSettings = {
 export type Organization = {
   id:string;
   name: string;
+  logo?: string;
+  domain?: string;
   createdAt: string;
   settings?: {
     agentPanelEnabled?: boolean;

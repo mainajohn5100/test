@@ -749,6 +749,19 @@ export const getOrganizationById = cache(async (id: string): Promise<Organizatio
     }
 });
 
+export async function updateOrganization(orgId: string, data: Partial<Omit<Organization, 'id' | 'settings'>>): Promise<void> {
+  try {
+    const orgRef = doc(db, 'organizations', orgId);
+    const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+    if (Object.keys(cleanData).length > 0) {
+        await updateDoc(orgRef, cleanData);
+    }
+  } catch (error) {
+    console.error("Error updating organization:", error);
+    throw new Error("Failed to update organization.");
+  }
+}
+
 export const getOrganizationByWhatsAppNumber = cache(async (phoneNumber: string): Promise<Organization | null> => {
     try {
         const orgsCol = collection(db, 'organizations');
