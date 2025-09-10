@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
-import type { User } from "@/lib/data";
+import type { User, Ticket as TicketType } from "@/lib/data";
 import { useSidebar } from "./ui/sidebar";
 import { useSettings } from "@/contexts/settings-context";
 import React from "react";
@@ -35,6 +35,7 @@ import { db } from "@/lib/firebase";
 import { differenceInMinutes } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "./ui/tooltip";
+import { getTickets } from "@/lib/firestore";
 
 type NavItem = {
     label: string;
@@ -198,6 +199,7 @@ function NavItems({ items, user, projectsEnabled, pathname, handleLinkClick }: {
 function ActiveAgentsGlimpse({ handleLinkClick }: { handleLinkClick: () => void }) {
     const { user } = useAuth();
     const [agents, setAgents] = React.useState<User[]>([]);
+    const [tickets, setTickets] = React.useState<TicketType[]>([]);
     
     const isUserOnline = (lastSeen?: string) => {
         if (!lastSeen) return false;
@@ -209,6 +211,8 @@ function ActiveAgentsGlimpse({ handleLinkClick }: { handleLinkClick: () => void 
             setAgents([]);
             return;
         };
+        
+        getTickets(user).then(setTickets);
 
         const usersCol = collection(db, 'users');
         const q = query(
@@ -234,6 +238,10 @@ function ActiveAgentsGlimpse({ handleLinkClick }: { handleLinkClick: () => void 
 
         return () => unsubscribe();
     }, [user]);
+    
+    const getActiveTicketCount = (agentName: string) => {
+        return tickets.filter(t => t.assignee === agentName && t.status !== 'Closed' && t.status !== 'Terminated').length;
+    };
 
     if (!user || user.role !== 'Admin') return null;
 
@@ -250,17 +258,20 @@ function ActiveAgentsGlimpse({ handleLinkClick }: { handleLinkClick: () => void 
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Link href={`/users/${agent.id}`} onClick={handleLinkClick} className="w-full">
-                                        <Button variant="ghost" className="w-full justify-start gap-2 h-auto p-2">
-                                            <Avatar className="h-6 w-6">
-                                                <AvatarImage src={agent.avatar} />
-                                                <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-sm font-normal truncate">{agent.name}</span>
+                                        <Button variant="ghost" className="w-full justify-between gap-2 h-auto p-2">
+                                            <div className="flex items-center gap-2 truncate">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={agent.avatar} />
+                                                    <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="text-sm font-normal truncate">{agent.name}</span>
+                                            </div>
+                                            <Badge variant="secondary">{getActiveTicketCount(agent.name)}</Badge>
                                         </Button>
                                     </Link>
                                 </TooltipTrigger>
                                 <TooltipContent side="right" align="center">
-                                    <p>{agent.name} is online</p>
+                                    <p>{agent.name} has {getActiveTicketCount(agent.name)} active tickets.</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
@@ -300,7 +311,9 @@ export function MainNav() {
                     <h2 className="text-sm font-semibold text-sidebar-foreground/70">Admin</h2>
                 </div>
                 <NavItems items={adminMenuItems} user={user} projectsEnabled={projectsEnabled} pathname={pathname} handleLinkClick={handleLinkClick} />
-                <ActiveAgentsGlimpse handleLinkClick={handleLinkClick} />
+                <div className="mt-2">
+                    <ActiveAgentsGlimpse handleLinkClick={handleLinkClick} />
+                </div>
             </div>
         )}
       </div>
