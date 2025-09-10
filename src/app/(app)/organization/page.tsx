@@ -17,9 +17,11 @@ import { Input } from '@/components/ui/input';
 import { updateOrganizationAction } from './actions';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
-function OrganizationDetailsForm({ org }: { org: Organization }) {
+function OrganizationSettingsCard({ org, users }: { org: Organization, users: User[] }) {
     const { toast } = useToast();
+    const router = useRouter();
     const [isPending, startTransition] = React.useTransition();
     const [previewUrl, setPreviewUrl] = React.useState<string | null>(org.logo || null);
 
@@ -45,13 +47,15 @@ function OrganizationDetailsForm({ org }: { org: Organization }) {
 
     return (
         <Card>
-            <form onSubmit={handleSubmit}>
-                <CardHeader>
-                    <CardTitle>Organization Details</CardTitle>
-                    <CardDescription>Update your organization's name, domain and logo.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
+            <CardHeader>
+                <CardTitle>General Settings</CardTitle>
+                <CardDescription>Update your organization's details, manage team members, and view your subscription plan.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {/* Organization Details Section */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <h3 className="text-lg font-medium">Details</h3>
+                     <div className="flex items-center gap-4">
                         <Avatar className="h-16 w-16 rounded-md">
                             <AvatarImage src={previewUrl || undefined} className="object-contain" />
                             <AvatarFallback className="rounded-md">
@@ -82,63 +86,53 @@ function OrganizationDetailsForm({ org }: { org: Organization }) {
                             <Input id="domain" name="domain" placeholder="example.com" defaultValue={org.domain} className="pl-9" disabled={isPending} />
                         </div>
                     </div>
-                </CardContent>
-                <div className="flex justify-end p-6 pt-0">
-                    <Button type="submit" disabled={isPending}>
-                        {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4"/>}
-                        Save Changes
-                    </Button>
-                </div>
-            </form>
-        </Card>
-    );
-}
+                    <div className="flex justify-end pt-2">
+                        <Button type="submit" disabled={isPending}>
+                            {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4"/>}
+                            Save Changes
+                        </Button>
+                    </div>
+                </form>
 
-function TeamMembersCard({ users }: { users: User[] }) {
-    const router = useRouter();
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>A list of all users in your organization.</CardDescription>
-            </CardHeader>
-            <CardContent>
+                <Separator />
+
+                {/* Team Members Section */}
                 <div className="space-y-4">
-                    {users.map(user => (
-                        <div key={user.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/users/${user.id}`)}>
-                                <Avatar>
-                                    <AvatarImage src={user.avatar} />
-                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-medium">{user.name}</p>
-                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <h3 className="text-lg font-medium">Team Members</h3>
+                    <div className="space-y-4">
+                        {users.map(user => (
+                            <div key={user.id} className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/users/${user.id}`)}>
+                                    <Avatar>
+                                        <AvatarImage src={user.avatar} />
+                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-medium">{user.name}</p>
+                                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                                    </div>
                                 </div>
+                                <Badge variant="outline">{user.role}</Badge>
                             </div>
-                            <Badge variant="outline">{user.role}</Badge>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                </div>
+                
+                <Separator />
+                
+                {/* Subscription Section */}
+                 <div className="space-y-4">
+                     <h3 className="text-lg font-medium">Subscription Plan</h3>
+                     <div className="text-center text-muted-foreground py-10 rounded-lg border border-dashed">
+                        <p>M-Pesa Subscription feature is coming soon.</p>
+                        <Button variant="secondary" disabled className="mt-4">Upgrade Plan</Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>
     );
 }
 
-function SubscriptionCard() {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Subscription Plan</CardTitle>
-                <CardDescription>Your current plan and billing details.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-center text-muted-foreground py-10">
-                <p>M-Pesa Subscription feature is coming soon.</p>
-                <Button variant="secondary" disabled>Upgrade Plan</Button>
-            </CardContent>
-        </Card>
-    );
-}
 
 export default function OrganizationPage() {
     const { user, loading: authLoading } = useAuth();
@@ -199,16 +193,10 @@ export default function OrganizationPage() {
                 title="Organization Settings"
                 description="Manage your organization details, team members, and subscription."
             />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                   <OrganizationDetailsForm org={organization} />
-                   <TeamMembersCard users={users} />
-                </div>
-                <div className="lg:col-span-1">
-                   <SubscriptionCard />
-                </div>
+            <div className="max-w-4xl mx-auto w-full">
+                <OrganizationSettingsCard org={organization} users={users} />
             </div>
         </div>
     );
 }
+
