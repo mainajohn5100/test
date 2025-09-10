@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize, ExternalLink, ArrowLeft } from "lucide-react";
+import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize, ExternalLink, ArrowLeft, Building, ChevronDown } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,10 +37,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useTheme } from "next-themes";
-import type { Notification } from "@/lib/data";
+import type { Notification, Organization } from "@/lib/data";
 import { formatDistanceToNow } from "date-fns";
 import { useSettings } from "@/contexts/settings-context";
-import { markAllUserNotificationsAsRead, updateNotificationReadStatus } from "@/lib/firestore";
+import { markAllUserNotificationsAsRead, updateNotificationReadStatus, getOrganizationById } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "./ui/scroll-area";
@@ -56,6 +56,53 @@ const getNotificationIcon = (notification: Notification) => {
     return <MessageSquare className="h-4 w-4" />
 }
 
+
+function OrganizationSelector({ org }: { org: Organization | null }) {
+    if (!org) {
+        return (
+            <div className="hidden md:flex items-center mr-4">
+                 <Skeleton className="h-5 w-24" />
+                 <Skeleton className="h-8 w-32 ml-2" />
+            </div>
+        );
+    }
+
+    // Placeholder for multi-tenant functionality
+    const otherOrgs = [
+        { id: 'org_2', name: 'Globex Corporation' },
+        { id: 'org_3', name: 'Stark Industries' },
+    ];
+
+    return (
+        <div className="hidden md:flex items-center mr-4">
+            <span className="text-sm text-gray-500 mr-2">Organization:</span>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="text-sm font-medium text-gray-700 flex items-center">
+                        <span>{org.name}</span>
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                    <DropdownMenuLabel>Switch Organization</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {/* The current organization */}
+                    <DropdownMenuItem disabled>
+                        <Building className="mr-2 h-4 w-4" />
+                        <span>{org.name}</span>
+                    </DropdownMenuItem>
+                    {/* Placeholder for other organizations */}
+                    {otherOrgs.map(o => (
+                         <DropdownMenuItem key={o.id} disabled>
+                            <span>{o.name}</span>
+                         </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    );
+}
+
 function AppShellContent({ children }: { children: React.ReactNode }) {
   const { user: currentUser } = useAuth();
   const router = useRouter();
@@ -68,12 +115,19 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   const [loadingNotifications, setLoadingNotifications] = React.useState(true);
   const [globalSearchTerm, setGlobalSearchTerm] = React.useState('');
   const [isFullScreen, setIsFullScreen] = React.useState(false);
+  const [organization, setOrganization] = React.useState<Organization | null>(null);
+
+  React.useEffect(() => {
+    if (currentUser?.organizationId) {
+        getOrganizationById(currentUser.organizationId).then(setOrganization);
+    }
+  }, [currentUser?.organizationId]);
   
   const unreadCount = React.useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
   const handleGlobalSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && globalSearchTerm.trim()) {
-      router.push(`/tickets/all?search=${encodeURIComponent(globalSearchTerm.trim())}`);
+      router.push(`/tickets?search=${encodeURIComponent(globalSearchTerm.trim())}`);
     }
   };
 
@@ -273,7 +327,10 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
                 <SidebarTrigger className="md:hidden" />
             )}
           <div className="flex-1">
-            <SidebarTrigger className="hidden md:block" />
+            <div className="flex items-center">
+                 <SidebarTrigger className="hidden md:block" />
+                 {currentUser?.role === 'Admin' && <OrganizationSelector org={organization} />}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
