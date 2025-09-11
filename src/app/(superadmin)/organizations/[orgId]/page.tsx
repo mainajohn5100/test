@@ -31,6 +31,7 @@ interface OrgDetails {
     subscriptionStatus: 'Active' | 'Trialing' | 'Past Due' | 'Canceled';
     configuredDomain: string;
     supportInquiryEmail: string;
+    primaryAdminName?: string;
 }
 
 interface OrgUser {
@@ -119,7 +120,6 @@ export default function OrganizationDetailPage() {
     const { user: currentUser } = useAuth();
     
     const [org, setOrg] = useState<OrgDetails | null>(null);
-    const [users, setUsers] = useState<OrgUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [isUpdating, startUpdateTransition] = useTransition();
 
@@ -133,24 +133,15 @@ export default function OrganizationDetailPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [orgResponse, usersResponse] = await Promise.all([
-                    fetch(`/api/superadmin/organizations/${orgId}`, {
-                        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
-                    }),
-                    fetch(`/api/superadmin/organizations/${orgId}/users`, {
-                        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
-                    })
-                ]);
+                const orgResponse = await fetch(`/api/superadmin/organizations/${orgId}`, {
+                    headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
+                });
 
                 if (!orgResponse.ok) throw new Error('Failed to fetch organization details');
                 const orgData = await orgResponse.json();
                 setOrg(orgData);
                 setPlan(orgData.subscriptionPlan);
                 setStatus(orgData.subscriptionStatus);
-
-                if (!usersResponse.ok) throw new Error('Failed to fetch users');
-                const usersData = await usersResponse.json();
-                setUsers(usersData);
 
             } catch (error: any) {
                 toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -301,33 +292,18 @@ export default function OrganizationDetailPage() {
                             </div>
                         </CardContent>
                     </Card>
-                     <Card>
+                    <Card>
                         <CardHeader>
-                            <CardTitle>User List</CardTitle>
-                            <CardDescription>All users associated with {org.organizationName}.</CardDescription>
+                            <CardTitle>Primary Admin</CardTitle>
+                            <CardDescription>The main point of contact for {org.organizationName}.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="border rounded-md">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Email</TableHead>
-                                            <TableHead>Role</TableHead>
-                                            <TableHead>Status</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {users.map(user => (
-                                            <TableRow key={user.userId}>
-                                                <TableCell>{user.name}</TableCell>
-                                                <TableCell>{user.email}</TableCell>
-                                                <TableCell><Badge variant="secondary">{user.role}</Badge></TableCell>
-                                                <TableCell><Badge variant={user.status === 'active' ? 'default' : 'destructive'}>{user.status}</Badge></TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1">
+                                    <p className="font-medium">{org.primaryAdminName || 'Not available'}</p>
+                                    <p className="text-sm text-muted-foreground">{org.supportInquiryEmail}</p>
+                                </div>
+                                <Badge variant="secondary">Admin</Badge>
                             </div>
                         </CardContent>
                     </Card>

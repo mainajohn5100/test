@@ -60,6 +60,7 @@ export async function GET(request: Request, { params }: { params: { orgId: strin
             configuredDomain: org.domain || org.subdomain,
             organizationLogoUrl: org.logo || '',
             supportInquiryEmail: org.settings?.supportEmail || primaryAdmin?.email || '',
+            primaryAdminName: primaryAdmin?.name || 'N/A',
         };
 
         return NextResponse.json(orgDetails);
