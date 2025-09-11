@@ -65,7 +65,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   }
 
   // Check if the user is the designated superadmin.
-  if (user?.role !== 'Admin' || user.email !== 'requestflow.o@gmail.com') {
+  if (user?.role !== 'Admin' || user.email !== process.env.NEXT_PUBLIC_SUPERADMIN_EMAIL) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center justify-center text-center">
