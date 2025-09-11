@@ -1,5 +1,4 @@
 
-
 'use client'; 
 
 import { notFound, useRouter, useParams } from "next/navigation";
@@ -311,7 +310,11 @@ function TicketDetailsCard({ ticket, currentStatus, currentPriority, currentCate
 
 function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket, reporter: User | undefined, reporterEmail: string | undefined }) {
     const getInitials = (name: string) => {
-        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+        const nameParts = name.split(' ');
+        if (nameParts.length > 1) {
+            return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
     }
     
     return (
@@ -368,27 +371,27 @@ const TicketEvent = ({ event, userMapById }: { event: TicketConversation, userMa
                 <AvatarFallback>{author?.name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-baseline gap-2">
                     <p className="font-sans font-bold text-[14px]">{author?.name || event.authorName}</p>
-                    <p className="font-sans text-[12px] text-muted-foreground">{format(new Date(event.createdAt), "PP 'at' p")}</p>
+                    <p className="font-sans text-[12px] text-muted-foreground">{format(new Date(event.createdAt), "MMM d, yyyy 'at' p")}</p>
                 </div>
                 {event.content && <div 
                     className="font-sans text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none tiptap-content" 
                     dangerouslySetInnerHTML={{ __html: event.content }}
                 />}
                 {event.attachments && event.attachments.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                        {event.attachments.map(file => (
-                             file.type.startsWith('image/') ? (
-                                <ImageAttachment key={file.name} src={file.url} />
-                               ) : (
-                                <a href={file.url} target="_blank" rel="noopener noreferrer" key={file.name}>
-                                    <Button variant="outline" size="sm" className="h-auto py-1 px-2">
-                                        <FileIcon className="mr-2 h-3.5 w-3.5"/>
-                                        {file.name}
-                                    </Button>
-                                </a>
-                               )
+                     <div className="mt-2 flex flex-col items-start gap-2">
+                        {event.attachments.map((file, index) => (
+                             <a 
+                                href={file.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                key={index} 
+                                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary hover:underline"
+                            >
+                                <Paperclip className="h-3.5 w-3.5" />
+                                {file.name}
+                            </a>
                         ))}
                     </div>
                 )}
@@ -406,7 +409,7 @@ function ImageAttachment({ src }: { src: string }) {
             alt="Attachment"
             width={100}
             height={75}
-            className="rounded-md object-cover cursor-pointer"
+            className="rounded-md object-cover cursor-pointer tiptap-content-image"
           />
         </DialogTrigger>
         <DialogContent className="max-w-4xl p-2">
@@ -554,7 +557,7 @@ export default function ViewTicketPage() {
 
 
 
-const [formState, formAction] = useActionState(addReplyWithState, { success: true });
+const [formState, formAction] = React.useActionState(addReplyWithState, { success: true });
 
 
   // useEffect to handle successful form submissions and reset the form 
@@ -879,23 +882,20 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
                     <CardContent>
                         <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: ticket.description }} />
                         {ticket.attachments && ticket.attachments.length > 0 && (
-                            <>
-                                <Separator className="my-4"/>
-                                <div className="flex flex-wrap gap-2">
-                                    {ticket.attachments.map((file) => (
-                                       file.type.startsWith('image/') ? (
-                                        <ImageAttachment key={file.name} src={file.url} />
-                                       ) : (
-                                        <a href={file.url} target="_blank" rel="noopener noreferrer" key={file.name}>
-                                            <Button variant="outline" size="sm" className="h-auto py-1 px-2">
-                                                <FileIcon className="mr-2 h-3.5 w-3.5"/>
-                                                {file.name}
-                                            </Button>
-                                        </a>
-                                       )
-                                    ))}
-                                </div>
-                            </>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {ticket.attachments.map((file) => (
+                                    file.type.startsWith('image/') ? (
+                                    <ImageAttachment key={file.name} src={file.url} />
+                                    ) : (
+                                    <a href={file.url} target="_blank" rel="noopener noreferrer" key={file.name}>
+                                        <Button variant="outline" size="sm" className="h-auto py-1 px-2">
+                                            <FileIcon className="mr-2 h-3.5 w-3.5"/>
+                                            {file.name}
+                                        </Button>
+                                    </a>
+                                    )
+                                ))}
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -930,7 +930,6 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
                                 <input type="hidden" name="content" value={reply} />
 
                                 <TiptapEditor
-                                    editor={editor}
                                     content={reply}
                                     onChange={setReply}
                                     placeholder="Type your reply here..."
@@ -955,23 +954,6 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
                                         </div>
                                     </div>
                                 )}
-
-                                {/* File inputs - one for each selected file */}
-                                {files.map((file, index) => (
-                                    <input
-                                        key={`file-${index}-${file.name}`}
-                                        type="file"
-                                        name="attachments"
-                                        style={{ display: 'none' }}
-                                        ref={(input) => {
-                                            if (input) {
-                                                const dataTransfer = new DataTransfer();
-                                                dataTransfer.items.add(file);
-                                                input.files = dataTransfer.files;
-                                            }
-                                        }}
-                                    />
-                                ))}
 
                                 {/* File selection input */}
                                 <input

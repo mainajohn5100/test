@@ -18,7 +18,7 @@ service firebase.storage {
     // Allow avatars to be read publicly and written only by the user who owns them.
     match /avatars/{userId}/{allPaths=**} {
       allow read;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write;
     }
   }
 }
