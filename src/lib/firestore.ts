@@ -537,8 +537,8 @@ export async function addConversation(
     ticketId: string, 
     conversationData: Partial<Omit<TicketConversation, 'id' | 'createdAt'>>
 ): Promise<string> {
-    if (!conversationData.authorId || !conversationData.content) {
-        throw new Error("Author ID and content are required to add a conversation.");
+    if (!conversationData.authorId || (!conversationData.content && (!conversationData.attachments || conversationData.attachments.length === 0))) {
+        throw new Error("Author ID and content or attachments are required to add a conversation.");
     }
 
     const ticketRef = doc(db, 'tickets', ticketId);
@@ -555,11 +555,12 @@ export async function addConversation(
         }
     }
 
-    const newConversation: Omit<TicketConversation, 'id'> = {
+    const newConversation: Omit<TicketConversation, 'id' | 'createdAt'> = {
         authorId: conversationData.authorId,
         authorName: authorName,
-        content: conversationData.content,
+        content: conversationData.content || '',
         createdAt: new Date().toISOString(),
+        attachments: conversationData.attachments || [],
     };
     
     // Add the new message to the sub-collection

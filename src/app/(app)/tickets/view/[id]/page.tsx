@@ -899,7 +899,7 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
             <CardTitle>Add a Reply</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-        <form action={formAction} className="space-y-4" encType="multipart/form-data">
+        <form action={formAction} className="space-y-4">
   <input type="hidden" name="ticketId" value={ticket.id} />
   <input type="hidden" name="authorId" value={currentUser.id} />
   <input type="hidden" name="content" value={reply} />

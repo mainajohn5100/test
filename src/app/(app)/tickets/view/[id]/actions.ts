@@ -27,7 +27,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 export async function addReplyAction(formData: FormData) {
   try {
     const ticketId = formData.get('ticketId') as string;
-    const content = formData.get('content') as string;
+    const content = (formData.get('content') as string) || '';
     const authorId = formData.get('authorId') as string;
     const files = formData.getAll('attachments') as File[];
 
@@ -124,7 +124,6 @@ export async function addReplyAction(formData: FormData) {
         try {
           const twilioClient = new Twilio(orgWhatsapp.accountSid, orgWhatsapp.authToken);
           const plainTextContent = htmlToText(content, { wordwrap: 130 });
-          const replyBody = `*New reply from ${author.name}:*\n\n${plainTextContent}`;
           
           const messagePayload: any = {
             from: `whatsapp:${orgWhatsapp.phoneNumber}`,
@@ -133,6 +132,7 @@ export async function addReplyAction(formData: FormData) {
 
           // Send main text message if there is content
           if (plainTextContent) {
+            const replyBody = `*New reply from ${author.name}:*\n\n${plainTextContent}`;
             await twilioClient.messages.create({ ...messagePayload, body: replyBody });
           }
           
