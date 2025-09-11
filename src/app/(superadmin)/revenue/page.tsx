@@ -8,25 +8,18 @@ import { DollarSign } from 'lucide-react';
 
 export default function RevenuePage() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 w-full">
       <PageHeader
         title="Revenue"
         description="View earnings reports and financial metrics."
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>Earnings Reports</CardTitle>
-          <CardDescription>
+      <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-lg">
+          <DollarSign className="w-16 h-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold">Earnings Reports</h2>
+          <p className="text-muted-foreground mt-2">
             Detailed financial reports and revenue breakdowns will be displayed here.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                <DollarSign className="w-12 h-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Revenue reports are not yet available.</p>
-            </div>
-        </CardContent>
-      </Card>
+          </p>
+      </div>
     </div>
   );
 }

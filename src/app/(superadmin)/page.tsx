@@ -128,7 +128,6 @@ export default function SuperAdminDashboardPage() {
         { title: "Total Organizations", value: organizations.length, icon: Building, description: "All organizations on the platform" },
         { title: "Active Subscriptions", value: activeSubscriptions, icon: CheckCircle, description: "Organizations with an active plan" },
         { title: "Total Projects", value: totalProjects, icon: Briefcase, description: "Sum of all projects created" },
-        { title: "Total Users", value: totalUsers, icon: Users, description: "Total registered users" },
     ];
 
     return (
@@ -168,7 +167,7 @@ export default function SuperAdminDashboardPage() {
                         <CardTitle className="text-sm font-medium">
                             Total Revenue
                         </CardTitle>
-                        <Select value={revenueTimeframe} onValueChange={setRevenueTimeframe}>
+                         <Select value={revenueTimeframe} onValueChange={setRevenueTimeframe}>
                           <SelectTrigger className="h-auto w-auto border-0 bg-transparent p-1 text-xs">
                             <SelectValue />
                           </SelectTrigger>

@@ -33,13 +33,13 @@ function SuperAdminNav() {
                 </Button>
             </Link>
             <Link href="/organizations">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.startsWith('/organizations') && "bg-sidebar-accent")}>
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/organizations' && "bg-sidebar-accent")}>
                     <Building />
                     Organizations
                 </Button>
             </Link>
-            <Link href="/superadmin/revenue">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.startsWith('/superadmin/revenue') && "bg-sidebar-accent")}>
+            <Link href="/revenue">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/revenue' && "bg-sidebar-accent")}>
                     <DollarSign />
                     Revenue
                 </Button>
