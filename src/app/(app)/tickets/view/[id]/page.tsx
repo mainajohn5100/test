@@ -303,7 +303,7 @@ function TicketDetailsCard({ ticket, currentStatus, currentPriority, currentCate
     )
 }
 
-function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket, reporter: User | undefined, reporterEmail: string | undefined }) {
+function ClientDetailsCard({ ticket, reporter }: { ticket: Ticket, reporter: User | undefined }) {
     const getInitials = (name: string) => {
         if (!name) return '?';
         const nameParts = name.split(' ');
@@ -325,10 +325,10 @@ function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket
                 </Avatar>
                 <div className="flex-1">
                     <p className="font-semibold text-sm">{reporter?.name || ticket.reporter}</p>
-                    {reporterEmail && (
-                        <a href={`mailto:${reporterEmail}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
+                    {reporter?.email && (
+                        <a href={`mailto:${reporter.email}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
                             <Mail className="h-3 w-3" />
-                            {reporterEmail}
+                            {reporter.email}
                         </a>
                     )}
                 </div>
@@ -536,7 +536,7 @@ export default function ViewTicketPage() {
 
 
 
-const [formState, formAction] = useActionState(addReplyWithState, { success: true });
+const [formState, formAction] = React.useActionState(addReplyWithState, { success: true });
 
 
   // useEffect to handle successful form submissions and reset the form 
@@ -565,7 +565,6 @@ const [formState, formAction] = useActionState(addReplyWithState, { success: tru
   
   const assignee = userMapByName.get(currentAssignee || '');
   const reporter = ticket.reporterId ? userMapById.get(ticket.reporterId) : userMapByEmail.get(ticket.reporterEmail);
-  const reporterEmail = ticket.reporterEmail || reporter?.email;
   const isTicketClosed = currentStatus === 'Closed' || currentStatus === 'Terminated';
   const canDeleteTicket = currentUser.role === 'Admin';
   const canChangeStatus = currentUser.role === 'Admin' || (currentUser.role === 'Agent' && ticket.assignee === currentUser.name);
@@ -852,8 +851,29 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
         <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-8 overflow-hidden mt-4 md:mt-0">
             <div className="lg:col-span-2 flex flex-col gap-6 overflow-y-auto">
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Description</CardTitle>
+                         <div className="md:hidden">
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 flex-shrink-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent side="right">
+                                    <SheetHeader>
+                                        <SheetTitle>Details</SheetTitle>
+                                    </SheetHeader>
+                                    <ScrollArea className="h-full pb-10">
+                                        <div className="space-y-4 pt-4">
+                                            <TicketDetailsCard {...detailProps} />
+                                            <ClientDetailsCard ticket={ticket} reporter={reporter} />
+                                            <SlaStatus ticket={ticket} />
+                                        </div>
+                                    </ScrollArea>
+                                </SheetContent>
+                            </Sheet>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:rounded-md [&_img]:max-w-full" dangerouslySetInnerHTML={{ __html: ticket.description }} />
@@ -980,7 +1000,7 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
             {/* Right Column (Details) - hidden on mobile */}
             <div className="hidden md:block md:col-span-1 space-y-4">
                 <TicketDetailsCard {...detailProps} />
-                <ClientDetailsCard ticket={ticket} reporter={reporter} reporterEmail={reporterEmail} />
+                <ClientDetailsCard ticket={ticket} reporter={reporter} />
                 <SlaStatus ticket={ticket} />
             </div>
         </div>
@@ -988,4 +1008,3 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
     </>
   );
 }
-
