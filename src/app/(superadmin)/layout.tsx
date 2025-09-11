@@ -31,7 +31,7 @@ function SuperAdminNav() {
                     Dashboard
                 </Button>
             </Link>
-            <Link href="/superadmin/organizations">
+            <Link href="/organizations">
                  <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.includes('/organizations') && "bg-sidebar-accent")}>
                     <Building />
                     Organizations
