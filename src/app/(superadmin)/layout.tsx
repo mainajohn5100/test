@@ -2,7 +2,7 @@
 'use client';
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarProvider,
@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 function SuperAdminNav() {
-    const pathname = React.usePathname();
+    const pathname = usePathname();
     return (
         <nav className="flex flex-col p-2 space-y-1">
             <Link href="/superadmin">
@@ -64,8 +64,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     );
   }
 
-  // In a real app, this would check for a 'SuperAdmin' custom claim.
-  // For now, we'll check if the user is the specific 'requestflow.o@gmail.com' admin.
+  // Check if the user is the designated superadmin.
   if (user?.role !== 'Admin' || user.email !== 'requestflow.o@gmail.com') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background p-4">
