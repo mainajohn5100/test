@@ -1,4 +1,5 @@
 
+
 'use client'; 
 
 import { notFound, useRouter, useParams } from "next/navigation";
@@ -47,12 +48,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import TipTapLink from '@tiptap/extension-link';
-import TipTapImage from '@tiptap/extension-image';
-import TextAlign from '@tiptap/extension-text-align';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SlaStatus } from "@/components/tickets/sla-status";
@@ -310,6 +305,7 @@ function TicketDetailsCard({ ticket, currentStatus, currentPriority, currentCate
 
 function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket, reporter: User | undefined, reporterEmail: string | undefined }) {
     const getInitials = (name: string) => {
+        if (!name) return '?';
         const nameParts = name.split(' ');
         if (nameParts.length > 1) {
             return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
@@ -467,23 +463,6 @@ export default function ViewTicketPage() {
   const userMapByEmail = React.useMemo(() => new Map(users.filter(u => u.email).map(u => [u.email, u])), [users]);
   const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Admin' || u.role === 'Agent'), [users]);
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder: "Type your reply here..." }),
-      TipTapLink.configure({ openOnClick: false, autolink: true }),
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    ],
-    editorProps: {
-      attributes: {
-        class: 'prose dark:prose-invert prose-sm sm:prose-base max-w-none',
-      },
-    },
-    onUpdate({ editor }) {
-      setReply(editor.getHTML());
-    },
-  });
-
   // Initial data fetch for non-realtime data like users
   React.useEffect(() => {
     if (!currentUser) return;
@@ -557,14 +536,13 @@ export default function ViewTicketPage() {
 
 
 
-const [formState, formAction] = React.useActionState(addReplyWithState, { success: true });
+const [formState, formAction] = useActionState(addReplyWithState, { success: true });
 
 
   // useEffect to handle successful form submissions and reset the form 
   React.useEffect(() => {
     if (formState.success && !formState.error) {
         // Reset form on successful submission
-        editor?.commands.clearContent();
         setReply("");
         setFiles([]);
         toast({ title: "Reply added" });
@@ -575,7 +553,7 @@ const [formState, formAction] = React.useActionState(addReplyWithState, { succes
             variant: 'destructive'
         });
     }
-}, [formState, editor, toast]);
+}, [formState, toast]);
   
   if (loading || !currentUser || !ticket) {
     return (
@@ -774,8 +752,7 @@ const [formState, formAction] = React.useActionState(addReplyWithState, { succes
   };
 
   const handleTemplateSelect = (templateContent: string) => {
-    if (!editor) return;
-    editor.commands.insertContent(templateContent);
+     setReply(prev => `${prev}${templateContent}`);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -804,7 +781,6 @@ const [formState, formAction] = React.useActionState(addReplyWithState, { succes
         const result = await addReplyAction(formData);
 
         if (result.success) {
-            editor?.commands.clearContent();
             setReply("");
             setFiles([]);
             toast({ title: "Reply added" });
@@ -918,76 +894,76 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
 
 
                 {canReply && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Add a Reply</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <form action={formAction} className="space-y-4">
-                                {/* Hidden form fields */}
-                                <input type="hidden" name="ticketId" value={ticket.id} />
-                                <input type="hidden" name="authorId" value={currentUser.id} />
-                                <input type="hidden" name="content" value={reply} />
+    <Card>
+        <CardHeader>
+            <CardTitle>Add a Reply</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+        <form action={formAction} className="space-y-4" encType="multipart/form-data">
+  <input type="hidden" name="ticketId" value={ticket.id} />
+  <input type="hidden" name="authorId" value={currentUser.id} />
+  <input type="hidden" name="content" value={reply} />
 
-                                <TiptapEditor
-                                    content={reply}
-                                    onChange={setReply}
-                                    placeholder="Type your reply here..."
-                                />
+  <TiptapEditor
+    content={reply}
+    onChange={setReply}
+    placeholder="Type your reply here..."
+  />
 
-                                {files.length > 0 && (
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-medium">Attachments:</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {files.map((file, index) => (
-                                                <Badge key={index} variant="secondary" className="flex items-center gap-2">
-                                                    <span className="truncate max-w-[150px]">{file.name}</span>
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => removeFile(file.name)} 
-                                                        className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                                    >
-                                                        <XCircle className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                                                    </button>
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+  {/* File selection input */}
+  <input
+    type="file"
+    name="attachments"
+    ref={fileInputRef}
+    onChange={handleFileChange}
+    className="hidden"
+    multiple
+    accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+  />
 
-                                {/* File selection input */}
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileChange}
-                                    className="hidden"
-                                    multiple
-                                    accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"
-                                />
+  {files.length > 0 && (
+    <div className="space-y-2">
+      <p className="text-sm font-medium">Attachments:</p>
+      <div className="flex flex-wrap gap-2">
+        {files.map((file, index) => (
+          <Badge key={index} variant="secondary" className="flex items-center gap-2">
+            <span className="truncate max-w-[150px]">{file.name}</span>
+            <button
+              type="button"
+              onClick={() => removeFile(file.name)}
+              className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <XCircle className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+    </div>
+  )}
 
-                                <div className="flex justify-between items-center">
-                                    <Button 
-                                        type="button"
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={() => fileInputRef.current?.click()}
-                                    >
-                                        <Paperclip className="mr-2 h-4 w-4"/>
-                                        Attach File
-                                    </Button>
-                                    
-                                    <SubmitButton reply={reply} files={files} isPending={isPending} />
-                                </div>
+  <div className="flex justify-between items-center">
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => fileInputRef.current?.click()}
+    >
+      <Paperclip className="mr-2 h-4 w-4" />
+      Attach File
+    </Button>
 
-                                {/* Error display */}
-                                {!formState.success && formState.error && (
-                                    <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-                                        Error: {formState.error}
-                                    </div>
-                                )}
-                            </form>
-                        </CardContent>
-                    </Card>
+    <SubmitButton reply={reply} files={files} isPending={isPending} />
+  </div>
+
+  {!formState.success && formState.error && (
+    <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+      Error: {formState.error}
+    </div>
+  )}
+</form>
+
+        </CardContent>
+    </Card>
                 )}
 
                  {!canReply && (
@@ -1012,3 +988,4 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
     </>
   );
 }
+
