@@ -26,14 +26,18 @@ export async function addReplyAction(formData: FormData) {
         return { success: false, error: 'A reply must have content or an attachment.' };
     }
 
-    const [ticket, author, admins] = await Promise.all([
-        getTicketById(ticketId),
+    const ticket = await getTicketById(ticketId);
+    if (!ticket) {
+        throw new Error("Ticket not found");
+    }
+
+    const [author, admins] = await Promise.all([
         getUserById(authorId),
-        getUsers({ organizationId: 'org_1', role: 'Admin' } as User) // This needs refinement for multi-tenant
+        getUsers({ organizationId: ticket.organizationId, role: 'Admin' } as User)
     ]);
     
-    if (!ticket || !author) {
-      throw new Error("Ticket or author not found");
+    if (!author) {
+      throw new Error("Author not found");
     }
 
     const attachments: Attachment[] = [];
