@@ -916,7 +916,8 @@ export async function getProjectCountForOrganization(orgId: string): Promise<num
 
 export async function getPrimaryAdminForOrganization(orgId: string): Promise<User | null> {
     const usersCol = collection(db, 'users');
-    const q = query(usersCol, where("organizationId", "==", orgId), where("role", "==", "Admin"), orderBy("createdAt", "asc"), limit(1));
+    // Simplified query: Find any admin in the organization.
+    const q = query(usersCol, where("organizationId", "==", orgId), where("role", "==", "Admin"), limit(1));
     const userSnapshot = await getDocs(q);
      if (userSnapshot.empty) {
         return null;
