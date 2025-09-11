@@ -5,11 +5,11 @@ import React from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Loader, ShieldAlert, Users, Building, LinkIcon, Save, Image as ImageIcon, Globe } from 'lucide-react';
+import { Loader, ShieldAlert, Users, Building, LinkIcon, Save, Image as ImageIcon, Globe, CreditCard, User, Wifi, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getOrganizationById, getUsers } from '@/lib/firestore';
-import type { Organization, User } from '@/lib/data';
+import type { Organization, User as UserType } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
@@ -19,9 +19,8 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
-function OrganizationSettingsCard({ org, users }: { org: Organization, users: User[] }) {
+function OrgDetailsCard({ org, onSave }: { org: Organization, onSave: () => void }) {
     const { toast } = useToast();
-    const router = useRouter();
     const [isPending, startTransition] = React.useTransition();
     const [previewUrl, setPreviewUrl] = React.useState<string | null>(org.logo || null);
 
@@ -39,6 +38,7 @@ function OrganizationSettingsCard({ org, users }: { org: Organization, users: Us
             const result = await updateOrganizationAction(org.id, formData);
             if (result.success) {
                 toast({ title: "Organization Updated", description: result.message });
+                onSave();
             } else {
                 toast({ title: "Error", description: result.error, variant: 'destructive' });
             }
@@ -46,15 +46,13 @@ function OrganizationSettingsCard({ org, users }: { org: Organization, users: Us
     }
 
     return (
-        <Card>
+        <Card className="col-span-1 md:col-span-2">
             <CardHeader>
-                <CardTitle>General Settings</CardTitle>
-                <CardDescription>Update your organization's details, manage team members, and view your subscription plan.</CardDescription>
+                <CardTitle>Organization Details</CardTitle>
+                <CardDescription>Update your organization's branding and domain settings.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-                {/* Organization Details Section */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <h3 className="text-lg font-medium">Details</h3>
+            <CardContent>
+                 <form onSubmit={handleSubmit} className="space-y-4">
                      <div className="flex items-center gap-4">
                         <Avatar className="h-16 w-16 rounded-md">
                             <AvatarImage src={previewUrl || undefined} className="object-contain" />
@@ -85,8 +83,7 @@ function OrganizationSettingsCard({ org, users }: { org: Organization, users: Us
                             <div className="relative">
                                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input id="subdomain" name="subdomain" placeholder="your-org" defaultValue={org.subdomain} className="pl-9 pr-36" disabled={isPending} />
-                                {/* TODO - change the requestflow.netlify.app to use a local env variable */}
-                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.{process.env.NEXT_PUBLIC_SUBDOMAIN}</span>
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.{process.env.NEXT_PUBLIC_SUBDOMAIN}</span>
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -104,52 +101,104 @@ function OrganizationSettingsCard({ org, users }: { org: Organization, users: Us
                         </Button>
                     </div>
                 </form>
-
-                <Separator />
-
-                {/* Team Members Section */}
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Team Members</h3>
-                    <div className="space-y-4">
-                        {users.map(user => (
-                            <div key={user.id} className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/users/${user.id}`)}>
-                                    <Avatar>
-                                        <AvatarImage src={user.avatar} />
-                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-medium">{user.name}</p>
-                                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                                    </div>
-                                </div>
-                                <Badge variant="outline">{user.role}</Badge>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                
-                <Separator />
-                
-                {/* Subscription Section */}
-                 <div className="space-y-4">
-                     <h3 className="text-lg font-medium">Subscription Plan</h3>
-                     <div className="text-center text-muted-foreground py-10 rounded-lg border border-dashed">
-                        <p>M-Pesa Subscription feature is coming soon.</p>
-                        <Button variant="secondary" disabled className="mt-4">Upgrade Plan</Button>
-                    </div>
-                </div>
             </CardContent>
         </Card>
     );
 }
 
+function TeamCard({ users }: { users: UserType[] }) {
+    const router = useRouter();
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Team Members</CardTitle>
+                <CardDescription>An overview of the users in your organization.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {users.slice(0, 4).map(user => (
+                    <div key={user.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/users/${user.id}`)}>
+                            <Avatar>
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-medium">{user.name}</p>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
+                        </div>
+                        <Badge variant="outline">{user.role}</Badge>
+                    </div>
+                ))}
+                {users.length > 4 && (
+                    <p className="text-sm text-center text-muted-foreground pt-2">
+                        + {users.length - 4} more members
+                    </p>
+                )}
+                 <Button variant="outline" className="w-full" onClick={() => router.push('/users')}>
+                    <Users className="mr-2 h-4 w-4" />
+                    Manage All Users
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
+
+function BillingCard({ org }: { org: Organization }) {
+    const plan = org.settings?.subscriptionPlan || 'Free';
+    const status = org.settings?.subscriptionStatus || 'Active';
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Billing & Subscription</CardTitle>
+                <CardDescription>Your current plan and billing status.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div>
+                        <p className="font-semibold">{plan} Plan</p>
+                        <p className="text-sm text-muted-foreground">Next billing date: N/A</p>
+                    </div>
+                    <Badge variant={status === 'Active' ? 'default' : 'destructive'} className={status === 'Active' ? 'bg-green-600' : ''}>
+                        {status}
+                    </Badge>
+                </div>
+                 <Button variant="secondary" className="w-full" disabled>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Manage Billing
+                </Button>
+            </CardContent>
+        </Card>
+    )
+}
+
+function ActivityCard() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>System Status</CardTitle>
+                <CardDescription>Live status of your organization's services.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center pt-6">
+                <div className="flex items-center gap-4 text-green-600">
+                    <div className="relative flex h-6 w-6">
+                        <Wifi className="relative h-6 w-6" />
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    </div>
+                    <span className="font-semibold text-lg">All Systems Online</span>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function OrganizationPage() {
     const { user, loading: authLoading } = useAuth();
     const [organization, setOrganization] = React.useState<Organization | null>(null);
-    const [users, setUsers] = React.useState<User[]>([]);
+    const [users, setUsers] = React.useState<UserType[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [refreshKey, setRefreshKey] = React.useState(0);
 
     React.useEffect(() => {
         if (user) {
@@ -165,10 +214,10 @@ export default function OrganizationPage() {
             };
             fetchData();
         }
-    }, [user]);
+    }, [user, refreshKey]);
 
     const pageLoading = authLoading || loading;
-
+    
     if (pageLoading) {
         return (
             <div className="flex h-full items-center justify-center">
@@ -201,11 +250,16 @@ export default function OrganizationPage() {
     return (
         <div className="flex flex-col gap-6">
             <PageHeader
-                title="Organization Settings"
-                description="Manage your organization details, team members, and subscription."
+                title="Organization Dashboard"
+                description={`Welcome to the management center for ${organization.name}.`}
             />
-            <div className="max-w-4xl mx-auto w-full">
-                <OrganizationSettingsCard org={organization} users={users} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <OrgDetailsCard org={organization} onSave={() => setRefreshKey(k => k + 1)} />
+                <div className="lg:col-span-1 space-y-6">
+                    <TeamCard users={users} />
+                    <BillingCard org={organization} />
+                    <ActivityCard />
+                </div>
             </div>
         </div>
     );
