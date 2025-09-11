@@ -321,26 +321,51 @@ export const getTaskById = cache(async (projectId: string, taskId: string): Prom
 });
 
 
-export const getUsers = cache(async (user: User): Promise<User[]> => {
-  try {
-    if (!user || !user.organizationId) return [];
+// export const getUsers = cache(async (user: User): Promise<User[]> => {
+//   try {
+//     if (!user || !user.organizationId) return [];
     
-    const usersCol = collection(db, 'users');
-    const queries = [where("organizationId", "==", user.organizationId)];
+//     const usersCol = collection(db, 'users');
+//     const queries = [where("organizationId", "==", user.organizationId)];
     
-    // Allow fetching just admins by passing a partial User object
-    if (user.role === 'Admin' && Object.keys(user).length === 2) {
-      queries.push(where("role", "==", "Admin"));
-    }
+//     // Allow fetching just admins by passing a partial User object
+//     if (user.role === 'Admin' && Object.keys(user).length === 2) {
+//       queries.push(where("role", "==", "Admin"));
+//     }
 
-    const q = query(usersCol, ...queries);
-    const userSnapshot = await getDocs(q);
-    return snapshotToData<User>(userSnapshot);
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    return [];
+//     const q = query(usersCol, ...queries);
+//     const userSnapshot = await getDocs(q);
+//     return snapshotToData<User>(userSnapshot);
+//   } catch (error) {
+//     console.error("Error fetching users:", error);
+//     return [];
+//   }
+// });
+
+interface UserFilter {
+    organizationId?: string;
+    role?: string;
   }
-});
+  
+  export const getUsers = cache(async (filter: UserFilter = {}): Promise<User[]> => {
+    try {
+      if (!filter.organizationId) return [];
+      
+      const usersCol = collection(db, 'users');
+      const queries = [where("organizationId", "==", filter.organizationId)];
+  
+      if (filter.role) {
+        queries.push(where("role", "==", filter.role));
+      }
+  
+      const q = query(usersCol, ...queries);
+      const userSnapshot = await getDocs(q);
+      return snapshotToData<User>(userSnapshot);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return [];
+    }
+  });
 
 export const getUserById = cache(async (id: string): Promise<User | null> => {
     try {

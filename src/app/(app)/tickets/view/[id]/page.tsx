@@ -30,12 +30,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import React from "react";
+import React, { useActionState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { getUsers } from "@/lib/firestore";
 import type { Ticket, User, TicketConversation, Attachment } from "@/lib/data";
 import { updateTicketAction, deleteTicketAction, addReplyAction } from "./actions";
+import { useFormStatus } from 'react-dom';
 import { useAuth } from "@/contexts/auth-context";
 import  TiptapEditor  from "@/components/tiptap-editor";
 import { Switch } from "@/components/ui/switch";
@@ -419,6 +420,13 @@ function ImageAttachment({ src }: { src: string }) {
     );
   }
 
+  const addReplyWithState = async (
+    prevState: { success: boolean; error?: string },
+    formData: FormData
+  ) => {
+    return await addReplyAction(formData);
+  };
+
 export default function ViewTicketPage() {
   const router = useRouter();
   const params = useParams();
@@ -542,6 +550,28 @@ export default function ViewTicketPage() {
     mainContent.addEventListener('scroll', handleScroll, { passive: true });
     return () => mainContent.removeEventListener('scroll', handleScroll);
   }, [isMobile]);
+
+
+
+const [formState, formAction] = useActionState(addReplyWithState, { success: true });
+
+
+  // useEffect to handle successful form submissions and reset the form 
+  React.useEffect(() => {
+    if (formState.success && !formState.error) {
+        // Reset form on successful submission
+        editor?.commands.clearContent();
+        setReply("");
+        setFiles([]);
+        toast({ title: "Reply added" });
+    } else if (!formState.success && formState.error) {
+        toast({
+            title: "Error",
+            description: formState.error,
+            variant: 'destructive'
+        });
+    }
+}, [formState, editor, toast]);
   
   if (loading || !currentUser || !ticket) {
     return (
@@ -783,10 +813,28 @@ export default function ViewTicketPage() {
         }
     });
   };
+
+  // Create a SubmitButton component that uses useFormStatus
+function SubmitButton({ reply, files, isPending }: { reply: string; files: File[]; isPending: boolean }) {
+    const { pending } = useFormStatus();
+    const isDisabled = pending || isPending || (!reply.trim() && files.length === 0);
+    
+    return (
+        <Button 
+            type="submit"
+            style={{ backgroundColor: "hsl(var(--accent))", color: "hsl(var(--accent-foreground))" }}
+            disabled={isDisabled}
+        >
+            {(pending || isPending) && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+            Send Reply
+        </Button>
+    );
+}
+
   
   const canReply = ((currentUser.role === 'Admin' || currentUser.role === 'Agent') || (currentUser.role === 'Client' && clientCanReply)) && !isTicketClosed;
   const detailProps = { ticket, currentStatus, currentPriority, currentCategory, currentAssignee, userMap, canChangePriority, canChangeCategory, handleAssigneeChange, canChangeAssignee, isTicketClosed, isStatusChangeAllowed, handleStatusChange, handlePriorityChange, handleCategoryChange, handleUnassign, isPending, assignableUsers, canDeleteTicket, handleDeleteRequest, currentTags, handleSuggestTags, isSuggestingTags, removeTag, suggestedTags, addTag, isMobile, ticketStatuses };
-  
+
   return (
     <>
       {confirmationConfig && (
@@ -866,53 +914,99 @@ export default function ViewTicketPage() {
                     </CardContent>
                 </Card>
                 
+
+
                 {canReply && (
                     <Card>
                         <CardHeader>
                             <CardTitle>Add a Reply</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                           <TiptapEditor
-                              editor={editor}
-                              content={reply}
-                              onChange={setReply}
-                              placeholder="Type your reply here..."
-                           />
-                            {files.length > 0 && (
-                                <div className="space-y-2">
-                                    <p className="text-sm font-medium">Attachments:</p>
-                                    <div className="flex flex-wrap gap-2">
-                                    {files.map((file, index) => (
-                                        <Badge key={index} variant="secondary" className="flex items-center gap-2">
-                                            <span className="truncate max-w-[150px]">{file.name}</span>
-                                            <button type="button" onClick={() => removeFile(file.name)} className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                                                <XCircle className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                                            </button>
-                                        </Badge>
-                                    ))}
+                            <form action={formAction} className="space-y-4">
+                                {/* Hidden form fields */}
+                                <input type="hidden" name="ticketId" value={ticket.id} />
+                                <input type="hidden" name="authorId" value={currentUser.id} />
+                                <input type="hidden" name="content" value={reply} />
+
+                                <TiptapEditor
+                                    editor={editor}
+                                    content={reply}
+                                    onChange={setReply}
+                                    placeholder="Type your reply here..."
+                                />
+
+                                {files.length > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium">Attachments:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {files.map((file, index) => (
+                                                <Badge key={index} variant="secondary" className="flex items-center gap-2">
+                                                    <span className="truncate max-w-[150px]">{file.name}</span>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => removeFile(file.name)} 
+                                                        className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                                    >
+                                                        <XCircle className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                                    </button>
+                                                </Badge>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center">
+                                )}
+
+                                {/* File inputs - one for each selected file */}
+                                {files.map((file, index) => (
+                                    <input
+                                        key={`file-${index}-${file.name}`}
+                                        type="file"
+                                        name="attachments"
+                                        style={{ display: 'none' }}
+                                        ref={(input) => {
+                                            if (input) {
+                                                const dataTransfer = new DataTransfer();
+                                                dataTransfer.items.add(file);
+                                                input.files = dataTransfer.files;
+                                            }
+                                        }}
+                                    />
+                                ))}
+
+                                {/* File selection input */}
                                 <input
                                     type="file"
                                     ref={fileInputRef}
                                     onChange={handleFileChange}
                                     className="hidden"
                                     multiple
+                                    accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"
                                 />
-                                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                                    <Paperclip className="mr-2 h-4 w-4"/>
-                                    Attach File
-                                </Button>
-                                <Button style={{ backgroundColor: "hsl(var(--accent))", color: "hsl(var(--accent-foreground))" }} onClick={handleAddReply} disabled={isPending || (!reply.trim() && files.length === 0)}>
-                                    {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                                    Send Reply
-                                </Button>
-                            </div>
+
+                                <div className="flex justify-between items-center">
+                                    <Button 
+                                        type="button"
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <Paperclip className="mr-2 h-4 w-4"/>
+                                        Attach File
+                                    </Button>
+                                    
+                                    <SubmitButton reply={reply} files={files} isPending={isPending} />
+                                </div>
+
+                                {/* Error display */}
+                                {!formState.success && formState.error && (
+                                    <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                                        Error: {formState.error}
+                                    </div>
+                                )}
+                            </form>
                         </CardContent>
                     </Card>
                 )}
+
                  {!canReply && (
                     <Card>
                         <CardContent className="p-6">

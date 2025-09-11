@@ -38,7 +38,7 @@ export type Ticket = {
   assignee: string;
   reporter: string;
   reporterId?: string;
-  reporterEmail?: string;
+  reporterEmail: string;
   reporterPhone?: string;
   createdAt: string;
   updatedAt: string;
@@ -263,6 +263,7 @@ export const tickets: Ticket[] = [
     category: 'Support',
     assignee: 'Alex Johnson',
     reporter: 'Internal',
+    reporterEmail: 'priyah.p@example.com',
     createdAt: '2024-05-02T11:00:00Z',
     updatedAt: '2024-05-03T09:00:00Z',
     tags: ['performance', 'api', 'backend'],
@@ -298,6 +299,7 @@ export const tickets: Ticket[] = [
     category: 'Billing',
     assignee: 'Alex Johnson',
     reporter: 'Internal',
+    reporterEmail: 'priya.ph@example.com',
     createdAt: '2024-05-04T18:00:00Z',
     updatedAt: '2024-05-04T18:00:00Z',
     tags: ['documentation', 'legal'],
@@ -333,6 +335,7 @@ export const tickets: Ticket[] = [
     category: 'Support',
     assignee: 'Alex Johnson',
     reporter: 'Internal',
+    reporterEmail: 'priya.p@exampleh.com',
     createdAt: '2024-04-28T12:00:00Z',
     updatedAt: '2024-04-29T10:00:00Z',
     tags: ['email', 'outage', 'backend'],
