@@ -310,22 +310,22 @@ function TicketDetailsCard({ ticket, currentStatus, currentPriority, currentCate
 }
 
 function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket, reporter: User | undefined, reporterEmail: string | undefined }) {
+    const getInitials = (name: string) => {
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    }
+    
     return (
          <Card>
             <CardHeader>
                 <CardTitle>Client Details</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center gap-4">
-                {reporter && (
-                    <Link href={`/users/${reporter.id}`}>
-                        <Avatar className="h-10 w-10">
-                            <AvatarImage src={reporter.avatar} />
-                            <AvatarFallback>{ticket.reporter.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                    </Link>
-                )}
+                <Avatar className="h-10 w-10">
+                    <AvatarImage src={reporter?.avatar} />
+                    <AvatarFallback>{getInitials(reporter?.name || ticket.reporter || '?')}</AvatarFallback>
+                </Avatar>
                 <div className="flex-1">
-                    <p className="font-semibold text-sm">{ticket.reporter}</p>
+                    <p className="font-semibold text-sm">{reporter?.name || ticket.reporter}</p>
                     {reporterEmail && (
                         <a href={`mailto:${reporterEmail}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
                             <Mail className="h-3 w-3" />
@@ -459,8 +459,9 @@ export default function ViewTicketPage() {
 
   const isMobile = useIsMobile();
 
-  const userMap = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
   const userMapById = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
+  const userMapByName = React.useMemo(() => new Map(users.map(u => [u.name, u])), [users]);
+  const userMapByEmail = React.useMemo(() => new Map(users.filter(u => u.email).map(u => [u.email, u])), [users]);
   const assignableUsers = React.useMemo(() => users.filter(u => u.role === 'Admin' || u.role === 'Agent'), [users]);
 
   const editor = useEditor({
@@ -484,7 +485,7 @@ export default function ViewTicketPage() {
   React.useEffect(() => {
     if (!currentUser) return;
     setLoading(true);
-    getUsers(currentUser)
+    getUsers({organizationId: currentUser.organizationId})
       .then(setUsers)
       .catch((error) => {
         console.error("Failed to fetch users", error);
@@ -581,8 +582,8 @@ const [formState, formAction] = useActionState(addReplyWithState, { success: tru
     );
   }
   
-  const assignee = userMap.get(currentAssignee);
-  const reporter = userMap.get(ticket.reporter);
+  const assignee = userMapByName.get(currentAssignee || '');
+  const reporter = ticket.reporterId ? userMapById.get(ticket.reporterId) : userMapByEmail.get(ticket.reporterEmail);
   const reporterEmail = ticket.reporterEmail || reporter?.email;
   const isTicketClosed = currentStatus === 'Closed' || currentStatus === 'Terminated';
   const canDeleteTicket = currentUser.role === 'Admin';
@@ -833,7 +834,7 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
 
   
   const canReply = ((currentUser.role === 'Admin' || currentUser.role === 'Agent') || (currentUser.role === 'Client' && clientCanReply)) && !isTicketClosed;
-  const detailProps = { ticket, currentStatus, currentPriority, currentCategory, currentAssignee, userMap, canChangePriority, canChangeCategory, handleAssigneeChange, canChangeAssignee, isTicketClosed, isStatusChangeAllowed, handleStatusChange, handlePriorityChange, handleCategoryChange, handleUnassign, isPending, assignableUsers, canDeleteTicket, handleDeleteRequest, currentTags, handleSuggestTags, isSuggestingTags, removeTag, suggestedTags, addTag, isMobile, ticketStatuses };
+  const detailProps = { ticket, currentStatus, currentPriority, currentCategory, currentAssignee, userMap: userMapByName, canChangePriority, canChangeCategory, handleAssigneeChange, canChangeAssignee, isTicketClosed, isStatusChangeAllowed, handleStatusChange, handlePriorityChange, handleCategoryChange, handleUnassign, isPending, assignableUsers, canDeleteTicket, handleDeleteRequest, currentTags, handleSuggestTags, isSuggestingTags, removeTag, suggestedTags, addTag, isMobile, ticketStatuses };
 
   return (
     <>
