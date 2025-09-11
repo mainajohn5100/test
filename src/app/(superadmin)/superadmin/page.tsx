@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 // This would come from an API call in a real app
 interface OrganizationData {
@@ -33,6 +34,7 @@ const placeholderOrganizations: OrganizationData[] = [
 
 
 function RecentActivityTable() {
+    const router = useRouter();
     const [organizations] = useState<OrganizationData[]>(placeholderOrganizations);
 
     const billingStatusVariant: Record<OrganizationData['billingStatus'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -56,7 +58,7 @@ function RecentActivityTable() {
                 </TableHeader>
                 <TableBody>
                     {organizations.map(org => (
-                        <TableRow key={org.id}>
+                        <TableRow key={org.id} onClick={() => router.push(`/superadmin/organizations/${org.id}`)} className="cursor-pointer">
                             <TableCell>
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-8 w-8">
@@ -193,5 +195,3 @@ export default function SuperAdminDashboardPage() {
         </div>
     )
 }
-
-    
