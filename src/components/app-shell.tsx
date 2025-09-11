@@ -73,6 +73,12 @@ function OrganizationSelector({ org }: { org: Organization | null }) {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="text-sm font-medium text-gray-700 flex items-center">
+                        {org.logo && (
+                            <Avatar className="mr-2 h-6 w-6">
+                                <AvatarImage src={org.logo} alt={org.name} />
+                                <AvatarFallback>{org.name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        )}
                         <span>{org.name}</span>
                         <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -81,7 +87,14 @@ function OrganizationSelector({ org }: { org: Organization | null }) {
                     <DropdownMenuLabel>Current Organization</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem disabled>
-                        <Building className="mr-2 h-4 w-4" />
+                         {org.logo ? (
+                            <Avatar className="mr-2 h-5 w-5">
+                                <AvatarImage src={org.logo} alt={org.name} />
+                                <AvatarFallback>{org.name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        ) : (
+                            <Building className="mr-2 h-4 w-4" />
+                        )}
                         <span>{org.name}</span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
