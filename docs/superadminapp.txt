@@ -1,0 +1,110 @@
+
+# Superadmin Application Specification for RequestFlow
+
+This document outlines the requirements for a superadmin dashboard to manage the tenant organizations using the RequestFlow SaaS application.
+
+---
+
+## 1. API Endpoints (to be built)
+
+The core application needs to expose secure, superadmin-only API endpoints to manage the organizations. These endpoints should be protected and only accessible by a user with a `SuperAdmin` role claim.
+
+### Organizations
+
+*   **`GET /api/superadmin/organizations`**
+    *   **Purpose:** Retrieve a paginated list of all organizations.
+    *   **Response Body:** An array of organization objects, each containing:
+        *   `organizationId`: string
+        *   `organizationName`: string
+        *   `accountCreatedAt`: ISO Date string
+        *   `primaryAdminName`: string
+        *   `primaryAdminEmail`: string
+        *   `primaryAdminPhone`: string (optional)
+        *   `userCounts`: { admins: number, agents: number, clients: number }
+        *   `subscriptionPlan`: string (e.g., 'Free', 'Pro', 'Enterprise')
+        *   `subscriptionStatus`: string (e.g., 'Active', 'Trialing', 'Past Due', 'Canceled')
+        *   `configuredDomain`: string (custom domain or subdomain)
+        *   `organizationLogoUrl`: string
+        *   `supportInquiryEmail`: string (The primary admin's email)
+
+*   **`GET /api/superadmin/organizations/{orgId}`**
+    *   **Purpose:** Get detailed information for a single organization.
+    *   **Response Body:** A single organization object with all the fields listed above.
+
+*   **`PUT /api/superadmin/organizations/{orgId}`**
+    *   **Purpose:** Update an organization's details, primarily for administrative tasks.
+    *   **Request Body:**
+        *   `subscriptionPlan`: string
+        *   `subscriptionStatus`: string
+        *   `organizationStatus`: 'active' | 'suspended' | 'disabled'
+    *   **Response Body:** `{ success: true, message: "Organization updated." }`
+
+*   **`POST /api/superadmin/organizations/{orgId}/message`**
+    *   **Purpose:** Send an email notification from the superadmin to the primary admin of an organization.
+    *   **Request Body:**
+        *   `subject`: string
+        *   `body`: string (HTML or plain text)
+    *   **Response Body:** `{ success: true, message: "Message sent." }`
+
+
+### Users (within an Organization)
+
+*   **`GET /api/superadmin/organizations/{orgId}/users`**
+    *   **Purpose:** List all users for a specific organization.
+    *   **Response Body:** An array of user objects, each containing:
+        *   `userId`: string
+        *   `name`: string
+        *   `email`: string
+        *   `role`: 'Admin' | 'Agent' | 'Client'
+        *   `status`: 'active' | 'disabled'
+        *   `lastSeen`: ISO Date string
+
+---
+
+## 2. Superadmin Frontend Application Prompt
+
+**Prompt for AI Code Generator:**
+
+"Create a comprehensive superadmin dashboard for the RequestFlow SaaS platform using Next.js, TypeScript, ShadCN UI, and Tailwind CSS. The dashboard will connect to a Firebase backend to manage tenant organizations.
+
+**Key Features:**
+
+1.  **Secure Login:**
+    *   A dedicated login page at `/login`.
+    *   Authentication should be handled by Firebase Auth, checking for a `SuperAdmin: true` custom claim. Users without this claim should be denied access.
+
+2.  **Dashboard Home (`/`)**
+    *   Display key metrics using stat cards:
+        *   Total number of organizations.
+        *   Total number of active subscriptions.
+        *   Total number of users (Admins, Agents, Clients).
+        *   A list or chart showing recently created organizations.
+
+3.  **Organizations Management Page (`/organizations`)**
+    *   Display a data table of all organizations fetched from the `GET /api/superadmin/organizations` endpoint.
+    *   The table columns should include: Organization Name, Primary Admin, User Counts (A/A/C), Subscription Plan, Status, and Creation Date.
+    *   Implement server-side sorting and filtering for all columns.
+    *   Each row should be clickable, navigating to a detailed view page: `/organizations/{orgId}`.
+
+4.  **Organization Detail Page (`/organizations/{orgId}`)**
+    *   Use a two-column layout.
+    *   **Left Column:** Display core organization details fetched from `GET /api/superadmin/organizations/{orgId}`:
+        *   Org Name, ID, Admin contact info, domain, logo, etc.
+        *   A section to manage the subscription. This should allow the superadmin to update the `subscriptionPlan` and `subscriptionStatus` via a PUT request to the API.
+        *   A section to suspend or reactivate the organization.
+    *   **Right Column:**
+        *   A data table listing all users in that organization, fetched from `GET /api/superadmin/organizations/{orgId}/users`.
+        *   A messaging component to send an email to the organization's primary admin via the `POST .../message` endpoint.
+
+5.  **Styling and Components:**
+    *   Use ShadCN UI components for all UI elements (Cards, Tables, Buttons, Inputs, etc.).
+    *   The layout should be clean, professional, and responsive.
+    *   Include a sidebar for navigation between the Dashboard and Organizations pages.
+
+6.  **Technology Stack:**
+    *   Framework: Next.js (App Router)
+    *   Language: TypeScript
+    *   Styling: Tailwind CSS
+    *   UI Components: ShadCN/UI
+    *   Backend: Firebase (Firestore for data, Auth for authentication)
+"
