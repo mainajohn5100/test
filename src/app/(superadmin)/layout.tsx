@@ -26,7 +26,7 @@ function SuperAdminNav() {
     return (
         <nav className="flex flex-col p-2 space-y-1">
             <Link href="/superadmin">
-                <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.endsWith('/superadmin') && "bg-sidebar-accent")}>
+                <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/superadmin' && "bg-sidebar-accent")}>
                     <LayoutDashboard />
                     Dashboard
                 </Button>
