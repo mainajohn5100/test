@@ -54,6 +54,19 @@ function SuperAdminShellContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isFullScreen, setIsFullScreen] = React.useState(false);
+  const [accessAllowed, setAccessAllowed] = React.useState(false);
+  const [checkingAccess, setCheckingAccess] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!loading) {
+      if (user?.role === 'Admin' && user.email === process.env.NEXT_PUBLIC_SUPERADMIN_EMAIL) {
+        setAccessAllowed(true);
+      } else {
+        setAccessAllowed(false);
+      }
+      setCheckingAccess(false);
+    }
+  }, [user, loading]);
 
   const handleLogout = async () => {
     try {
@@ -84,16 +97,15 @@ function SuperAdminShellContent({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
   }, []);
 
-  if (loading) {
+  if (loading || checkingAccess) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin" />
       </div>
     );
   }
-
-  // Check if the user is the designated superadmin.
-  if (user?.role !== 'Admin' || user.email !== process.env.NEXT_PUBLIC_SUPERADMIN_EMAIL) {
+  
+  if (!accessAllowed) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center justify-center text-center">
