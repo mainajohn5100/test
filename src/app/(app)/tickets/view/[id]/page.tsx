@@ -338,30 +338,30 @@ function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket
 }
 
 const getAttachmentSummary = (attachments: Attachment[]) => {
-    const counts: { [key: string]: number } = {};
-    let otherCount = 0;
+    if (!attachments || attachments.length === 0) return null;
+    const photoCount = attachments.filter(att => att.type.startsWith('image/')).length;
+    const pdfCount = attachments.filter(att => att.type === 'application/pdf').length;
+    const otherCount = attachments.length - photoCount - pdfCount;
 
-    attachments.forEach(att => {
-        if (att.type.startsWith('image/')) {
-            counts['Photo'] = (counts['Photo'] || 0) + 1;
-        } else if (att.type === 'application/pdf') {
-            counts['PDF'] = (counts['PDF'] || 0) + 1;
-        } else {
-            otherCount++;
-        }
-    });
-
-    const parts = Object.entries(counts).map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`);
-    if (otherCount > 0) {
-        parts.push(`${otherCount} other file${otherCount > 1 ? 's' : ''}`);
-    }
-    return parts.join(', ');
+    const parts = [];
+    if (photoCount > 0) parts.push(`${photoCount} Photo${photoCount > 1 ? 's' : ''}`);
+    if (pdfCount > 0) parts.push(`${pdfCount} PDF${pdfCount > 1 ? 's' : ''}`);
+    if (otherCount > 0) parts.push(`${otherCount} other file${otherCount > 1 ? 's' : ''}`);
+    
+    if (parts.length === 0) return null;
+    
+    return (
+        <div className="text-sm text-muted-foreground flex items-center gap-2 pt-2">
+            <Paperclip className="h-4 w-4" />
+            <span>{parts.join(', ')}</span>
+        </div>
+    );
 };
 
 const TicketEvent = ({ event, userMapById }: { event: TicketConversation, userMapById: Map<string, User>}) => {
     const author = userMapById.get(event.authorId);
     return (
-         <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3">
             <Avatar className="h-8 w-8 border">
                 {author?.avatar && <AvatarImage src={author.avatar} />}
                 <AvatarFallback>{author?.name?.charAt(0) || '?'}</AvatarFallback>
@@ -376,9 +376,19 @@ const TicketEvent = ({ event, userMapById }: { event: TicketConversation, userMa
                     dangerouslySetInnerHTML={{ __html: event.content }}
                 />}
                 {event.attachments && event.attachments.length > 0 && (
-                    <div className="text-sm text-muted-foreground flex items-center gap-2 pt-1">
-                        <Paperclip className="h-4 w-4" />
-                        <span>{getAttachmentSummary(event.attachments)}</span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {event.attachments.map(file => (
+                             file.type.startsWith('image/') ? (
+                                <ImageAttachment key={file.name} src={file.url} />
+                               ) : (
+                                <a href={file.url} target="_blank" rel="noopener noreferrer" key={file.name}>
+                                    <Button variant="outline" size="sm" className="h-auto py-1 px-2">
+                                        <FileIcon className="mr-2 h-3.5 w-3.5"/>
+                                        {file.name}
+                                    </Button>
+                                </a>
+                               )
+                        ))}
                     </div>
                 )}
             </div>
@@ -450,10 +460,6 @@ export default function ViewTicketPage() {
       StarterKit,
       Placeholder.configure({ placeholder: "Type your reply here..." }),
       TipTapLink.configure({ openOnClick: false, autolink: true }),
-      TipTapImage.configure({
-        inline: false,
-        allowBase64: true,
-      }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     editorProps: {
