@@ -37,7 +37,7 @@ import { getUsers } from "@/lib/firestore";
 import type { Ticket, User, TicketConversation, Attachment } from "@/lib/data";
 import { updateTicketAction, deleteTicketAction, addReplyAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
-import { TiptapEditor } from "@/components/tiptap-editor";
+import  TiptapEditor  from "@/components/tiptap-editor";
 import { Switch } from "@/components/ui/switch";
 import { collection, query, onSnapshot, orderBy, Timestamp, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
