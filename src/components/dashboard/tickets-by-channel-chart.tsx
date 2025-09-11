@@ -8,7 +8,7 @@ import type { Ticket } from "@/lib/data"
 
 const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
-const EMAIL_SOURCES: (Ticket['source'])[] = ['Client Inquiry', 'Partner', 'Vendor', 'Internal', 'General Inquiry'];
+const EMAIL_SOURCES: (Ticket['source'])[] = ['Client Inquiry', 'Partner', 'Vendor', 'Internal'];
 
 interface TicketsByChannelChartProps {
     tickets: Ticket[];
@@ -18,14 +18,24 @@ export function TicketsByChannelChart({ tickets }: TicketsByChannelChartProps) {
   const data = React.useMemo(() => {
     const channelCounts = tickets.reduce((acc, ticket) => {
       let channel: string;
-      if (ticket.source === 'WhatsApp') {
-        channel = 'WhatsApp';
-      } else if (ticket.source === 'Project') {
-        channel = 'Project';
-      } else if (EMAIL_SOURCES.includes(ticket.source)) {
-        channel = 'Email';
-      } else {
-        channel = 'Other';
+      switch (ticket.source) {
+        case 'WhatsApp':
+          channel = 'WhatsApp';
+          break;
+        case 'Project':
+          channel = 'Project';
+          break;
+        case 'General Inquiry':
+          channel = 'Web Form';
+          break;
+        case 'Client Inquiry':
+        case 'Partner':
+        case 'Vendor':
+        case 'Internal':
+          channel = 'Email';
+          break;
+        default:
+          channel = 'Other';
       }
       acc[channel] = (acc[channel] || 0) + 1;
       return acc;
