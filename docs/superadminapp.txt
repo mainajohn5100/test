@@ -5,7 +5,7 @@ This document outlines the requirements for a superadmin dashboard to manage the
 
 ---
 
-## 1. API Endpoints (to be built)
+## 1. API Endpoints (Built in Main App)
 
 The core application needs to expose secure, superadmin-only API endpoints to manage the organizations. These endpoints should be protected and only accessible by a user with a `SuperAdmin` role claim.
 
@@ -25,7 +25,7 @@ The core application needs to expose secure, superadmin-only API endpoints to ma
         *   `subscriptionStatus`: string (e.g., 'Active', 'Trialing', 'Past Due', 'Canceled')
         *   `configuredDomain`: string (custom domain or subdomain)
         *   `organizationLogoUrl`: string
-        *   `supportInquiryEmail`: string (The primary admin's email)
+        *   `supportInquiryEmail`: string (The primary admin's email or the org's support email)
 
 *   **`GET /api/superadmin/organizations/{orgId}`**
     *   **Purpose:** Get detailed information for a single organization.
@@ -34,9 +34,9 @@ The core application needs to expose secure, superadmin-only API endpoints to ma
 *   **`PUT /api/superadmin/organizations/{orgId}`**
     *   **Purpose:** Update an organization's details, primarily for administrative tasks.
     *   **Request Body:**
-        *   `subscriptionPlan`: string
-        *   `subscriptionStatus`: string
-        *   `organizationStatus`: 'active' | 'suspended' | 'disabled'
+        *   `subscriptionPlan`: string (optional)
+        *   `subscriptionStatus`: string (optional)
+        *   `organizationStatus`: 'active' | 'suspended' | 'disabled' (optional)
     *   **Response Body:** `{ success: true, message: "Organization updated." }`
 
 *   **`POST /api/superadmin/organizations/{orgId}/message`**

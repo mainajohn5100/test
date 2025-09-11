@@ -1,6 +1,6 @@
 
 
-import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, or, arrayUnion } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc, query, where, Timestamp, deleteDoc, updateDoc, DocumentData, QuerySnapshot, DocumentSnapshot, writeBatch, limit, orderBy, setDoc, or, arrayUnion,getCountFromServer } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Ticket, Project, User, Notification, TicketConversation, Organization, Task, SLAPolicy } from './data';
 import { cache } from 'react';
@@ -882,4 +882,49 @@ export async function sendVerificationEmail(userId: string) {
         // This case should ideally not happen in the signup flow.
         console.warn("Could not send verification email: current user does not match new user.");
     }
+}
+
+// Superadmin Functions
+export async function getAllOrganizations(): Promise<Organization[]> {
+    const orgsCol = collection(db, 'organizations');
+    const orgSnapshot = await getDocs(orgsCol);
+    return snapshotToData<Organization>(orgSnapshot);
+}
+
+export async function getUsersForOrganization(orgId: string): Promise<User[]> {
+    if (!orgId) return [];
+    const usersCol = collection(db, 'users');
+    const q = query(usersCol, where("organizationId", "==", orgId));
+    const userSnapshot = await getDocs(q);
+    return snapshotToData<User>(userSnapshot);
+}
+
+export async function getUserCountForOrganization(orgId: string, role: User['role']): Promise<number> {
+    const usersCol = collection(db, 'users');
+    const q = query(usersCol, where("organizationId", "==", orgId), where("role", "==", role));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+}
+
+export async function getPrimaryAdminForOrganization(orgId: string): Promise<User | null> {
+    const usersCol = collection(db, 'users');
+    const q = query(usersCol, where("organizationId", "==", orgId), where("role", "==", "Admin"), orderBy("createdAt", "asc"), limit(1));
+    const userSnapshot = await getDocs(q);
+     if (userSnapshot.empty) {
+        return null;
+    }
+    return docToData<User>(userSnapshot.docs[0]);
+}
+
+export async function updateOrganizationBySuperAdmin(orgId: string, data: Partial<Organization>): Promise<void> {
+  try {
+    const orgRef = doc(db, 'organizations', orgId);
+    const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+    if (Object.keys(cleanData).length > 0) {
+        await updateDoc(orgRef, cleanData);
+    }
+  } catch (error) {
+    console.error("Error updating organization (superadmin):", error);
+    throw new Error("Failed to update organization.");
+  }
 }

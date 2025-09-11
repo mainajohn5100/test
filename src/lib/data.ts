@@ -73,6 +73,7 @@ export type User = {
   organizationId: string;
   lastSeen?: string;
   createdByAdmin?: boolean;
+  createdAt?: string; // Added for sorting admins
 };
 
 export type Project = {
@@ -164,6 +165,10 @@ export type Organization = {
     slaPolicies?: SLAPolicy[];
     // Hybrid / Org-level settings
     excludeClosedTickets?: boolean;
+    // SuperAdmin managed settings
+    subscriptionPlan?: string;
+    subscriptionStatus?: 'Active' | 'Trialing' | 'Past Due' | 'Canceled';
+    organizationStatus?: 'active' | 'suspended' | 'disabled';
   }
 };
 
