@@ -17,15 +17,13 @@ The core application needs to expose secure, superadmin-only API endpoints to ma
         *   `organizationId`: string
         *   `organizationName`: string
         *   `accountCreatedAt`: ISO Date string
-        *   `primaryAdminName`: string
-        *   `primaryAdminEmail`: string
-        *   `primaryAdminPhone`: string (optional)
         *   `userCounts`: { admins: number, agents: number, clients: number }
+        *   `projectCount`: number
         *   `subscriptionPlan`: string (e.g., 'Free', 'Pro', 'Enterprise')
         *   `subscriptionStatus`: string (e.g., 'Active', 'Trialing', 'Past Due', 'Canceled')
         *   `configuredDomain`: string (custom domain or subdomain)
         *   `organizationLogoUrl`: string
-        *   `supportInquiryEmail`: string (The primary admin's email or the org's support email)
+        *   `supportInquiryEmail`: string
 
 *   **`GET /api/superadmin/organizations/{orgId}`**
     *   **Purpose:** Get detailed information for a single organization.
@@ -78,18 +76,19 @@ The core application needs to expose secure, superadmin-only API endpoints to ma
         *   Total number of organizations.
         *   Total number of active subscriptions.
         *   Total number of users (Admins, Agents, Clients).
+        *   Total number of projects.
         *   A list or chart showing recently created organizations.
 
 3.  **Organizations Management Page (`/organizations`)**
     *   Display a data table of all organizations fetched from the `GET /api/superadmin/organizations` endpoint.
-    *   The table columns should include: Organization Name, Primary Admin, User Counts (A/A/C), Subscription Plan, Status, and Creation Date.
+    *   The table columns should include: Organization Name, User Counts (A/A/C), Project Count, Subscription Plan, Status, and Creation Date.
     *   Implement server-side sorting and filtering for all columns.
     *   Each row should be clickable, navigating to a detailed view page: `/organizations/{orgId}`.
 
 4.  **Organization Detail Page (`/organizations/{orgId}`)**
     *   Use a two-column layout.
     *   **Left Column:** Display core organization details fetched from `GET /api/superadmin/organizations/{orgId}`:
-        *   Org Name, ID, Admin contact info, domain, logo, etc.
+        *   Org Name, ID, domain, logo, user/project counts etc.
         *   A section to manage the subscription. This should allow the superadmin to update the `subscriptionPlan` and `subscriptionStatus` via a PUT request to the API.
         *   A section to suspend or reactivate the organization.
     *   **Right Column:**

@@ -4,7 +4,8 @@ import {
     getOrganizationById, 
     updateOrganizationBySuperAdmin,
     getPrimaryAdminForOrganization,
-    getUserCountForOrganization
+    getUserCountForOrganization,
+    getProjectCountForOrganization
 } from '@/lib/firestore';
 import { verifySuperAdmin } from '@/lib/superadmin-auth';
 import { z } from 'zod';
@@ -30,25 +31,30 @@ export async function GET(request: Request, { params }: { params: { orgId: strin
             return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
         }
         
-         const [primaryAdmin, adminCount, agentCount, clientCount] = await Promise.all([
+         const [
+             primaryAdmin, 
+             adminCount, 
+             agentCount, 
+             clientCount,
+             projectCount
+        ] = await Promise.all([
             getPrimaryAdminForOrganization(org.id),
             getUserCountForOrganization(org.id, 'Admin'),
             getUserCountForOrganization(org.id, 'Agent'),
             getUserCountForOrganization(org.id, 'Client'),
+            getProjectCountForOrganization(org.id),
         ]);
 
         const orgDetails = {
             organizationId: org.id,
             organizationName: org.name,
             accountCreatedAt: org.createdAt,
-            primaryAdminName: primaryAdmin?.name || 'N/A',
-            primaryAdminEmail: primaryAdmin?.email || 'N/A',
-            primaryAdminPhone: primaryAdmin?.phone || '',
             userCounts: {
                 admins: adminCount,
                 agents: agentCount,
                 clients: clientCount,
             },
+            projectCount,
             subscriptionPlan: org.settings?.subscriptionPlan || 'Free',
             subscriptionStatus: org.settings?.subscriptionStatus || 'Active',
             configuredDomain: org.domain || org.subdomain,

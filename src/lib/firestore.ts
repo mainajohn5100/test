@@ -906,6 +906,14 @@ export async function getUserCountForOrganization(orgId: string, role: User['rol
     return snapshot.data().count;
 }
 
+export async function getProjectCountForOrganization(orgId: string): Promise<number> {
+    const projectsCol = collection(db, 'projects');
+    const q = query(projectsCol, where("organizationId", "==", orgId));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+}
+
+
 export async function getPrimaryAdminForOrganization(orgId: string): Promise<User | null> {
     const usersCol = collection(db, 'users');
     const q = query(usersCol, where("organizationId", "==", orgId), where("role", "==", "Admin"), orderBy("createdAt", "asc"), limit(1));
