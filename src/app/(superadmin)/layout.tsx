@@ -1,0 +1,134 @@
+
+'use client';
+import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Sidebar,
+  SidebarProvider,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Building, LayoutDashboard, Loader, Shield, ShieldAlert, Users } from "lucide-react";
+import { Logo } from "@/components/icons";
+import { useAuth } from "@/contexts/auth-context";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+function SuperAdminNav() {
+    const pathname = React.usePathname();
+    return (
+        <nav className="flex flex-col p-2 space-y-1">
+            <Link href="/superadmin">
+                <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.endsWith('/superadmin') && "bg-sidebar-accent")}>
+                    <LayoutDashboard />
+                    Dashboard
+                </Button>
+            </Link>
+            <Link href="/superadmin/organizations">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.includes('/organizations') && "bg-sidebar-accent")}>
+                    <Building />
+                    Organizations
+                </Button>
+            </Link>
+        </nav>
+    );
+}
+
+export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        router.push('/login');
+    } catch (error) {
+        console.error("Error signing out: ", error);
+        toast({ title: 'Error', description: 'Failed to sign out.', variant: 'destructive' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // In a real app, this would check for a 'SuperAdmin' custom claim.
+  // For now, we'll check if the user is the specific 'alex.j@example.com' admin.
+  if (user?.role !== 'Admin' || user.email !== 'alex.j@example.com') {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background p-4">
+        <div className="flex flex-col items-center justify-center text-center">
+          <ShieldAlert className="h-12 w-12 text-destructive mb-4" />
+          <h2 className="text-2xl font-bold">Access Denied</h2>
+          <p className="text-muted-foreground max-w-sm mt-2">
+            You do not have permission to access the superadmin dashboard.
+          </p>
+          <Button onClick={() => router.push('/dashboard')} className="mt-6">
+            Return to App
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen">
+        <Sidebar variant="sidebar" side="left" collapsible="none" className="w-64">
+           <SidebarHeader className="border-b">
+                <Link href="/superadmin" className="flex items-center gap-2">
+                    <Shield className="w-8 h-8 text-sidebar-primary" />
+                    <span className="font-headline font-semibold text-xl text-sidebar-foreground">
+                    Superadmin
+                    </span>
+                </Link>
+            </SidebarHeader>
+            <SidebarContent>
+                <SuperAdminNav />
+            </SidebarContent>
+            <SidebarFooter>
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="justify-start w-full h-auto p-2">
+                    <div className="flex justify-between items-center w-full">
+                        <div className="flex gap-3 items-center">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium">{user.name}</span>
+                            <span className="text-xs text-muted-foreground">{user.email}</span>
+                        </div>
+                        </div>
+                    </div>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" className="w-56">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/dashboard')}>Back to App</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            </SidebarFooter>
+        </Sidebar>
+        <main className="flex-1 p-4 md:p-6 overflow-auto bg-muted/40">
+            {children}
+        </main>
+      </div>
+    </SidebarProvider>
+  );
+}

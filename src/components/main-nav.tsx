@@ -103,6 +103,15 @@ const adminMenuItems: NavItem[] = [
   },
 ];
 
+const superAdminMenuItems: NavItem[] = [
+    {
+        label: "Superadmin",
+        href: "/superadmin",
+        icon: Shield,
+        roles: ['Admin'],
+    }
+]
+
 const bottomMenuItems: NavItem[] = [
   {
     label: "Settings",
@@ -161,6 +170,8 @@ function NavItems({ items, user, projectsEnabled, pathname, handleLinkClick }: {
     .filter(item => {
         if (!item.roles.includes(user.role)) return false;
         if (item.setting === 'projectsEnabled' && !projectsEnabled) return false;
+        // In a real app, you'd have a proper superadmin claim. For now, we show the link to the first admin.
+        if (item.label === 'Superadmin' && user.email !== 'alex.j@example.com') return false;
         return true;
     })
     .map(item => {
@@ -354,6 +365,9 @@ export function MainNav() {
       </div>
        <div className="mt-auto">
         <NavItems items={bottomMenuItems} user={user} projectsEnabled={projectsEnabled} pathname={pathname} handleLinkClick={handleLinkClick} />
+        {user.role === 'Admin' && (
+            <NavItems items={superAdminMenuItems} user={user} projectsEnabled={projectsEnabled} pathname={pathname} handleLinkClick={handleLinkClick} />
+        )}
       </div>
     </nav>
   );
