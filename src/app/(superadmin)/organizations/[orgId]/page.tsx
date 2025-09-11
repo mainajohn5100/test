@@ -9,7 +9,6 @@ import { ArrowLeft, Briefcase, Building, Calendar, DollarSign, Edit, Mail, Send,
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format, isValid } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -27,8 +26,8 @@ interface OrgDetails {
     accountCreatedAt: string;
     userCounts: { admins: number, agents: number, clients: number };
     projectCount: number;
-    subscriptionPlan: string;
-    subscriptionStatus: 'Active' | 'Trialing' | 'Past Due' | 'Canceled';
+    subscriptionPlan?: string;
+    subscriptionStatus?: 'Active' | 'Trialing' | 'Past Due' | 'Canceled';
     configuredDomain: string;
     supportInquiryEmail: string;
     primaryAdminName?: string;
@@ -140,8 +139,8 @@ export default function OrganizationDetailPage() {
                 if (!orgResponse.ok) throw new Error('Failed to fetch organization details');
                 const orgData = await orgResponse.json();
                 setOrg(orgData);
-                setPlan(orgData.subscriptionPlan);
-                setStatus(orgData.subscriptionStatus);
+                setPlan(orgData.subscriptionPlan || 'Free');
+                setStatus(orgData.subscriptionStatus || 'Active');
 
             } catch (error: any) {
                 toast({ title: 'Error', description: error.message, variant: 'destructive' });
