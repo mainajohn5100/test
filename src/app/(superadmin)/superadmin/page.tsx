@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Building, CheckCircle, Users, Briefcase, Loader, Search, MoreVertical, Eye } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow, format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // This would come from an API call in a real app
 interface OrganizationData {
@@ -192,3 +193,5 @@ export default function SuperAdminDashboardPage() {
         </div>
     )
 }
+
+    
