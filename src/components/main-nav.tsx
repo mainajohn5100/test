@@ -79,7 +79,7 @@ const generalMenuItems: NavItem[] = [
 const adminMenuItems: NavItem[] = [
   {
     label: "Organization",
-    href: "/organization",
+    href: "/organization/dashboard",
     icon: Building,
     roles: ['Admin'],
   },
