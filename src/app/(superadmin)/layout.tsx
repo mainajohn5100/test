@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Building, LayoutDashboard, Loader, Shield, ShieldAlert, Users, Search, Maximize, Minimize, LifeBuoy, DollarSign } from "lucide-react";
+import { Building, LayoutDashboard, Loader, Shield, ShieldAlert, Users, Search, Maximize, Minimize, LifeBuoy, DollarSign, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
@@ -34,16 +34,22 @@ function SuperAdminNav() {
                     <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                 </Button>
             </Link>
-            <Link href="/organizations">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.startsWith('/organizations') && "bg-sidebar-accent")}>
+            <Link href="/superadmin/organizations">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.startsWith('/superadmin/organizations') && "bg-sidebar-accent")}>
                     <Building />
                     <span className="group-data-[collapsible=icon]:hidden">Organizations</span>
                 </Button>
             </Link>
-            <Link href="/revenue">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/revenue' && "bg-sidebar-accent")}>
+            <Link href="/superadmin/revenue">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/superadmin/revenue' && "bg-sidebar-accent")}>
                     <DollarSign />
                     <span className="group-data-[collapsible=icon]:hidden">Revenue</span>
+                </Button>
+            </Link>
+            <Link href="/superadmin/settings">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/superadmin/settings' && "bg-sidebar-accent")}>
+                    <Settings />
+                    <span className="group-data-[collapsible=icon]:hidden">Settings</span>
                 </Button>
             </Link>
         </nav>
@@ -144,12 +150,12 @@ function SuperAdminShellContent({ children }: { children: React.ReactNode }) {
                   <div className="flex justify-between items-center w-full">
                       <div className="flex gap-3 items-center">
                       <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                          <AvatarImage src={user?.avatar} alt={user?.name} />
+                          <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                          <span className="text-sm font-medium">{user.name}</span>
-                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                          <span className="text-sm font-medium">{user?.name}</span>
+                          <span className="text-xs text-muted-foreground">{user?.email}</span>
                       </div>
                       </div>
                   </div>
