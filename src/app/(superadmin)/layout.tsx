@@ -74,7 +74,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           <p className="text-muted-foreground max-w-sm mt-2">
             You do not have permission to access the superadmin dashboard.
           </p>
-          <Button onClick={() => router.push('/dashboard')} className="mt-6">
+          <Button onClick={() => router.push('/dashboard')} className="mt-6" >
             Return to App
           </Button>
         </div>
