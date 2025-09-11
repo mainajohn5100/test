@@ -22,6 +22,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { inter } from "@/app/fonts";
 
 function SuperAdminNav() {
     const pathname = usePathname();
@@ -215,8 +216,10 @@ function SuperAdminShellContent({ children }: { children: React.ReactNode }) {
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
-      <SuperAdminShellContent>{children}</SuperAdminShellContent>
-    </SidebarProvider>
+    <div className={inter.className}>
+        <SidebarProvider>
+            <SuperAdminShellContent>{children}</SuperAdminShellContent>
+        </SidebarProvider>
+    </div>
   );
 }
