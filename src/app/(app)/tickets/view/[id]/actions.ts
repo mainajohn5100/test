@@ -75,6 +75,13 @@ export async function addReplyAction(formData: FormData) {
       authorName: author.name,
       attachments,
     });
+    
+    // --- Auto-assign logic ---
+    if (author.role === 'Admin' && ticket.status === 'New' && ticket.assignee === 'Unassigned') {
+        await updateTicket(ticketId, { assignee: author.name });
+        console.log(`Ticket ${ticketId} auto-assigned to admin ${author.name}`);
+    }
+
 
     // --- Notification Logic ---
     const userIdsToNotify = new Set<string>();
@@ -91,7 +98,7 @@ export async function addReplyAction(formData: FormData) {
     userIdsToNotify.delete(author.id);
 
     if (userIdsToNotify.size > 0) {
-      const plainTextContent = content ? htmlToText(content, { wordwrap: 130 }) : 'Sent attachments';
+      const plainTextContent = content ? htmlToText(content, { wordwrap: 130 }) : `Sent ${attachments.length} attachment(s)`;
       const summary =
         plainTextContent.length > 100 ? `${plainTextContent.substring(0, 97)}...` : plainTextContent;
 

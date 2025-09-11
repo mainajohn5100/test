@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { CreateUserForm } from "@/app/(app)/users/create-user-form";
 import { Combobox } from "@/components/ui/combobox";
 import { useSearchParams } from "next/navigation";
-import { TiptapEditor } from "@/components/tiptap-editor";
+import  TiptapEditor  from "@/components/tiptap-editor";
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
