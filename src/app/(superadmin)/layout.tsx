@@ -10,6 +10,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarTrigger,
+  SidebarInset,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -29,26 +30,26 @@ function SuperAdminNav() {
             <Link href="/superadmin">
                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/superadmin' && "bg-sidebar-accent")}>
                     <LayoutDashboard />
-                    Dashboard
+                    <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                 </Button>
             </Link>
             <Link href="/organizations">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/organizations' && "bg-sidebar-accent")}>
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.startsWith('/organizations') && "bg-sidebar-accent")}>
                     <Building />
-                    Organizations
+                    <span className="group-data-[collapsible=icon]:hidden">Organizations</span>
                 </Button>
             </Link>
             <Link href="/revenue">
                  <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/revenue' && "bg-sidebar-accent")}>
                     <DollarSign />
-                    Revenue
+                    <span className="group-data-[collapsible=icon]:hidden">Revenue</span>
                 </Button>
             </Link>
         </nav>
     );
 }
 
-export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+function SuperAdminShellContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -110,91 +111,100 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen bg-muted/40">
-        <Sidebar variant="sidebar" side="left" collapsible="icon" className="w-64 hidden md:flex">
-           <SidebarHeader className="border-b">
-                <Link href="/superadmin" className="flex items-center gap-2">
-                    <Shield className="w-8 h-8 text-sidebar-primary" />
-                    <span className="font-headline font-semibold text-xl text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-                    Superadmin
-                    </span>
-                </Link>
-            </SidebarHeader>
-            <SidebarContent>
-                <SuperAdminNav />
-            </SidebarContent>
-            <SidebarFooter>
-                <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="justify-start w-full h-auto p-2">
-                    <div className="flex justify-between items-center w-full">
-                        <div className="flex gap-3 items-center">
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                            <span className="text-sm font-medium">{user.name}</span>
-                            <span className="text-xs text-muted-foreground">{user.email}</span>
-                        </div>
-                        </div>
-                    </div>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="start" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push('/dashboard')}>Back to App</DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-                </DropdownMenu>
-            </SidebarFooter>
-        </Sidebar>
-        <div className="flex flex-col flex-1">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-              <SidebarTrigger className="md:hidden" />
-              <div className="flex-1" />
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search..." className="pl-9" />
-                </div>
-                 <Button variant="ghost" size="icon" onClick={toggleFullScreen}>
-                    {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-                    <span className="sr-only">Toggle Fullscreen</span>
-                </Button>
-                <Link href="/support" passHref>
-                  <Button variant="ghost" size="icon">
-                      <LifeBuoy className="h-5 w-5" />
-                      <span className="sr-only">Support</span>
+    <>
+      <Sidebar variant="sidebar" side="left" collapsible="icon">
+         <SidebarHeader className="border-b">
+              <Link href="/superadmin" className="flex items-center gap-2">
+                  <Shield className="w-8 h-8 text-sidebar-primary" />
+                  <span className="font-headline font-semibold text-xl text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+                  Superadmin
+                  </span>
+              </Link>
+          </SidebarHeader>
+          <SidebarContent>
+              <SuperAdminNav />
+          </SidebarContent>
+          <SidebarFooter>
+              <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="justify-start w-full h-auto p-2">
+                  <div className="flex justify-between items-center w-full">
+                      <div className="flex gap-3 items-center">
+                      <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.avatar} alt={user.name} />
+                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
+                          <span className="text-sm font-medium">{user.name}</span>
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                      </div>
+                      </div>
+                  </div>
                   </Button>
-                </Link>
-                {user && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="rounded-full">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => router.push('/dashboard')}>Back to App</DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="start" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/dashboard')}>Back to App</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+              </DropdownMenu>
+          </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+            <SidebarTrigger className="md:hidden" />
+            <div className="flex items-center">
+              <SidebarTrigger className="hidden md:block" />
+            </div>
+            <div className="flex-1" />
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Search..." className="pl-9" />
               </div>
-          </header>
-          <main className="flex-1 p-4 md:p-6 overflow-auto">
-              {children}
-          </main>
-        </div>
-      </div>
+               <Button variant="ghost" size="icon" onClick={toggleFullScreen}>
+                  {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                  <span className="sr-only">Toggle Fullscreen</span>
+              </Button>
+              <Link href="/support" passHref>
+                <Button variant="ghost" size="icon">
+                    <LifeBuoy className="h-5 w-5" />
+                    <span className="sr-only">Support</span>
+                </Button>
+              </Link>
+              {user && (
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                              <Avatar className="h-8 w-8">
+                                  <AvatarImage src={user.avatar} alt={user.name} />
+                                  <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => router.push('/dashboard')}>Back to App</DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+              )}
+            </div>
+        </header>
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+            {children}
+        </main>
+      </SidebarInset>
+    </>
+  );
+}
+
+export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <SuperAdminShellContent>{children}</SuperAdminShellContent>
     </SidebarProvider>
   );
 }
