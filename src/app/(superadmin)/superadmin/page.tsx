@@ -11,33 +11,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { formatDistanceToNow, format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
+import { toast } from '@/hooks/use-toast';
 
-// This would come from an API call in a real app
 interface OrganizationData {
-    id: string;
-    name: string;
-    logoUrl?: string;
-    billingStatus: 'Active' | 'Trialing' | 'Past Due' | 'Canceled';
-    onlineStatus: 'Online' | 'Offline';
-    lastActivity: string; // ISO string
-    nextBillingDate: string; // ISO string
+    organizationId: string;
+    organizationName: string;
+    organizationLogoUrl?: string;
+    subscriptionStatus: 'Active' | 'Trialing' | 'Past Due' | 'Canceled';
+    accountCreatedAt: string; // ISO string
+    userCounts: { admins: number, agents: number, clients: number };
+    projectCount: number;
 }
 
-const placeholderOrganizations: OrganizationData[] = [
-    {id: '1', name: 'Innovate Inc.', logoUrl: undefined, billingStatus: 'Active', onlineStatus: 'Online', lastActivity: new Date().toISOString(), nextBillingDate: '2024-08-15' },
-    {id: '2', name: 'Solutions Corp', logoUrl: undefined, billingStatus: 'Trialing', onlineStatus: 'Offline', lastActivity: '2024-07-20T10:00:00Z', nextBillingDate: '2024-07-30' },
-    {id: '3', name: 'Synergy Group', logoUrl: undefined, billingStatus: 'Past Due', onlineStatus: 'Offline', lastActivity: '2024-07-18T15:30:00Z', nextBillingDate: '2024-07-15' },
-];
-
-
-function RecentActivityTable() {
+function RecentActivityTable({ organizations }: { organizations: OrganizationData[] }) {
     const router = useRouter();
-    const [organizations] = useState<OrganizationData[]>(placeholderOrganizations);
 
-    const billingStatusVariant: Record<OrganizationData['billingStatus'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const billingStatusVariant: Record<OrganizationData['subscriptionStatus'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
         'Active': 'default',
         'Trialing': 'secondary',
         'Past Due': 'destructive',
@@ -50,63 +43,82 @@ function RecentActivityTable() {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Organization</TableHead>
+                        <TableHead>Users</TableHead>
+                        <TableHead>Projects</TableHead>
                         <TableHead>Billing Status</TableHead>
-                        <TableHead>Online Status</TableHead>
-                        <TableHead>Last Activity</TableHead>
-                        <TableHead>Next Billing Date</TableHead>
+                        <TableHead>Date Created</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {organizations.map(org => (
-                        <TableRow key={org.id} onClick={() => router.push(`/superadmin/organizations/${org.id}`)} className="cursor-pointer">
+                    {organizations.map(org => {
+                         const creationDate = new Date(org.accountCreatedAt);
+                         const totalUsers = org.userCounts.admins + org.userCounts.agents + org.userCounts.clients;
+                        return (
+                        <TableRow key={org.organizationId} onClick={() => router.push(`/superadmin/organizations/${org.organizationId}`)} className="cursor-pointer">
                             <TableCell>
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-8 w-8">
-                                        <AvatarImage src={org.logoUrl} alt={org.name} />
-                                        <AvatarFallback>{org.name.charAt(0)}</AvatarFallback>
+                                        <AvatarImage src={org.organizationLogoUrl} alt={org.organizationName} />
+                                        <AvatarFallback>{org.organizationName.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <span className="font-medium">{org.name}</span>
+                                    <span className="font-medium">{org.organizationName}</span>
                                 </div>
                             </TableCell>
+                            <TableCell>{totalUsers}</TableCell>
+                            <TableCell>{org.projectCount}</TableCell>
                             <TableCell>
-                                <Badge variant={billingStatusVariant[org.billingStatus]}>{org.billingStatus}</Badge>
+                                <Badge variant={billingStatusVariant[org.subscriptionStatus]}>{org.subscriptionStatus}</Badge>
                             </TableCell>
-                            <TableCell>
-                                <div className="flex items-center gap-2">
-                                    <span className={`h-2 w-2 rounded-full ${org.onlineStatus === 'Online' ? 'bg-green-500' : 'bg-gray-400'}`} />
-                                    {org.onlineStatus}
-                                </div>
-                            </TableCell>
-                            <TableCell>{formatDistanceToNow(new Date(org.lastActivity), { addSuffix: true })}</TableCell>
-                            <TableCell>{format(new Date(org.nextBillingDate), 'PP')}</TableCell>
+                            <TableCell>{isValid(creationDate) ? format(creationDate, 'PP') : 'N/A'}</TableCell>
                         </TableRow>
-                    ))}
+                    )})}
                 </TableBody>
             </Table>
         </div>
     );
 }
 
-
 export default function SuperAdminDashboardPage() {
+    const { user: currentUser } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({
-        totalOrganizations: 5,
-        activeSubscriptions: 4,
-        totalProjects: 233,
-        totalUsers: 725,
-    });
+    const [organizations, setOrganizations] = useState<OrganizationData[]>([]);
     
     useEffect(() => {
-        // Simulate fetching data
-        setTimeout(() => setLoading(false), 1000);
-    }, []);
+        if (!currentUser) return;
+        
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // In a real app, this secret would be an ID token.
+                const response = await fetch('/api/superadmin/organizations', {
+                    headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch organizations: ${response.statusText}`);
+                }
+                const data: OrganizationData[] = await response.json();
+                setOrganizations(data);
+            } catch (error) {
+                console.error(error);
+                toast({ title: 'Error', description: 'Could not load organization data.', variant: 'destructive' });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [currentUser]);
+
+    const totalUsers = organizations.reduce((acc, org) => acc + (org.userCounts.admins + org.userCounts.agents + org.userCounts.clients), 0);
+    const totalProjects = organizations.reduce((acc, org) => acc + org.projectCount, 0);
+    const activeSubscriptions = organizations.filter(org => org.subscriptionStatus === 'Active').length;
 
     const statCards = [
-        { title: "Total Organizations", value: stats.totalOrganizations, icon: Building, description: "All organizations on the platform" },
-        { title: "Active Subscriptions", value: stats.activeSubscriptions, icon: CheckCircle, description: "Organizations with an active plan" },
-        { title: "Total Projects", value: stats.totalProjects, icon: Briefcase, description: "Sum of all projects created" },
-        { title: "Total Users", value: stats.totalUsers, icon: Users, description: "Total registered users" },
+        { title: "Total Organizations", value: organizations.length, icon: Building, description: "All organizations on the platform" },
+        { title: "Active Subscriptions", value: activeSubscriptions, icon: CheckCircle, description: "Organizations with an active plan" },
+        { title: "Total Projects", value: totalProjects, icon: Briefcase, description: "Sum of all projects created" },
+        { title: "Total Users", value: totalUsers, icon: Users, description: "Total registered users" },
     ];
 
     return (
@@ -147,38 +159,11 @@ export default function SuperAdminDashboardPage() {
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <div>
-                                <CardTitle>Recent Activity</CardTitle>
+                                <CardTitle>All Organizations</CardTitle>
                                 <CardDescription>
-                                    Top 10 most recently active organizations.
+                                    A list of all organizations on the platform.
                                 </CardDescription>
                             </div>
-                            <Button variant="outline">View All</Button>
-                        </div>
-                         <div className="flex items-center gap-2 pt-4">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Filter by name..." className="pl-9" />
-                            </div>
-                            <Select>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="All Billing Statuses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="trialing">Trialing</SelectItem>
-                                    <SelectItem value="past-due">Past Due</SelectItem>
-                                    <SelectItem value="canceled">Canceled</SelectItem>
-                                </SelectContent>
-                            </Select>
-                             <Select>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="All Online Statuses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="online">Online</SelectItem>
-                                    <SelectItem value="offline">Offline</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -187,7 +172,7 @@ export default function SuperAdminDashboardPage() {
                                 <Loader className="h-6 w-6 animate-spin" />
                              </div>
                         ) : (
-                            <RecentActivityTable />
+                            <RecentActivityTable organizations={organizations} />
                         )}
                     </CardContent>
                 </Card>

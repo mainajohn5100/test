@@ -1,43 +1,82 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/page-header";
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Briefcase, Building, Calendar, DollarSign, Edit, Mail, Send, Trash2, Users, Loader } from 'lucide-react';
+import { ArrowLeft, Briefcase, Building, Calendar, DollarSign, Edit, Mail, Send, Trash2, Users, Loader, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/auth-context';
+import { toast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// Placeholder data - this would come from API calls
-const placeholderOrgDetails = {
-    id: '1',
-    name: 'Innovate Inc.',
-    logoUrl: undefined,
-    createdAt: '2023-01-15T10:00:00Z',
-    nextBillingDate: '2024-08-15T10:00:00Z',
-    primaryAdmin: { name: 'Alex Johnson', email: 'alex.j@innovate.com' },
-    userCount: 15,
-    projectCount: 5,
-    billingHistory: [
-        { id: 'inv_1', date: '2024-07-15', amount: 99.00, status: 'Paid' },
-        { id: 'inv_2', date: '2024-06-15', amount: 99.00, status: 'Paid' },
-        { id: 'inv_3', date: '2024-05-15', amount: 99.00, statu: 'Paid' },
-    ],
-    subscription: { plan: 'Pro', status: 'Active' },
-};
+interface OrgDetails {
+    organizationId: string;
+    organizationName: string;
+    organizationLogoUrl?: string;
+    accountCreatedAt: string;
+    userCounts: { admins: number, agents: number, clients: number };
+    projectCount: number;
+    subscriptionPlan: string;
+    subscriptionStatus: 'Active' | 'Trialing' | 'Past Due' | 'Canceled';
+    configuredDomain: string;
+    supportInquiryEmail: string;
+}
 
-function MessageAdminDialog() {
+interface OrgUser {
+    userId: string;
+    name: string;
+    email: string;
+    role: 'Admin' | 'Agent' | 'Client';
+    status: 'active' | 'disabled';
+    lastSeen: string;
+}
+
+function MessageAdminDialog({ org }: { org: OrgDetails | null }) {
+    const [isPending, startTransition] = useTransition();
+    const [subject, setSubject] = useState('');
+    const [body, setBody] = useState('');
+    const [open, setOpen] = useState(false);
+
+    if (!org) return null;
+
+    const handleSend = () => {
+        startTransition(async () => {
+            try {
+                const response = await fetch(`/api/superadmin/organizations/${org.organizationId}/message`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`
+                    },
+                    body: JSON.stringify({ subject, body })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to send message');
+                
+                toast({ title: 'Message Sent', description: `Email sent to ${org.supportInquiryEmail}.` });
+                setOpen(false);
+                setSubject('');
+                setBody('');
+            } catch (error: any) {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            }
+        });
+    };
+
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button>
                     <Send className="mr-2 h-4 w-4" />
@@ -46,24 +85,27 @@ function MessageAdminDialog() {
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Send Message to Organization Admin</DialogTitle>
+                    <DialogTitle>Send Message to {org.organizationName}</DialogTitle>
                     <DialogDescription>
-                        This will send an email to the primary administrator of this organization.
+                        This will send an email to the primary administrator: {org.supportInquiryEmail}.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="subject">Subject</Label>
-                        <Input id="subject" placeholder="Regarding your account..." />
+                        <Input id="subject" placeholder="Regarding your account..." value={subject} onChange={(e) => setSubject(e.target.value)} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="message">Message</Label>
-                        <Textarea id="message" placeholder="Type your message here." rows={6} />
+                        <Textarea id="message" placeholder="Type your message here." rows={6} value={body} onChange={(e) => setBody(e.target.value)} />
                     </div>
                 </div>
                 <DialogFooter>
-                    <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                    <Button>Send Message</Button>
+                    <DialogClose asChild><Button variant="ghost" disabled={isPending}>Cancel</Button></DialogClose>
+                    <Button onClick={handleSend} disabled={isPending || !subject || !body}>
+                        {isPending && <Loader className="mr-2 h-4 w-4 animate-spin"/>}
+                        Send Message
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -74,23 +116,94 @@ export default function OrganizationDetailPage() {
     const router = useRouter();
     const params = useParams();
     const { orgId } = params;
+    const { user: currentUser } = useAuth();
     
-    // In a real app, you would fetch data based on orgId
-    const [org, setOrg] = useState(placeholderOrgDetails);
-    const [loading, setLoading] = useState(false);
+    const [org, setOrg] = useState<OrgDetails | null>(null);
+    const [users, setUsers] = useState<OrgUser[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isUpdating, startUpdateTransition] = useTransition();
 
-    if (loading) {
+    const [plan, setPlan] = useState('');
+    const [status, setStatus] = useState('');
+
+
+    useEffect(() => {
+        if (!currentUser || !orgId) return;
+
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [orgResponse, usersResponse] = await Promise.all([
+                    fetch(`/api/superadmin/organizations/${orgId}`, {
+                        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
+                    }),
+                    fetch(`/api/superadmin/organizations/${orgId}/users`, {
+                        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
+                    })
+                ]);
+
+                if (!orgResponse.ok) throw new Error('Failed to fetch organization details');
+                const orgData = await orgResponse.json();
+                setOrg(orgData);
+                setPlan(orgData.subscriptionPlan);
+                setStatus(orgData.subscriptionStatus);
+
+                if (!usersResponse.ok) throw new Error('Failed to fetch users');
+                const usersData = await usersResponse.json();
+                setUsers(usersData);
+
+            } catch (error: any) {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [currentUser, orgId]);
+    
+    const handleUpdateSubscription = () => {
+        if (!org) return;
+        startUpdateTransition(async () => {
+            try {
+                const response = await fetch(`/api/superadmin/organizations/${orgId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`
+                    },
+                    body: JSON.stringify({ subscriptionPlan: plan, subscriptionStatus: status })
+                });
+
+                if (!response.ok) throw new Error('Failed to update subscription');
+                
+                toast({ title: 'Subscription Updated' });
+                // Re-fetch data to reflect changes
+                const updatedOrg = await fetch(`/api/superadmin/organizations/${orgId}`, {
+                    headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
+                }).then(res => res.json());
+                setOrg(updatedOrg);
+            } catch (error: any) {
+                 toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            }
+        });
+    };
+
+
+    if (loading || !org) {
         return <div className="flex h-full items-center justify-center"><Loader className="h-8 w-8 animate-spin"/></div>
     }
+
+    const totalUsers = org.userCounts.admins + org.userCounts.agents + org.userCounts.clients;
 
     return (
         <div className="flex flex-col gap-6">
             <PageHeader
-                title={org.name}
-                description={`Managing organization ID: ${orgId}`}
+                title={org.organizationName}
+                description={`Managing organization ID: ${org.organizationId}`}
             >
                 <div className="flex items-center gap-2">
-                    <MessageAdminDialog />
+                    <MessageAdminDialog org={org} />
                     <Button variant="outline" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Organizations
@@ -104,28 +217,23 @@ export default function OrganizationDetailPage() {
                     <Card>
                         <CardHeader className="flex flex-row items-center gap-4">
                             <Avatar className="h-14 w-14">
-                                <AvatarImage src={org.logoUrl} alt={org.name} />
-                                <AvatarFallback>{org.name.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={org.organizationLogoUrl} alt={org.organizationName} />
+                                <AvatarFallback>{org.organizationName.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <CardTitle>{org.name}</CardTitle>
-                                <CardDescription>ID: {org.id}</CardDescription>
+                                <CardTitle>{org.organizationName}</CardTitle>
+                                <CardDescription>Domain: {org.configuredDomain}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">Account Created</span>
-                                <span>{format(new Date(org.createdAt), 'PP')}</span>
+                                <span>{format(new Date(org.accountCreatedAt), 'PP')}</span>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Next Billing Date</span>
-                                <span>{format(new Date(org.nextBillingDate), 'PP')}</span>
-                            </div>
-                             <Separator />
+                            <Separator />
                              <div className="text-sm">
-                                <p className="font-medium">Primary Admin</p>
-                                <p className="text-muted-foreground">{org.primaryAdmin.name}</p>
-                                <p className="text-muted-foreground text-xs">{org.primaryAdmin.email}</p>
+                                <p className="font-medium">Primary Admin Email</p>
+                                <p className="text-muted-foreground">{org.supportInquiryEmail}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -137,8 +245,8 @@ export default function OrganizationDetailPage() {
                             <div className="flex items-center gap-4">
                                 <Users className="h-6 w-6 text-muted-foreground" />
                                 <div>
-                                    <p className="font-bold text-2xl">{org.userCount}</p>
-                                    <p className="text-sm text-muted-foreground">Total Users</p>
+                                    <p className="font-bold text-2xl">{totalUsers}</p>
+                                    <p className="text-sm text-muted-foreground">{org.userCounts.admins} A / {org.userCounts.agents} A / {org.userCounts.clients} C</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
@@ -156,41 +264,70 @@ export default function OrganizationDetailPage() {
                 <div className="lg:col-span-2 space-y-6">
                      <Card>
                         <CardHeader>
-                            <CardTitle>Billing & Subscription</CardTitle>
-                            <CardDescription>Manage this organization's plan and view their billing history.</CardDescription>
+                            <CardTitle>Subscription Management</CardTitle>
+                            <CardDescription>Manage this organization's plan and billing status.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent className="space-y-4">
                             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between rounded-lg border p-4">
-                                <div>
-                                    <p className="font-medium">Current Plan: {org.subscription.plan}</p>
-                                    <p className="text-sm text-muted-foreground">Status: <Badge variant={org.subscription.status === 'Active' ? 'default' : 'destructive'}>{org.subscription.status}</Badge></p>
+                                <div className="grid grid-cols-2 gap-4 flex-1">
+                                    <div className="space-y-2">
+                                        <Label>Subscription Plan</Label>
+                                        <Select value={plan} onValueChange={setPlan}>
+                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Free">Free</SelectItem>
+                                                <SelectItem value="Pro">Pro</SelectItem>
+                                                <SelectItem value="Enterprise">Enterprise</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Billing Status</Label>
+                                        <Select value={status} onValueChange={setStatus}>
+                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Active">Active</SelectItem>
+                                                <SelectItem value="Trialing">Trialing</SelectItem>
+                                                <SelectItem value="Past Due">Past Due</SelectItem>
+                                                <SelectItem value="Canceled">Canceled</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
-                                <Button variant="outline">Change Plan</Button>
+                                <Button onClick={handleUpdateSubscription} disabled={isUpdating} className="mt-4 md:mt-0">
+                                    {isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <ShieldCheck className="mr-2 h-4 w-4"/>}
+                                    Update Subscription
+                                </Button>
                             </div>
-                             <div>
-                                <h4 className="font-medium mb-2">Recent Billing History</h4>
-                                <div className="border rounded-md">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Invoice ID</TableHead>
-                                                <TableHead>Date</TableHead>
-                                                <TableHead>Amount</TableHead>
-                                                <TableHead>Status</TableHead>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>User List</CardTitle>
+                            <CardDescription>All users associated with {org.organizationName}.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="border rounded-md">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Name</TableHead>
+                                            <TableHead>Email</TableHead>
+                                            <TableHead>Role</TableHead>
+                                            <TableHead>Status</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {users.map(user => (
+                                            <TableRow key={user.userId}>
+                                                <TableCell>{user.name}</TableCell>
+                                                <TableCell>{user.email}</TableCell>
+                                                <TableCell><Badge variant="secondary">{user.role}</Badge></TableCell>
+                                                <TableCell><Badge variant={user.status === 'active' ? 'default' : 'destructive'}>{user.status}</Badge></TableCell>
                                             </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {org.billingHistory.map(item => (
-                                                <TableRow key={item.id}>
-                                                    <TableCell>{item.id}</TableCell>
-                                                    <TableCell>{format(new Date(item.date), 'PP')}</TableCell>
-                                                    <TableCell>${item.amount.toFixed(2)}</TableCell>
-                                                    <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </div>
                         </CardContent>
                     </Card>
