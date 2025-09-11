@@ -65,8 +65,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   }
 
   // In a real app, this would check for a 'SuperAdmin' custom claim.
-  // For now, we'll check if the user is the specific 'alex.j@example.com' admin.
-  if (user?.role !== 'Admin' || user.email !== 'alex.j@example.com') {
+  // For now, we'll check if the user is the specific 'requestflow.o@gmail.com' admin.
+  if (user?.role !== 'Admin' || user.email !== 'requestflow.o@gmail.com') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center justify-center text-center">
