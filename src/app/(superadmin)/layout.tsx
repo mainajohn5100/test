@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Building, LayoutDashboard, Loader, Shield, ShieldAlert, Users, Search, Maximize, Minimize, LifeBuoy } from "lucide-react";
+import { Building, LayoutDashboard, Loader, Shield, ShieldAlert, Users, Search, Maximize, Minimize, LifeBuoy, DollarSign } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
@@ -36,6 +36,12 @@ function SuperAdminNav() {
                  <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.startsWith('/organizations') && "bg-sidebar-accent")}>
                     <Building />
                     Organizations
+                </Button>
+            </Link>
+            <Link href="/superadmin/revenue">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.startsWith('/superadmin/revenue') && "bg-sidebar-accent")}>
+                    <DollarSign />
+                    Revenue
                 </Button>
             </Link>
         </nav>
