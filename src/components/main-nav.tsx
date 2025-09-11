@@ -170,8 +170,8 @@ function NavItems({ items, user, projectsEnabled, pathname, handleLinkClick }: {
     .filter(item => {
         if (!item.roles.includes(user.role)) return false;
         if (item.setting === 'projectsEnabled' && !projectsEnabled) return false;
-        // In a real app, you'd have a proper superadmin claim. For now, we show the link to the first admin.
-        if (item.label === 'Superadmin' && user.email !== 'alex.j@example.com') return false;
+        // In a real app, you'd have a proper superadmin claim.
+        if (item.label === 'Superadmin' && user.email !== 'requestflow.o@gmail.com') return false;
         return true;
     })
     .map(item => {
