@@ -5,7 +5,7 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/page-header";
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Briefcase, Building, Calendar, DollarSign, Edit, Mail, Send, Trash2, Users, Loader, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, Mail, Send, Loader, Users as UsersIcon, ShieldCheck, Clock, Building, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface OrgDetails {
     organizationId: string;
@@ -78,7 +79,7 @@ function MessageAdminDialog({ org }: { org: OrgDetails | null }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button variant="outline">
                     <Send className="mr-2 h-4 w-4" />
                     Message Admin
                 </Button>
@@ -119,28 +120,32 @@ export default function OrganizationDetailPage() {
     const { user: currentUser } = useAuth();
     
     const [org, setOrg] = useState<OrgDetails | null>(null);
+    const [users, setUsers] = useState<OrgUser[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isUpdating, startUpdateTransition] = useTransition();
-
-    const [plan, setPlan] = useState('');
-    const [status, setStatus] = useState('');
-
-
+    
     useEffect(() => {
         if (!currentUser || !orgId) return;
 
         const fetchData = async () => {
             setLoading(true);
             try {
-                const orgResponse = await fetch(`/api/superadmin/organizations/${orgId}`, {
-                    headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
-                });
-
+                const [orgResponse, usersResponse] = await Promise.all([
+                    fetch(`/api/superadmin/organizations/${orgId}`, {
+                        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
+                    }),
+                    fetch(`/api/superadmin/organizations/${orgId}/users`, {
+                        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
+                    })
+                ]);
+                
                 if (!orgResponse.ok) throw new Error('Failed to fetch organization details');
+                if (!usersResponse.ok) throw new Error('Failed to fetch user details');
+
                 const orgData = await orgResponse.json();
+                const usersData = await usersResponse.json();
+                
                 setOrg(orgData);
-                setPlan(orgData.subscriptionPlan || 'Free');
-                setStatus(orgData.subscriptionStatus || 'Active');
+                setUsers(usersData);
 
             } catch (error: any) {
                 toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -152,171 +157,140 @@ export default function OrganizationDetailPage() {
         fetchData();
     }, [currentUser, orgId]);
     
-    const handleUpdateSubscription = () => {
-        if (!org) return;
-        startUpdateTransition(async () => {
-            try {
-                const response = await fetch(`/api/superadmin/organizations/${orgId}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`
-                    },
-                    body: JSON.stringify({ subscriptionPlan: plan, subscriptionStatus: status })
-                });
-
-                if (!response.ok) throw new Error('Failed to update subscription');
-                
-                toast({ title: 'Subscription Updated' });
-                // Re-fetch data to reflect changes
-                const updatedOrg = await fetch(`/api/superadmin/organizations/${orgId}`, {
-                    headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}` }
-                }).then(res => res.json());
-                setOrg(updatedOrg);
-            } catch (error: any) {
-                 toast({ title: 'Error', description: error.message, variant: 'destructive' });
-            }
-        });
-    };
-
 
     if (loading || !org) {
         return <div className="flex h-full items-center justify-center"><Loader className="h-8 w-8 animate-spin"/></div>
     }
-
+    
     const totalUsers = org.userCounts.admins + org.userCounts.agents + org.userCounts.clients;
+
+    const billingHistory = [
+        { date: 'Jul 15, 2024', plan: 'Pro', amount: 299.00, status: 'Paid' },
+        { date: 'Jun 15, 2024', plan: 'Pro', amount: 299.00, status: 'Paid' }
+    ]
 
     return (
         <div className="flex flex-col gap-6">
             <PageHeader
                 title={org.organizationName}
-                description={`Managing organization ID: ${org.organizationId}`}
+                description={
+                    <div className='flex items-center gap-2'>
+                        <span>Organization ID: {org.organizationId}</span>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">Active</Badge>
+                    </div>
+                }
             >
                 <div className="flex items-center gap-2">
                     <MessageAdminDialog org={org} />
-                    <Button variant="outline" onClick={() => router.back()}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Organizations
-                    </Button>
+                    <Button variant="destructive">Suspend</Button>
                 </div>
             </PageHeader>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column */}
-                <div className="lg:col-span-1 space-y-6">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center gap-4">
-                            <Avatar className="h-14 w-14">
-                                <AvatarImage src={org.organizationLogoUrl} alt={org.organizationName} />
-                                <AvatarFallback>{org.organizationName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle>{org.organizationName}</CardTitle>
-                                <CardDescription>Domain: {org.configuredDomain}</CardDescription>
-                            </div>
+                <div className="lg:col-span-2 space-y-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Organization Details</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Account Created</span>
-                                <span>{format(new Date(org.accountCreatedAt), 'PP')}</span>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            <div className="flex items-start gap-3">
+                                <Building className="h-5 w-5 text-muted-foreground mt-1"/>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Plan</p>
+                                    <p className="font-medium">{org.subscriptionPlan}</p>
+                                </div>
                             </div>
-                            <Separator />
-                             <div className="text-sm">
-                                <p className="font-medium">Primary Admin Email</p>
-                                <p className="text-muted-foreground">{org.supportInquiryEmail}</p>
+                             <div className="flex items-start gap-3">
+                                <UsersIcon className="h-5 w-5 text-muted-foreground mt-1"/>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Users</p>
+                                    <p className="font-medium">{totalUsers}</p>
+                                </div>
+                            </div>
+                             <div className="flex items-start gap-3">
+                                <Briefcase className="h-5 w-5 text-muted-foreground mt-1"/>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Projects</p>
+                                    <p className="font-medium">{org.projectCount}</p>
+                                </div>
+                            </div>
+                              <div className="flex items-start gap-3">
+                                <Calendar className="h-5 w-5 text-muted-foreground mt-1"/>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Created At</p>
+                                    <p className="font-medium">{format(new Date(org.accountCreatedAt), 'PP')}</p>
+                                </div>
+                            </div>
+                             <div className="flex items-start gap-3">
+                                <Clock className="h-5 w-5 text-muted-foreground mt-1"/>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Next Billing Date</p>
+                                    <p className="font-medium">Aug 15, 2024</p>
+                                </div>
+                            </div>
+                             <div className="flex items-start gap-3">
+                                <Mail className="h-5 w-5 text-muted-foreground mt-1"/>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Primary Admin</p>
+                                    <p className="font-medium">{org.supportInquiryEmail}</p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                      <Card>
                         <CardHeader>
-                            <CardTitle>Usage Stats</CardTitle>
+                            <CardTitle>Recent Billing</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center gap-4">
-                                <Users className="h-6 w-6 text-muted-foreground" />
-                                <div>
-                                    <p className="font-bold text-2xl">{totalUsers}</p>
-                                    <p className="text-sm text-muted-foreground">{org.userCounts.admins} A / {org.userCounts.agents} A / {org.userCounts.clients} C</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <Briefcase className="h-6 w-6 text-muted-foreground" />
-                                <div>
-                                    <p className="font-bold text-2xl">{org.projectCount}</p>
-                                    <p className="text-sm text-muted-foreground">Total Projects</p>
-                                </div>
-                            </div>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Plan</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {billingHistory.map((item, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{item.date}</TableCell>
+                                            <TableCell><Badge variant="outline">{item.plan}</Badge></TableCell>
+                                            <TableCell>${item.amount.toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary" className="bg-green-100 text-green-800">{item.status}</Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Right Column */}
-                <div className="lg:col-span-2 space-y-6">
-                     <Card>
+                <div className="lg:col-span-1 space-y-6">
+                    <Card>
                         <CardHeader>
-                            <CardTitle>Subscription Management</CardTitle>
-                            <CardDescription>Manage this organization's plan and billing status.</CardDescription>
+                            <CardTitle>Users</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between rounded-lg border p-4">
-                                <div className="grid grid-cols-2 gap-4 flex-1">
-                                    <div className="space-y-2">
-                                        <Label>Subscription Plan</Label>
-                                        <Select value={plan} onValueChange={setPlan}>
-                                            <SelectTrigger><SelectValue/></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Free">Free</SelectItem>
-                                                <SelectItem value="Pro">Pro</SelectItem>
-                                                <SelectItem value="Enterprise">Enterprise</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                            {users.map(user => (
+                                <div key={user.userId} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar>
+                                            <AvatarImage />
+                                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-medium">{user.name}</p>
+                                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>Billing Status</Label>
-                                        <Select value={status} onValueChange={setStatus}>
-                                            <SelectTrigger><SelectValue/></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Active">Active</SelectItem>
-                                                <SelectItem value="Trialing">Trialing</SelectItem>
-                                                <SelectItem value="Past Due">Past Due</SelectItem>
-                                                <SelectItem value="Canceled">Canceled</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                    <Badge variant="outline">{user.role}</Badge>
                                 </div>
-                                <Button onClick={handleUpdateSubscription} disabled={isUpdating} className="mt-4 md:mt-0">
-                                    {isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <ShieldCheck className="mr-2 h-4 w-4"/>}
-                                    Update Subscription
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Primary Admin</CardTitle>
-                            <CardDescription>The main point of contact for {org.organizationName}.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1">
-                                    <p className="font-medium">{org.primaryAdminName || 'Not available'}</p>
-                                    <p className="text-sm text-muted-foreground">{org.supportInquiryEmail}</p>
-                                </div>
-                                <Badge variant="secondary">Admin</Badge>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between rounded-lg border border-destructive/50 p-4">
-                            <div>
-                                <p className="font-medium">Suspend Organization</p>
-                                <p className="text-sm text-muted-foreground">This will temporarily disable access for all users in the organization.</p>
-                            </div>
-                            <Button variant="destructive">Suspend</Button>
+                            ))}
                         </CardContent>
                     </Card>
                 </div>
