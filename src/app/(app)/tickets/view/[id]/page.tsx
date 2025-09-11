@@ -34,7 +34,7 @@ import React from "react";
 import { useToast } from "@/hooks/use-toast";
 import { suggestTags } from "@/ai/flows/suggest-tags";
 import { getUsers } from "@/lib/firestore";
-import type { Ticket, User, TicketConversation } from "@/lib/data";
+import type { Ticket, User, TicketConversation, Attachment } from "@/lib/data";
 import { updateTicketAction, deleteTicketAction, addReplyAction } from "./actions";
 import { useAuth } from "@/contexts/auth-context";
 import { TiptapEditor } from "@/components/tiptap-editor";
@@ -337,23 +337,50 @@ function ClientDetailsCard({ ticket, reporter, reporterEmail }: { ticket: Ticket
     );
 }
 
+const getAttachmentSummary = (attachments: Attachment[]) => {
+    const counts: { [key: string]: number } = {};
+    let otherCount = 0;
+
+    attachments.forEach(att => {
+        if (att.type.startsWith('image/')) {
+            counts['Photo'] = (counts['Photo'] || 0) + 1;
+        } else if (att.type === 'application/pdf') {
+            counts['PDF'] = (counts['PDF'] || 0) + 1;
+        } else {
+            otherCount++;
+        }
+    });
+
+    const parts = Object.entries(counts).map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`);
+    if (otherCount > 0) {
+        parts.push(`${otherCount} other file${otherCount > 1 ? 's' : ''}`);
+    }
+    return parts.join(', ');
+};
+
 const TicketEvent = ({ event, userMapById }: { event: TicketConversation, userMapById: Map<string, User>}) => {
     const author = userMapById.get(event.authorId);
     return (
-        <div className="flex items-start gap-3">
+         <div className="flex items-start gap-3">
             <Avatar className="h-8 w-8 border">
                 {author?.avatar && <AvatarImage src={author.avatar} />}
                 <AvatarFallback>{author?.name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
-            <div className="flex-1">
+            <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2">
                     <p className="font-sans font-bold text-[14px]">{author?.name || event.authorName}</p>
                     <p className="font-sans text-[12px] text-muted-foreground">{format(new Date(event.createdAt), "PP 'at' p")}</p>
                 </div>
-                <div 
+                {event.content && <div 
                     className="font-sans text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none tiptap-content" 
                     dangerouslySetInnerHTML={{ __html: event.content }}
-                />
+                />}
+                {event.attachments && event.attachments.length > 0 && (
+                    <div className="text-sm text-muted-foreground flex items-center gap-2 pt-1">
+                        <Paperclip className="h-4 w-4" />
+                        <span>{getAttachmentSummary(event.attachments)}</span>
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -389,6 +416,7 @@ export default function ViewTicketPage() {
   const { user: currentUser } = useAuth();
   const { ticketStatuses, cannedResponses } = useSettings();
   const [isPending, startTransition] = React.useTransition();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
   const [conversations, setConversations] = React.useState<TicketConversation[]>([]);
@@ -400,6 +428,7 @@ export default function ViewTicketPage() {
   const [currentCategory, setCurrentCategory] = React.useState<Ticket['category'] | undefined>();
   const [currentAssignee, setCurrentAssignee] = React.useState<string | undefined>();
   const [reply, setReply] = React.useState("");
+  const [files, setFiles] = React.useState<File[]>([]);
   const [currentTags, setCurrentTags] = React.useState<string[]>([]);
   const [suggestedTags, setSuggestedTags] = React.useState<string[]>([]);
   const [isSuggestingTags, setIsSuggestingTags] = React.useState(false);
@@ -455,7 +484,6 @@ export default function ViewTicketPage() {
     if (!params.id) return;
     const ticketId = Array.isArray(params.id) ? params.id[0] : params.id;
     
-    // Listener for the main ticket document
     const ticketUnsub = onSnapshot(doc(db, "tickets", ticketId), (doc) => {
       if (doc.exists()) {
         const ticketData = { 
@@ -477,7 +505,6 @@ export default function ViewTicketPage() {
       }
     });
 
-    // Listener for the conversations sub-collection
     const conversationsQuery = query(collection(db, "tickets", ticketId, "conversations"), orderBy("createdAt", "asc"));
     const conversationsUnsub = onSnapshot(conversationsQuery, (snapshot) => {
         const convos = snapshot.docs.map(doc => {
@@ -497,7 +524,6 @@ export default function ViewTicketPage() {
     };
   }, [params.id]);
 
-  // Scroll listener for header shrink effect
   React.useEffect(() => {
     const mainContent = document.querySelector('main');
     if (isMobile || !mainContent) return;
@@ -523,22 +549,15 @@ export default function ViewTicketPage() {
   const reporter = userMap.get(ticket.reporter);
   const reporterEmail = ticket.reporterEmail || reporter?.email;
   const isTicketClosed = currentStatus === 'Closed' || currentStatus === 'Terminated';
-  
   const canDeleteTicket = currentUser.role === 'Admin';
-  
   const canChangeStatus = currentUser.role === 'Admin' || (currentUser.role === 'Agent' && ticket.assignee === currentUser.name);
-
-  // Clients cannot change priority or category after creation.
   const canChangePriority = currentUser.role !== 'Client' && !isTicketClosed;
   const canChangeCategory = currentUser.role !== 'Client' && !isTicketClosed;
-
   const canChangeAssignee = currentUser.role === 'Admin' && !isTicketClosed;
-
   const isStatusChangeAllowed = canChangeStatus && (!isTicketClosed || currentUser.role === 'Admin');
 
   const handleStatusChange = (newStatus: Ticket['status']) => {
     if (!ticket || !isStatusChangeAllowed || !currentUser) return;
-
     const performUpdate = () => {
       startTransition(async () => {
           const oldStatus = currentStatus;
@@ -618,13 +637,7 @@ export default function ViewTicketPage() {
     startTransition(async () => {
         const oldAssignee = currentAssignee;
         setCurrentAssignee(newAssigneeUser.name);
-
-        const result = await updateTicketAction(
-            ticket.id,
-            { assignee: newAssigneeUser.name },
-            currentUser.id
-        );
-
+        const result = await updateTicketAction(ticket.id, { assignee: newAssigneeUser.name }, currentUser.id);
         if (result.success) {
             toast({ title: "Assignee updated successfully!" });
         } else {
@@ -639,13 +652,7 @@ export default function ViewTicketPage() {
     startTransition(async () => {
         const oldAssignee = currentAssignee;
         setCurrentAssignee('Unassigned');
-
-        const result = await updateTicketAction(
-            ticket.id,
-            { assignee: 'Unassigned' },
-            currentUser.id
-        );
-
+        const result = await updateTicketAction(ticket.id, { assignee: 'Unassigned' }, currentUser.id);
         if (result.success) {
             toast({ title: "Ticket unassigned successfully!" });
         } else {
@@ -660,13 +667,7 @@ export default function ViewTicketPage() {
     startTransition(async () => {
       const oldTags = [...currentTags];
       setCurrentTags(newTags);
-
-      const result = await updateTicketAction(
-        ticket.id,
-        { tags: newTags },
-        currentUser.id
-      );
-
+      const result = await updateTicketAction(ticket.id, { tags: newTags }, currentUser.id);
       if (result.success) {
         toast({ title: 'Tags updated' });
       } else {
@@ -687,11 +688,7 @@ export default function ViewTicketPage() {
       }
     } catch(e) {
       console.error("Error suggesting tags:", e);
-      toast({
-        title: "Error",
-        description: "Could not suggest tags at this time.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Could not suggest tags at this time.", variant: "destructive" });
     } finally {
       setIsSuggestingTags(false);
     }
@@ -715,16 +712,9 @@ export default function ViewTicketPage() {
     startTransition(async () => {
       const result = await deleteTicketAction(ticket.id);
       if (result?.error) {
-        toast({
-          title: "Error deleting ticket",
-          description: result.error,
-          variant: "destructive",
-        });
+        toast({ title: "Error deleting ticket", description: result.error, variant: "destructive" });
       } else {
-        toast({
-          title: "Ticket Deleted",
-          description: "The ticket has been successfully deleted.",
-        });
+        toast({ title: "Ticket Deleted", description: "The ticket has been successfully deleted." });
       }
       setConfirmationOpen(false);
     });
@@ -748,19 +738,35 @@ export default function ViewTicketPage() {
     editor.commands.insertContent(templateContent);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setFiles(prevFiles => [...prevFiles, ...newFiles]);
+    }
+  };
+
+  const removeFile = (fileNameToRemove: string) => {
+    setFiles(prevFiles => prevFiles.filter(file => file.name !== fileNameToRemove));
+  };
+
 
   const handleAddReply = () => {
-    if (!reply.trim() || !currentUser || !ticket) return;
+    if ((!reply || !reply.trim()) && files.length === 0) return;
+    if (!currentUser || !ticket) return;
+
     startTransition(async () => {
-        const result = await addReplyAction({
-            ticketId: ticket.id,
-            content: reply,
-            authorId: currentUser.id,
-        });
+        const formData = new FormData();
+        formData.append('ticketId', ticket.id);
+        formData.append('content', reply);
+        formData.append('authorId', currentUser.id);
+        files.forEach(file => formData.append('attachments', file));
+
+        const result = await addReplyAction(formData);
 
         if (result.success) {
             editor?.commands.clearContent();
             setReply("");
+            setFiles([]);
             toast({ title: "Reply added" });
         } else {
             toast({
@@ -773,7 +779,6 @@ export default function ViewTicketPage() {
   };
   
   const canReply = ((currentUser.role === 'Admin' || currentUser.role === 'Agent') || (currentUser.role === 'Client' && clientCanReply)) && !isTicketClosed;
-
   const detailProps = { ticket, currentStatus, currentPriority, currentCategory, currentAssignee, userMap, canChangePriority, canChangeCategory, handleAssigneeChange, canChangeAssignee, isTicketClosed, isStatusChangeAllowed, handleStatusChange, handlePriorityChange, handleCategoryChange, handleUnassign, isPending, assignableUsers, canDeleteTicket, handleDeleteRequest, currentTags, handleSuggestTags, isSuggestingTags, removeTag, suggestedTags, addTag, isMobile, ticketStatuses };
   
   return (
@@ -788,7 +793,6 @@ export default function ViewTicketPage() {
       )}
 
       <div className="flex h-full flex-col">
-        {/* Main Header */}
         <PageHeader 
           title={ticket.title} 
           description={
@@ -812,7 +816,6 @@ export default function ViewTicketPage() {
         </PageHeader>
         
         <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-8 overflow-hidden mt-4 md:mt-0">
-            {/* Left Column (Main content) */}
             <div className="lg:col-span-2 flex flex-col gap-6 overflow-y-auto">
                 <Card>
                     <CardHeader>
@@ -846,7 +849,7 @@ export default function ViewTicketPage() {
                     <CardHeader>
                         <CardTitle>History</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6">
                         {conversations.length > 0 ? (
                             conversations.map((conv) => (
                                 <TicketEvent key={conv.id} event={conv} userMapById={userMapById}/>
@@ -862,16 +865,44 @@ export default function ViewTicketPage() {
                         <CardHeader>
                             <CardTitle>Add a Reply</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <Textarea placeholder="Type your message here..." rows={5} value={reply} onChange={(e) => setReply(e.target.value)}/>
-                                <div className="flex justify-between items-center">
-                                    <Button variant="outline" size="sm"><Paperclip className="mr-2 h-4 w-4"/>Attach File</Button>
-                                    <Button style={{ backgroundColor: "hsl(var(--accent))", color: "hsl(var(--accent-foreground))" }} onClick={handleAddReply} disabled={isPending || !reply.trim()}>
-                                        {isPending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Send Reply
-                                    </Button>
+                        <CardContent className="space-y-4">
+                           <TiptapEditor
+                              editor={editor}
+                              content={reply}
+                              onChange={setReply}
+                              placeholder="Type your reply here..."
+                           />
+                            {files.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium">Attachments:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                    {files.map((file, index) => (
+                                        <Badge key={index} variant="secondary" className="flex items-center gap-2">
+                                            <span className="truncate max-w-[150px]">{file.name}</span>
+                                            <button type="button" onClick={() => removeFile(file.name)} className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                                <XCircle className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                    </div>
                                 </div>
+                            )}
+                            <div className="flex justify-between items-center">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    multiple
+                                />
+                                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                                    <Paperclip className="mr-2 h-4 w-4"/>
+                                    Attach File
+                                </Button>
+                                <Button style={{ backgroundColor: "hsl(var(--accent))", color: "hsl(var(--accent-foreground))" }} onClick={handleAddReply} disabled={isPending || (!reply.trim() && files.length === 0)}>
+                                    {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                    Send Reply
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

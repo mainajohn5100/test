@@ -4,6 +4,7 @@ export type Attachment = {
   name: string;
   url: string;
   type: string;
+  size?: number; // Size in bytes
 };
 
 export type TicketConversation = {
@@ -12,6 +13,7 @@ export type TicketConversation = {
     authorName: string;
     content: string;
     createdAt: string;
+    attachments?: Attachment[];
 }
 
 export type SLATarget = {
