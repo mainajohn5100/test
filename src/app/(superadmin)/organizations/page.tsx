@@ -136,7 +136,7 @@ export default function OrganizationsPage() {
                                 <Card 
                                     key={org.organizationId} 
                                     className="flex flex-col hover:shadow-md transition-shadow cursor-pointer"
-                                    onClick={() => router.push(`/superadmin/organizations/${org.organizationId}`)}
+                                    onClick={() => router.push(`/organizations/${org.organizationId}`)}
                                 >
                                     <CardHeader>
                                         <div className="flex justify-between items-center">

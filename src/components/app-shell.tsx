@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize, ExternalLink, ArrowLeft, Building, ChevronDown } from "lucide-react";
+import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize, ExternalLink, ArrowLeft, Building, ChevronDown, LifeBuoy } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -349,6 +349,12 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
                     <span className="sr-only">Toggle Fullscreen</span>
                 </Button>
             )}
+            <Link href="/support" passHref>
+                <Button variant="ghost" size="icon">
+                    <LifeBuoy className="h-5 w-5" />
+                    <span className="sr-only">Support</span>
+                </Button>
+            </Link>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full relative">

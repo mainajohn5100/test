@@ -32,7 +32,7 @@ function SuperAdminNav() {
                 </Button>
             </Link>
             <Link href="/organizations">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.includes('/organizations') && "bg-sidebar-accent")}>
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/organizations' && "bg-sidebar-accent")}>
                     <Building />
                     Organizations
                 </Button>
