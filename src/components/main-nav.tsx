@@ -123,6 +123,39 @@ const clientProjectSubItems: Omit<NavItem, 'icon' | 'roles'>[] = [
     { label: "All Projects", href: "/projects/all" },
 ];
 
+function TicketCounter() {
+    const { user } = useAuth();
+    const [activeTicketCount, setActiveTicketCount] = React.useState(0);
+
+    React.useEffect(() => {
+        if (!user) return;
+
+        const ticketsCol = collection(db, 'tickets');
+        const queries = [where("organizationId", "==", user.organizationId)];
+        
+        if (user.role === 'Client') {
+            queries.push(where("reporterEmail", "==", user.email));
+        } else if (user.role === 'Agent') {
+            queries.push(where("assignee", "==", user.name));
+        }
+        
+        const q = query(ticketsCol, ...queries);
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const ticketsData = snapshot.docs.map(doc => doc.data() as TicketType);
+            const activeTickets = ticketsData.filter(t => t.status !== 'Closed' && t.status !== 'Terminated');
+            setActiveTicketCount(activeTickets.length);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    if (activeTicketCount > 0) {
+        return <Badge variant="secondary" className="ml-auto group-data-[collapsible=icon]:hidden">{activeTicketCount}</Badge>;
+    }
+    return null;
+}
+
 function NavItems({ items, user, projectsEnabled, pathname, handleLinkClick }: { items: NavItem[], user: User, projectsEnabled: boolean, pathname: string, handleLinkClick: () => void }) {
     const accessibleMenuItems = items
     .filter(item => {
@@ -188,7 +221,8 @@ function NavItems({ items, user, projectsEnabled, pathname, handleLinkClick }: {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                <span className="group-data-[collapsible=icon]:hidden flex-1 text-left">{item.label}</span>
+                 {item.label === "Tickets" && <TicketCounter />}
               </Button>
             </Link>
           )
