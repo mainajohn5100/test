@@ -41,11 +41,17 @@ const plans = [
 
 function UpgradeDialog() {
     const { toast } = useToast();
+    const { user } = useAuth();
     const [isPending, startTransition] = React.useTransition();
     const [activeTab, setActiveTab] = React.useState('mpesa');
     const [mpesaPhone, setMpesaPhone] = React.useState('');
 
     const handleUpgrade = () => {
+        if (!user) {
+            toast({ title: 'Error', description: 'You must be logged in to upgrade.', variant: 'destructive'});
+            return;
+        }
+
         if (activeTab === 'mpesa' && !mpesaPhone.trim()) {
             toast({
                 title: 'Phone Number Required',
@@ -61,6 +67,8 @@ function UpgradeDialog() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        userId: user.id, // Pass the current user's ID
+                        organizationId: user.organizationId, // and organization ID
                         plan: 'Pro',
                         paymentMethod: activeTab,
                         phone: mpesaPhone,
@@ -206,7 +214,7 @@ export default function BillingPage() {
                     <CardHeader>
                         <CardTitle>Billing History</CardTitle>
                         <CardDescription>You have not made any payments yet.</CardDescription>
-                    </CardHeader>
+                    </Header>
                     <CardContent>
                         <div className="text-center py-10 border-2 border-dashed rounded-lg">
                             <DollarSign className="mx-auto h-12 w-12 text-muted-foreground" />

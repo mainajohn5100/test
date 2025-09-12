@@ -3,48 +3,35 @@ import { NextResponse } from 'next/server';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User, Organization } from '@/lib/data';
-import { auth } from '@/lib/firebase';
 import { randomBytes } from 'crypto';
 
 // This is a placeholder for the real Pesapal integration.
 // In a real application, you would use a library or fetch to call the Pesapal API.
 
 export async function POST(request: Request) {
-    // In a real app, you'd get the user from a session or verified token,
-    // not directly from the client-side auth instance.
-    // For this prototype, we'll assume the client has sent user information securely.
-    
-    // Let's simulate getting the user ID from a secure session/token.
-    // Since we can't do that here, we'll have to rely on a less secure method for now.
-    // const currentUser = auth.currentUser;
-    // if (!currentUser) {
-    //     return NextResponse.json({ error: 'You must be logged in to make a payment.' }, { status: 401 });
-    // }
-    
-    // This is a placeholder for a secure way to get the user in a serverless environment.
-    // We will proceed with a placeholder user for logic demonstration.
-    const placeholderUserId = "usr_1"; // Assuming the Admin user for this prototype
-    const placeholderOrgId = "org_1";
-
     try {
         const body = await request.json();
-        const { plan, paymentMethod, phone } = body;
+        const { plan, paymentMethod, phone, userId, organizationId } = body;
+
+        if (!userId || !organizationId) {
+            return NextResponse.json({ error: 'User or Organization ID is missing.' }, { status: 400 });
+        }
 
         // 1. Get user and organization details
-        const userDoc = await getDoc(doc(db, 'users', placeholderUserId));
+        const userDoc = await getDoc(doc(db, 'users', userId));
         if (!userDoc.exists()) {
             return NextResponse.json({ error: 'User not found.' }, { status: 404 });
         }
         const user = userDoc.data() as User;
         
-        const orgDoc = await getDoc(doc(db, 'organizations', placeholderOrgId));
+        const orgDoc = await getDoc(doc(db, 'organizations', organizationId));
         if (!orgDoc.exists()) {
             return NextResponse.json({ error: 'Organization not found.' }, { status: 404 });
         }
         const organization = orgDoc.data() as Organization;
 
         // 2. Construct the Pesapal Order Request
-        console.log(`Initiating payment for ${organization.name} (Org ID: ${placeholderOrgId})`);
+        console.log(`Initiating payment for ${organization.name} (Org ID: ${organizationId})`);
         console.log(`Plan: ${plan}, Method: ${paymentMethod}, Phone: ${phone}`);
 
         const orderDetails = {
