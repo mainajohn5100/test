@@ -753,21 +753,6 @@ export const getOrganizationById = cache(async (id: string): Promise<Organizatio
     }
 });
 
-export const getOrganizationBySubdomain = cache(async (subdomain: string): Promise<Organization | null> => {
-    try {
-        const orgsCol = collection(db, 'organizations');
-        const q = query(orgsCol, where("subdomain", "==", subdomain), limit(1));
-        const orgSnapshot = await getDocs(q);
-        if (orgSnapshot.empty) {
-            return null;
-        }
-        return docToData<Organization>(orgSnapshot.docs[0]);
-    } catch (error) {
-        console.error("Error fetching organization by subdomain:", error);
-        return null;
-    }
-});
-
 export async function updateOrganization(orgId: string, data: Partial<Omit<Organization, 'id' | 'settings'>>): Promise<void> {
   try {
     const orgRef = doc(db, 'organizations', orgId);

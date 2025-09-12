@@ -78,21 +78,11 @@ function OrgDetailsCard({ org, onSave }: { org: Organization, onSave: () => void
                         <Label htmlFor="name">Organization Name</Label>
                         <Input id="name" name="name" defaultValue={org.name} disabled={isPending} />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="subdomain">Subdomain</Label>
-                            <div className="relative">
-                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input id="subdomain" name="subdomain" placeholder="your-org" defaultValue={org.subdomain} className="pl-9 pr-36" disabled={isPending} />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.{process.env.NEXT_PUBLIC_APP_DOMAIN}</span>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="domain">Custom Domain (Optional)</Label>
-                            <div className="relative">
-                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input id="domain" name="domain" placeholder="example.com" defaultValue={org.domain} className="pl-9" disabled={isPending} />
-                            </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="domain">Custom Domain (Optional)</Label>
+                        <div className="relative">
+                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="domain" name="domain" placeholder="example.com" defaultValue={org.domain} className="pl-9" disabled={isPending} />
                         </div>
                     </div>
                     <div className="flex justify-end pt-2">

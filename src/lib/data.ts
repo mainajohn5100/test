@@ -149,7 +149,6 @@ export type Organization = {
   name: string;
   logo?: string;
   domain?: string;
-  subdomain?: string;
   createdAt: string;
   settings?: {
     agentPanelEnabled?: boolean;
