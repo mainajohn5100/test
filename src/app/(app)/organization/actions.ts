@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache';
 import { storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { updateOrganization, getOrganizationById, getOrganizationBySubdomain, createUserInAuth, setAuthUserClaims, createUserInFirestore } from '@/lib/firestore';
+import { updateOrganization, getOrganizationById, createUserInAuth, setAuthUserClaims, createUserInFirestore } from '@/lib/firestore';
 import type { User as AppUser } from '@/lib/data';
 import { z } from 'zod';
 import { userCreateSchema } from '../users/schema';

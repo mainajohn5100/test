@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache';
 import { storage, auth } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
-import { updateUser, updateUserByAdmin, getUserById, getUserByEmail, createUserInAuth, setAuthUserClaims, createUserInFirestore } from '@/lib/firestore';
+import { updateUser, getUserById, getUserByEmail, createUserInAuth, setAuthUserClaims, createUserInFirestore } from '@/lib/firestore';
 import { sendEmailVerification, updateEmail as updateFbEmail, updateProfile as updateFbProfile } from 'firebase/auth';
 import { userCreateSchema } from './schema';
 import { z } from 'zod';
@@ -104,7 +104,7 @@ export async function updateUserPrivacyAction(userId: string, isPublic: boolean)
 
 export async function updateUserStatusAction(userId: string, status: 'active' | 'disabled') {
     try {
-        await updateUserByAdmin(userId, { status });
+        await updateUser(userId, { status });
         revalidatePath('/users');
         return { success: true };
     } catch (error) {
