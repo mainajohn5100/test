@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize, ExternalLink, ArrowLeft, Building, ChevronDown, LifeBuoy } from "lucide-react";
+import { Search, Bell, Moon, Sun, Ticket, Briefcase, MessageSquare, BellOff, Loader, RefreshCw, Maximize, Minimize, ExternalLink, ArrowLeft, Building, ChevronDown, LifeBuoy, CreditCard } from "lucide-react";
 import { Logo } from "@/components/icons";
 import { MainNav } from "@/components/main-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -279,7 +279,13 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleProfileClick}>Profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
-                <DropdownMenuItem disabled>Support</DropdownMenuItem>
+                {currentUser.role === 'Admin' && (
+                  <DropdownMenuItem onClick={() => router.push('/organization/billing')}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Billing
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => router.push('/support')}>Support</DropdownMenuItem>
                  <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <span>Theme</span>
@@ -426,6 +432,12 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleProfileClick}>Profile</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+                        {currentUser.role === 'Admin' && (
+                          <DropdownMenuItem onClick={() => router.push('/organization/billing')}>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Billing
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                     </DropdownMenuContent>
