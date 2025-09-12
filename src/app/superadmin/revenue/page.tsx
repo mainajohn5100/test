@@ -13,7 +13,7 @@ export default function RevenuePage() {
         title="Revenue"
         description="View earnings reports and financial metrics."
       />
-      <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-lg">
+      <div className="flex flex-col items-center justify-center h-96 border-2 border-dashed rounded-lg bg-background">
           <DollarSign className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold">Earnings Reports</h2>
           <p className="text-muted-foreground mt-2">
