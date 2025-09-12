@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast";
-import { updateUserStatusAction } from "./actions";
+import { updateUserStatusAction } from "@/app/(app)/users/actions";
 import { cn } from "@/lib/utils";
 
 const UserTableRowActions = ({ user, currentUser }: { user: User, currentUser: User }) => {

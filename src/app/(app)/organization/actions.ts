@@ -5,7 +5,12 @@
 import { revalidatePath } from 'next/cache';
 import { storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { updateOrganization, getOrganizationById } from '@/lib/firestore';
+import { updateOrganization, getOrganizationById, getOrganizationBySubdomain, createUserInAuth, setAuthUserClaims, createUserInFirestore } from '@/lib/firestore';
+import type { User as AppUser } from '@/lib/data';
+import { z } from 'zod';
+import { userCreateSchema } from '../users/schema';
+
+const subdomainSchema = z.string().min(3, "Subdomain must be at least 3 characters.").max(30, "Subdomain must be 30 characters or less.").regex(/^[a-z0-9-]+$/, "Subdomain can only contain lowercase letters, numbers, and hyphens.");
 
 export async function updateOrganizationAction(orgId: string, formData: FormData) {
   try {
@@ -13,9 +18,24 @@ export async function updateOrganizationAction(orgId: string, formData: FormData
 
     const name = formData.get('name') as string;
     const domain = formData.get('domain') as string;
+    const subdomain = formData.get('subdomain') as string | null;
 
     if (name) updateData.name = name;
     if (domain) updateData.domain = domain;
+    
+    if (subdomain) {
+      const validation = subdomainSchema.safeParse(subdomain);
+      if (!validation.success) {
+        return { success: false, error: validation.error.errors.map(e => e.message).join(', ') };
+      }
+      
+      const existingOrg = await getOrganizationBySubdomain(subdomain);
+      if (existingOrg && existingOrg.id !== orgId) {
+        return { success: false, error: 'This subdomain is already taken.' };
+      }
+      updateData.subdomain = subdomain;
+    }
+
 
     const logoFile = formData.get('logo') as File | null;
     if (logoFile && logoFile.size > 0) {
