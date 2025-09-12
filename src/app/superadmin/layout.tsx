@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Building, LayoutDashboard, Loader, Shield, ShieldAlert, Users, Search, Maximize, Minimize, LifeBuoy, DollarSign, Settings } from "lucide-react";
+import { Building, LayoutDashboard, Loader, Shield, ShieldAlert, Users, Search, Maximize, Minimize, LifeBuoy, DollarSign, Settings, Activity } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { signOut } from "firebase/auth";
@@ -44,6 +44,12 @@ function SuperAdminNav() {
                  <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/superadmin/revenue' && "bg-sidebar-accent")}>
                     <DollarSign />
                     <span className="group-data-[collapsible=icon]:hidden">Revenue</span>
+                </Button>
+            </Link>
+            <Link href="/superadmin/health">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/superadmin/health' && "bg-sidebar-accent")}>
+                    <Activity />
+                    <span className="group-data-[collapsible=icon]:hidden">System Health</span>
                 </Button>
             </Link>
             <Link href="/superadmin/settings">
@@ -222,7 +228,7 @@ function SuperAdminShellContent({ children }: { children: React.ReactNode }) {
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={inter.className}>
+    <div className={cn("font-body", inter.variable)}>
         <SidebarProvider>
             <SuperAdminShellContent>{children}</SuperAdminShellContent>
         </SidebarProvider>
