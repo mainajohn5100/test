@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
 const plans = [
     {
@@ -39,8 +39,7 @@ const plans = [
     }
 ]
 
-export default function BillingPage() {
-    const { user } = useAuth();
+function UpgradeDialog() {
     const { toast } = useToast();
     const [isPending, startTransition] = React.useTransition();
     const [activeTab, setActiveTab] = React.useState('mpesa');
@@ -74,7 +73,6 @@ export default function BillingPage() {
                     throw new Error(result.error || 'Failed to initiate payment.');
                 }
                 
-                // Redirect user to the Pesapal checkout URL
                 if (result.redirectUrl) {
                     window.location.href = result.redirectUrl;
                 } else {
@@ -90,6 +88,58 @@ export default function BillingPage() {
             }
         });
     };
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button className="w-full">Upgrade to Pro</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Upgrade to Pro Plan</DialogTitle>
+                    <DialogDescription>
+                        Select your preferred payment method to complete the upgrade. You will be redirected to our secure payment partner.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                     <Tabs value={activeTab} onValueChange={setActiveTab}>
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="mpesa">
+                                <Smartphone className="mr-2 h-4 w-4" />
+                                M-Pesa
+                            </TabsTrigger>
+                            <TabsTrigger value="card">
+                                <CreditCard className="mr-2 h-4 w-4" />
+                                Credit/Debit Card
+                            </TabsTrigger>
+                        </TabsList>
+                         <TabsContent value="mpesa" className="pt-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="mpesa-phone">M-Pesa Phone Number</Label>
+                                <Input id="mpesa-phone" type="tel" placeholder="e.g. 0712345678" value={mpesaPhone} onChange={(e) => setMpesaPhone(e.target.value)} />
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="card" className="pt-6">
+                            <div className="text-sm text-muted-foreground">
+                                You will be redirected to our secure payment partner, Pesapal, to enter your card details and complete the payment.
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="ghost" disabled={isPending}>Cancel</Button></DialogClose>
+                    <Button onClick={handleUpgrade} disabled={isPending}>
+                        {isPending && <Loader className="mr-2 h-4 w-4 animate-spin"/>}
+                        Pay & Upgrade
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+export default function BillingPage() {
+    const { user } = useAuth();
     
     if (user?.role !== 'Admin') {
         return (
@@ -139,59 +189,19 @@ export default function BillingPage() {
                             </ul>
                         </CardContent>
                         <div className="p-6 pt-0">
-                             <Button className="w-full" disabled={plan.isCurrent}>
-                                {plan.cta}
-                            </Button>
+                            {plan.name === 'Pro' ? (
+                                <UpgradeDialog />
+                            ) : (
+                                 <Button className="w-full" disabled={plan.isCurrent}>
+                                    {plan.cta}
+                                </Button>
+                            )}
                         </div>
                     </Card>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Payment Method</CardTitle>
-                        <CardDescription>Select your preferred payment method to upgrade to the Pro plan.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Tabs value={activeTab} onValueChange={setActiveTab}>
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="mpesa">
-                                    <Smartphone className="mr-2 h-4 w-4" />
-                                    M-Pesa
-                                </TabsTrigger>
-                                <TabsTrigger value="card">
-                                    <CreditCard className="mr-2 h-4 w-4" />
-                                    Credit/Debit Card
-                                </TabsTrigger>
-                            </TabsList>
-                             <TabsContent value="mpesa" className="pt-4">
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="mpesa-phone">M-Pesa Phone Number</Label>
-                                        <Input id="mpesa-phone" type="tel" placeholder="e.g. 0712345678" value={mpesaPhone} onChange={(e) => setMpesaPhone(e.target.value)} />
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        You will be redirected to a secure page to complete your payment.
-                                    </p>
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="card" className="pt-4">
-                                <div className="space-y-4">
-                                    <p className="text-sm text-muted-foreground">
-                                        You will be redirected to our secure payment partner, Pesapal, to enter your card details and complete the payment.
-                                    </p>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                    </CardContent>
-                     <div className="p-6 pt-0 flex justify-end">
-                         <Button onClick={handleUpgrade} disabled={isPending}>
-                            {isPending && <Loader className="mr-2 h-4 w-4 animate-spin"/>}
-                            Pay & Upgrade
-                         </Button>
-                    </div>
-                </Card>
+            <div className="grid grid-cols-1">
                  <Card>
                     <CardHeader>
                         <CardTitle>Billing History</CardTitle>
