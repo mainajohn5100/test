@@ -4,7 +4,7 @@
 import React from 'react';
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, DollarSign, Smartphone } from "lucide-react";
+import { CreditCard, DollarSign, Smartphone, Loader } from "lucide-react";
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 
 const plans = [
@@ -40,6 +41,55 @@ const plans = [
 
 export default function BillingPage() {
     const { user } = useAuth();
+    const { toast } = useToast();
+    const [isPending, startTransition] = React.useTransition();
+    const [activeTab, setActiveTab] = React.useState('mpesa');
+    const [mpesaPhone, setMpesaPhone] = React.useState('');
+
+    const handleUpgrade = () => {
+        if (activeTab === 'mpesa' && !mpesaPhone.trim()) {
+            toast({
+                title: 'Phone Number Required',
+                description: 'Please enter your M-Pesa phone number.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        startTransition(async () => {
+            try {
+                const response = await fetch('/api/billing/initiate-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        plan: 'Pro',
+                        paymentMethod: activeTab,
+                        phone: mpesaPhone,
+                    }),
+                });
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to initiate payment.');
+                }
+                
+                // Redirect user to the Pesapal checkout URL
+                if (result.redirectUrl) {
+                    window.location.href = result.redirectUrl;
+                } else {
+                    throw new Error('Could not retrieve payment URL.');
+                }
+
+            } catch (error: any) {
+                toast({
+                    title: 'Payment Error',
+                    description: error.message,
+                    variant: 'destructive',
+                });
+            }
+        });
+    };
     
     if (user?.role !== 'Admin') {
         return (
@@ -71,7 +121,7 @@ export default function BillingPage() {
                         <CardHeader>
                             <div className="flex justify-between items-baseline">
                                 <CardTitle>{plan.name}</CardTitle>
-                                {plan.isPopular && <span className="text-xs font-semibold text-primary">Most Popular</span>}
+                                {plan.isPopular && <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">Most Popular</span>}
                             </div>
                             <div className="flex items-baseline">
                                 <span className="text-3xl font-bold">{plan.price}</span>
@@ -101,57 +151,45 @@ export default function BillingPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Payment Method</CardTitle>
-                        <CardDescription>Select your preferred payment method and proceed to upgrade.</CardDescription>
+                        <CardDescription>Select your preferred payment method to upgrade to the Pro plan.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Tabs defaultValue="card">
+                        <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="card">
-                                    <CreditCard className="mr-2 h-4 w-4" />
-                                    Credit/Debit Card
-                                </TabsTrigger>
                                 <TabsTrigger value="mpesa">
                                     <Smartphone className="mr-2 h-4 w-4" />
                                     M-Pesa
                                 </TabsTrigger>
+                                <TabsTrigger value="card">
+                                    <CreditCard className="mr-2 h-4 w-4" />
+                                    Credit/Debit Card
+                                </TabsTrigger>
                             </TabsList>
-                            <TabsContent value="card" className="pt-4">
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="card-name">Name on Card</Label>
-                                        <Input id="card-name" placeholder="John Doe" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="card-number">Card Number</Label>
-                                        <Input id="card-number" placeholder="**** **** **** 1234" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="expiry">Expiry</Label>
-                                            <Input id="expiry" placeholder="MM/YY" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="cvc">CVC</Label>
-                                            <Input id="cvc" placeholder="123" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </TabsContent>
                              <TabsContent value="mpesa" className="pt-4">
                                 <div className="space-y-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="mpesa-phone">M-Pesa Phone Number</Label>
-                                        <Input id="mpesa-phone" type="tel" placeholder="e.g. 0712345678" />
+                                        <Input id="mpesa-phone" type="tel" placeholder="e.g. 0712345678" value={mpesaPhone} onChange={(e) => setMpesaPhone(e.target.value)} />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        You will receive a prompt on your phone to enter your M-Pesa PIN to complete the payment.
+                                        You will be redirected to a secure page to complete your payment.
+                                    </p>
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="card" className="pt-4">
+                                <div className="space-y-4">
+                                    <p className="text-sm text-muted-foreground">
+                                        You will be redirected to our secure payment partner, Pesapal, to enter your card details and complete the payment.
                                     </p>
                                 </div>
                             </TabsContent>
                         </Tabs>
                     </CardContent>
                      <div className="p-6 pt-0 flex justify-end">
-                         <Button disabled>Pay & Upgrade</Button>
+                         <Button onClick={handleUpgrade} disabled={isPending}>
+                            {isPending && <Loader className="mr-2 h-4 w-4 animate-spin"/>}
+                            Pay & Upgrade
+                         </Button>
                     </div>
                 </Card>
                  <Card>
