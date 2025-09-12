@@ -34,20 +34,20 @@ function SuperAdminNav() {
                     <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                 </Button>
             </Link>
-            <Link href="/superadmin/organizations">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname.startsWith('/superadmin/organizations') && "bg-sidebar-accent")}>
+            <Link href="/organizations">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/organizations' && "bg-sidebar-accent")}>
                     <Building />
                     <span className="group-data-[collapsible=icon]:hidden">Organizations</span>
                 </Button>
             </Link>
-            <Link href="/superadmin/revenue">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/superadmin/revenue' && "bg-sidebar-accent")}>
+            <Link href="/revenue">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === 'revenue' && "bg-sidebar-accent")}>
                     <DollarSign />
                     <span className="group-data-[collapsible=icon]:hidden">Revenue</span>
                 </Button>
             </Link>
-            <Link href="/superadmin/settings">
-                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/superadmin/settings' && "bg-sidebar-accent")}>
+            <Link href="/settings">
+                 <Button variant="ghost" className={cn("w-full justify-start gap-2", pathname === '/settings' && "bg-sidebar-accent")}>
                     <Settings />
                     <span className="group-data-[collapsible=icon]:hidden">Settings</span>
                 </Button>
