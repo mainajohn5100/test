@@ -1,6 +1,11 @@
 
 import { NextResponse } from 'next/server';
 import { verifySuperAdmin } from '@/lib/superadmin-auth';
+import { 
+    getAllOrganizations,
+    getUserCountForOrganization,
+    getProjectCountForOrganization,
+} from '@/lib/firestore';
 
 export async function GET(request: Request) {
     try {
@@ -9,8 +14,25 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
+        const organizations = await getAllOrganizations();
+        let totalUsers = 0;
+        let totalProjects = 0;
+
+        for (const org of organizations) {
+            const [adminCount, agentCount, clientCount, projectCount] = await Promise.all([
+                getUserCountForOrganization(org.id, 'Admin'),
+                getUserCountForOrganization(org.id, 'Agent'),
+                getUserCountForOrganization(org.id, 'Client'),
+                getProjectCountForOrganization(org.id),
+            ]);
+            totalUsers += adminCount + agentCount + clientCount;
+            totalProjects += projectCount;
+        }
+
+        const activeSubscriptions = organizations.filter(org => org.settings?.subscriptionStatus === 'Active').length;
+
         // In a real implementation, this data would be fetched from various monitoring services,
-        // databases, and logs. For now, we return static placeholder data.
+        // databases, and logs. For now, we return a mix of real and placeholder data.
         const healthData = {
             applicationHealth: {
                 uptime: "99.98%",
@@ -41,7 +63,8 @@ export async function GET(request: Request) {
                 serverStatus: "Online",
             },
             tenantMetrics: {
-                activeVsInactive: "152 / 18",
+                activeTenants: activeSubscriptions,
+                inactiveTenants: organizations.length - activeSubscriptions,
                 slaCompliance: "99.2%",
                 avgTicketBacklog: 12,
                 highLoadTenants: 3,
