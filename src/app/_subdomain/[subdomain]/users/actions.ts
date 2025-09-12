@@ -226,7 +226,3 @@ export async function updateUserPrivacyAction(userId: string, activityIsPublic: 
     return { success: false, error: 'Failed to update privacy settings.' };
   }
 }
-
-
-
-
