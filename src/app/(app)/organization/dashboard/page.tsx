@@ -46,7 +46,7 @@ function OrgDetailsCard({ org, onSave }: { org: Organization, onSave: () => void
     }
 
     return (
-        <Card className="col-span-1 md:col-span-2">
+        <Card>
             <CardHeader>
                 <CardTitle>Organization Details</CardTitle>
                 <CardDescription>Update your organization's branding and domain settings.</CardDescription>
@@ -253,12 +253,14 @@ export default function OrganizationPage() {
                 title="Organization Dashboard"
                 description={`Welcome to the management center for ${organization.name}.`}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <OrgDetailsCard org={organization} onSave={() => setRefreshKey(k => k + 1)} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <OrgDetailsCard org={organization} onSave={() => setRefreshKey(k => k + 1)} />
+                    <ActivityCard />
+                </div>
                 <div className="lg:col-span-1 space-y-6">
                     <TeamCard users={users} />
                     <BillingCard org={organization} />
-                    <ActivityCard />
                 </div>
             </div>
         </div>
