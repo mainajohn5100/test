@@ -5,8 +5,8 @@ import * as React from 'react';
 import type { Ticket, Project, User } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Activity, AlertTriangle, CheckCircle, Clock, Users } from 'lucide-react';
-import { differenceInHours, formatDistanceToNowStrict } from 'date-fns';
-import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { differenceInHours, format, subDays, eachDayOfInterval, startOfDay } from 'date-fns';
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, LineChart, Line, Legend, CartesianGrid } from 'recharts';
 import { tooltipConfigs } from '../ui/chart-tooltip';
 
 function calculateAverageResolutionTime(tickets: Ticket[]): number {
@@ -63,6 +63,29 @@ export function OverviewCharts({ tickets, projects, users }: { tickets: Ticket[]
     }, {} as Record<string, number>);
 
     const statusChartData = Object.entries(ticketsByStatus).map(([name, value]) => ({ name, tickets: value }));
+    
+    const ticketTrendData = React.useMemo(() => {
+        const last30Days = eachDayOfInterval({
+          start: subDays(new Date(), 29),
+          end: new Date()
+        });
+
+        return last30Days.map(day => {
+          const dayKey = format(day, 'yyyy-MM-dd');
+          const newTickets = tickets.filter(t => format(startOfDay(new Date(t.createdAt)), 'yyyy-MM-dd') === dayKey).length;
+          const resolvedTickets = tickets.filter(t => 
+            (t.status === 'Closed' || t.status === 'Terminated') &&
+            format(startOfDay(new Date(t.updatedAt)), 'yyyy-MM-dd') === dayKey
+          ).length;
+
+          return {
+            name: format(day, 'MMM d'),
+            "New": newTickets,
+            "Resolved": resolvedTickets,
+          };
+        });
+    }, [tickets]);
+
 
     return (
         <div className="space-y-6">
@@ -74,22 +97,47 @@ export function OverviewCharts({ tickets, projects, users }: { tickets: Ticket[]
                 <StatCard title="Active Agents" value={stats.activeAgents.toString()} icon={Users} />
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Current Ticket Distribution</CardTitle>
-                    <CardDescription>A snapshot of all tickets by their current status.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={statusChartData}>
-                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip {...tooltipConfigs.bar} />
-                            <Bar dataKey="tickets" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Ticket Inflow vs. Resolved</CardTitle>
+                            <CardDescription>Daily ticket trends for the last 30 days.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <ResponsiveContainer width="100%" height={250}>
+                                <LineChart data={ticketTrendData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} interval={4} />
+                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                    <Tooltip {...tooltipConfigs.line} />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="New" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
+                                    <Line type="monotone" dataKey="Resolved" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </div>
+                 <div className="lg:col-span-1">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Current Ticket Distribution</CardTitle>
+                            <CardDescription>A snapshot of all tickets by their current status.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={statusChartData}>
+                                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                    <Tooltip {...tooltipConfigs.bar} />
+                                    <Bar dataKey="tickets" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }
