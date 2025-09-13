@@ -55,17 +55,18 @@ const getSlaStatus = (ticket: Ticket) => {
 }
 
 const getTicketSourceInfo = (ticket: Ticket) => {
-    switch (ticket.source) {
-        case 'Project':
-            return { name: 'Project', icon: Briefcase, color: 'text-purple-700' };
-        case 'WhatsApp':
-            return { name: 'WhatsApp', icon: MessageCircle, color: 'text-green-700' };
-        case 'General Inquiry':
-             // This source is used by the webform
-            return { name: 'Web Form', icon: FileText, color: 'text-cyan-700' };
-        default:
-            return { name: 'Email', icon: Mail, color: 'text-sky-700' };
+    // Prioritize the explicit source field first.
+    if (ticket.source === 'Project') {
+        return { name: 'Project', icon: Briefcase, color: 'text-purple-700' };
     }
+    if (ticket.source === 'WhatsApp') {
+        return { name: 'WhatsApp', icon: MessageCircle, color: 'text-green-700' };
+    }
+    if (ticket.source === 'General Inquiry') {
+        return { name: 'Web Form', icon: FileText, color: 'text-cyan-700' };
+    }
+    // Default to Email for all other cases
+    return { name: 'Email', icon: Mail, color: 'text-sky-700' };
 };
 
 export function TicketTable({ tickets, users }: TicketTableProps) {

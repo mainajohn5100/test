@@ -17,11 +17,11 @@ export function TicketsByChannelChart({ tickets }: TicketsByChannelChartProps) {
     const channelCounts = tickets.reduce((acc, ticket) => {
       let channel: string;
       switch (ticket.source) {
-        case 'WhatsApp':
-          channel = 'WhatsApp';
-          break;
         case 'Project':
           channel = 'Project';
+          break;
+        case 'WhatsApp':
+          channel = 'WhatsApp';
           break;
         case 'General Inquiry':
           channel = 'Web Form';
@@ -33,7 +33,13 @@ export function TicketsByChannelChart({ tickets }: TicketsByChannelChartProps) {
           channel = 'Email';
           break;
         default:
-          channel = 'Email'; // Default unknown sources to Email
+          // If source is null, undefined, or an unexpected value, but a project is linked,
+          // classify it as a Project ticket. This handles legacy or manually created tickets.
+          if (ticket.project) {
+              channel = 'Project';
+          } else {
+              channel = 'Email'; // Default to Email if no other source matches
+          }
       }
       acc[channel] = (acc[channel] || 0) + 1;
       return acc;
