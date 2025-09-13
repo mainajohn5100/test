@@ -25,9 +25,17 @@ function calculateAgentMetrics(agent: User, tickets: Ticket[]) {
         avgResolutionTime = totalTime / resolvedTickets.length;
     }
 
+    // Calculate real CSAT score
+    const ratedTickets = resolvedTickets.filter(t => t.csatStatus === 'rated' && t.csatScore !== undefined);
+    let csat = 0;
+    if (ratedTickets.length > 0) {
+        const totalScore = ratedTickets.reduce((acc, t) => acc + t.csatScore!, 0);
+        // CSAT is often presented on a 100-point scale. We'll convert our 1-5 scale to a percentage.
+        csat = (totalScore / (ratedTickets.length * 5)) * 100;
+    }
+
     // Placeholder for metrics not yet implemented
     const avgResponseTime = Math.random() * 5; // Simulated in hours
-    const csat = 85 + Math.random() * 15; // Simulated score out of 100
 
     return {
         id: agent.id,
@@ -38,8 +46,8 @@ function calculateAgentMetrics(agent: User, tickets: Ticket[]) {
         open: agentTickets.length - resolvedTickets.length,
         resolutionRate,
         avgResolutionTime,
-        avgResponseTime, // Placeholder
-        csat, // Placeholder
+        avgResponseTime, // Still a placeholder
+        csat, // Now real data
     };
 }
 
@@ -93,7 +101,7 @@ export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[],
                  <StatCard 
                     title="Highest CSAT Agent" 
                     value={highestCsat ? highestCsat.name : '--'}
-                    subValue={highestCsat ? `${highestCsat.csat.toFixed(1)}% rating` : ''}
+                    subValue={highestCsat && highestCsat.csat > 0 ? `${highestCsat.csat.toFixed(1)}% rating` : 'No ratings yet'}
                     icon={Award}
                     iconClass="text-amber-500"
                 />
@@ -138,8 +146,14 @@ export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[],
                                     </TableCell>
                                     <TableCell>
                                          <div className="flex items-center gap-1">
-                                            {agent.csat > 90 ? <Star className="h-4 w-4 text-yellow-500" /> : <Frown className="h-4 w-4 text-muted-foreground" />}
-                                            <span className="font-medium">{agent.csat.toFixed(1)}%</span>
+                                            {agent.csat > 0 ? (
+                                                <>
+                                                    {agent.csat > 90 ? <Star className="h-4 w-4 text-yellow-500" /> : <Frown className="h-4 w-4 text-muted-foreground" />}
+                                                    <span className="font-medium">{agent.csat.toFixed(1)}%</span>
+                                                </>
+                                            ) : (
+                                                <span className="text-muted-foreground text-xs">No Ratings</span>
+                                            )}
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -158,4 +172,3 @@ export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[],
         </div>
     );
 }
-
