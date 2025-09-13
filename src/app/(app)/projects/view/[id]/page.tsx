@@ -377,7 +377,10 @@ const AssociatedTicketsCard = React.memo(({ tickets }: { tickets: Ticket[] }) =>
                       <TableBody>
                           {tickets.map((ticket) => (
                               <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
-                                  <TableCell className="font-medium">{ticket.title}</TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">{ticket.title}</div>
+                                    <div className="text-sm text-muted-foreground">Reported by {ticket.reporter}</div>
+                                  </TableCell>
                                   <TableCell>
                                       <Badge variant={ticketStatusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
                                   </TableCell>
