@@ -370,6 +370,7 @@ const AssociatedTicketsCard = React.memo(({ tickets }: { tickets: Ticket[] }) =>
                       <TableHeader>
                           <TableRow>
                               <TableHead>Title</TableHead>
+                              <TableHead>Reporter</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Priority</TableHead>
                           </TableRow>
@@ -377,10 +378,8 @@ const AssociatedTicketsCard = React.memo(({ tickets }: { tickets: Ticket[] }) =>
                       <TableBody>
                           {tickets.map((ticket) => (
                               <TableRow key={ticket.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/tickets/view/${ticket.id}`)}>
-                                  <TableCell>
-                                    <div className="font-medium">{ticket.title}</div>
-                                    <div className="text-sm text-muted-foreground">Reported by {ticket.reporter}</div>
-                                  </TableCell>
+                                  <TableCell className="font-medium">{ticket.title}</TableCell>
+                                  <TableCell>{ticket.reporter}</TableCell>
                                   <TableCell>
                                       <Badge variant={ticketStatusVariantMap[ticket.status] || 'default'}>{ticket.status}</Badge>
                                   </TableCell>
