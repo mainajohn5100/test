@@ -200,44 +200,59 @@ export async function updateTicketAction(
       dataToUpdate.priorityLastSetBy = user.role;
     }
 
+    // First, commit the main ticket updates to the database.
     await updateTicket(ticketId, dataToUpdate);
 
-    // --- CSAT Logic: Trigger on ticket closure ---
-    if (updates.status === 'Closed' && currentTicket.status !== 'Closed') {
-        const org = await getOrganizationById(currentTicket.organizationId);
-        const reporter = await getUserByEmail(currentTicket.reporterEmail);
-        
-        if (org && reporter) {
-            if (currentTicket.source === 'WhatsApp' && currentTicket.reporterPhone && org.settings?.whatsapp?.accountSid && org.settings.whatsapp.authToken) {
-                // Send WhatsApp CSAT request
-                 const twilioClient = new Twilio(org.settings.whatsapp.accountSid, org.settings.whatsapp.authToken);
-                 const csatTemplate = org.settings.whatsapp.templates?.csatRequest || "Thank you for contacting us! How would you rate the support you received? Please reply with a number from 1 (Poor) to 5 (Excellent).";
-                 await twilioClient.messages.create({
-                    from: `whatsapp:${org.settings.whatsapp.phoneNumber}`,
-                    to: `whatsapp:${currentTicket.reporterPhone}`,
-                    body: csatTemplate
-                 });
-                 await updateTicket(ticketId, { csatStatus: 'pending' });
+    // --- Post-Update Logic (Notifications, CSAT) ---
 
-            } else if (org.settings?.emailTemplates?.csatRequest) {
-                // Send Email CSAT request
-                await sendEmail({
-                    to: reporter.email,
-                    subject: `How did we do on your request: "${currentTicket.title}"?`,
-                    template: org.settings.emailTemplates.csatRequest,
-                    data: {
-                        ticket: { ...currentTicket, id: ticketId },
-                        user: reporter,
-                        baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-                    }
-                });
-                await updateTicket(ticketId, { csatStatus: 'pending' });
-            }
+    const wasJustClosed = updates.status === 'Closed' && currentTicket.status !== 'Closed';
+
+    // CSAT Trigger Logic
+    if (wasJustClosed) {
+      const org = await getOrganizationById(currentTicket.organizationId);
+      const reporter = await getUserByEmail(currentTicket.reporterEmail);
+      
+      if (org && reporter) {
+        if (currentTicket.source === 'WhatsApp' && currentTicket.reporterPhone && org.settings?.whatsapp?.accountSid && org.settings.whatsapp.authToken) {
+          // Send WhatsApp CSAT request
+          try {
+            const twilioClient = new Twilio(org.settings.whatsapp.accountSid, org.settings.whatsapp.authToken);
+            const csatTemplate = org.settings.whatsapp.templates?.csatRequest || "Thank you for contacting us! How would you rate the support you received? Please reply with a number from 1 (Poor) to 5 (Excellent).";
+            await twilioClient.messages.create({
+              from: `whatsapp:${org.settings.whatsapp.phoneNumber}`,
+              to: `whatsapp:${currentTicket.reporterPhone}`,
+              body: csatTemplate
+            });
+            await updateTicket(ticketId, { csatStatus: 'pending' });
+            console.log(`Successfully sent WhatsApp CSAT request for ticket ${ticketId}`);
+          } catch (twilioError) {
+            console.error("Error sending WhatsApp CSAT request:", twilioError);
+          }
+
+        } else if (org.settings?.emailTemplates?.csatRequest) {
+          // Send Email CSAT request
+          try {
+            await sendEmail({
+              to: reporter.email,
+              subject: `How did we do on your request: "${currentTicket.title}"?`,
+              template: org.settings.emailTemplates.csatRequest,
+              data: {
+                  ticket: { ...currentTicket, id: ticketId },
+                  user: reporter,
+                  baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+              }
+            });
+            await updateTicket(ticketId, { csatStatus: 'pending' });
+            console.log(`Successfully sent Email CSAT request for ticket ${ticketId}`);
+          } catch (emailError) {
+             console.error("Error sending Email CSAT request:", emailError);
+          }
         }
+      }
     }
 
 
-    // --- Notification Logic ---
+    // Notification Logic for status or priority changes
     if (updates.status || updates.priority) {
       const userIdsToNotify = new Set<string>();
 
@@ -300,5 +315,7 @@ export async function deleteTicketAction(ticketId: string) {
     return { error: 'Failed to delete ticket. Please try again.' };
   }
 
-  redirect('/tickets/all');
+  redirect('/tickets');
 }
+
+    
