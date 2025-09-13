@@ -214,7 +214,7 @@ export default function BillingPage() {
                     <CardHeader>
                         <CardTitle>Billing History</CardTitle>
                         <CardDescription>You have not made any payments yet.</CardDescription>
-                    </Header>
+                    </CardHeader>
                     <CardContent>
                         <div className="text-center py-10 border-2 border-dashed rounded-lg">
                             <DollarSign className="mx-auto h-12 w-12 text-muted-foreground" />
