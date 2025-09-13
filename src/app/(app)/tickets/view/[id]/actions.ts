@@ -20,6 +20,7 @@ import { Twilio } from 'twilio';
 import { htmlToText } from 'html-to-text';
 import { storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { sendEmail } from '@/lib/email';
 
 /**
  * Add a reply to a ticket
@@ -201,6 +202,40 @@ export async function updateTicketAction(
 
     await updateTicket(ticketId, dataToUpdate);
 
+    // --- CSAT Logic: Trigger on ticket closure ---
+    if (updates.status === 'Closed' && currentTicket.status !== 'Closed') {
+        const org = await getOrganizationById(currentTicket.organizationId);
+        const reporter = await getUserByEmail(currentTicket.reporterEmail);
+        
+        if (org && reporter) {
+            if (currentTicket.source === 'WhatsApp' && currentTicket.reporterPhone && org.settings?.whatsapp?.accountSid) {
+                // Send WhatsApp CSAT request
+                 const twilioClient = new Twilio(org.settings.whatsapp.accountSid, org.settings.whatsapp.authToken);
+                 await twilioClient.messages.create({
+                    from: `whatsapp:${org.settings.whatsapp.phoneNumber}`,
+                    to: `whatsapp:${currentTicket.reporterPhone}`,
+                    body: "Thank you for contacting us! How would you rate the support you received? Please reply with a number from 1 (Poor) to 5 (Excellent)."
+                 });
+                 await updateTicket(ticketId, { csatStatus: 'pending' });
+
+            } else if (org.settings?.emailTemplates?.csatRequest) {
+                // Send Email CSAT request
+                await sendEmail({
+                    to: reporter.email,
+                    subject: `How did we do on your request: "${currentTicket.title}"?`,
+                    template: org.settings.emailTemplates.csatRequest,
+                    data: {
+                        ticket: currentTicket,
+                        user: reporter,
+                        baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+                    }
+                });
+                await updateTicket(ticketId, { csatStatus: 'pending' });
+            }
+        }
+    }
+
+
     // --- Notification Logic ---
     if (updates.status || updates.priority) {
       const userIdsToNotify = new Set<string>();
@@ -266,3 +301,5 @@ export async function deleteTicketAction(ticketId: string) {
 
   redirect('/tickets/all');
 }
+
+    
