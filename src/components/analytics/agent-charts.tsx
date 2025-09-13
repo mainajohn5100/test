@@ -9,7 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { differenceInHours } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { Award, Frown, Gauge, Star, TrendingUp } from 'lucide-react';
+import { Award, Frown, Gauge, MoreVertical, Star, TrendingUp } from 'lucide-react';
+import { Button } from '../ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
 
 function calculateAgentMetrics(agent: User, tickets: Ticket[]) {
     const agentTickets = tickets.filter(t => t.assignee === agent.name);
@@ -40,6 +44,7 @@ function calculateAgentMetrics(agent: User, tickets: Ticket[]) {
     return {
         id: agent.id,
         name: agent.name,
+        role: agent.role,
         avatar: agent.avatar,
         ticketsHandled: agentTickets.length,
         resolved: resolvedTickets.length,
@@ -65,13 +70,21 @@ const StatCard = ({ title, value, subValue, icon: Icon, iconClass }: { title: st
 )
 
 export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[], agents: User[] }) {
+    const [hideAdmins, setHideAdmins] = React.useState(false);
+
     const agentMetrics = React.useMemo(() => {
         if (agents.length === 0) return [];
-        return agents.map(agent => calculateAgentMetrics(agent, tickets));
-    }, [agents, tickets]);
+        
+        let filteredAgents = agents;
+        if (hideAdmins) {
+            filteredAgents = agents.filter(agent => agent.role !== 'Admin');
+        }
+        
+        return filteredAgents.map(agent => calculateAgentMetrics(agent, tickets));
+    }, [agents, tickets, hideAdmins]);
     
     const totalTickets = agentMetrics.reduce((acc, agent) => acc + agent.ticketsHandled, 0);
-    const avgTicketsPerAgent = agents.length > 0 ? (totalTickets / agents.length).toFixed(1) : '0';
+    const avgTicketsPerAgent = agentMetrics.length > 0 ? (totalTickets / agentMetrics.length).toFixed(1) : '0';
 
     const fastestResponder = React.useMemo(() => 
         agentMetrics.length > 0 ? agentMetrics.reduce((fastest, current) => current.avgResponseTime < fastest.avgResponseTime ? current : fastest) : null
@@ -107,9 +120,32 @@ export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[],
                 />
             </div>
             <Card>
-                <CardHeader>
-                    <CardTitle>Agent Leaderboard</CardTitle>
-                    <CardDescription>Performance metrics for each agent.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Agent Leaderboard</CardTitle>
+                        <CardDescription>Performance metrics for each agent.</CardDescription>
+                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <div className="flex items-center justify-between w-full">
+                                    <Label htmlFor="hide-admins" className="pr-2 font-normal text-sm">
+                                        Hide Admins
+                                    </Label>
+                                    <Switch
+                                        id="hide-admins"
+                                        checked={hideAdmins}
+                                        onCheckedChange={setHideAdmins}
+                                    />
+                                </div>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -131,7 +167,10 @@ export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[],
                                                 <AvatarImage src={agent.avatar} alt={agent.name} />
                                                 <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
-                                            <span className="font-medium">{agent.name}</span>
+                                            <div>
+                                                <p className="font-medium">{agent.name}</p>
+                                                <p className="text-xs text-muted-foreground">{agent.role}</p>
+                                            </div>
                                         </div>
                                     </TableCell>
                                     <TableCell>{agent.ticketsHandled}</TableCell>
