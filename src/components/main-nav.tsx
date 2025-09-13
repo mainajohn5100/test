@@ -62,16 +62,9 @@ const generalMenuItems: NavItem[] = [
   },
   {
     label: "Projects",
+    href: "/projects",
     icon: Briefcase,
     roles: ['Admin', 'Agent', 'Client'],
-    subItems: [
-      { label: "All Projects", href: "/projects/all" },
-      { label: "New", href: "/projects/new" },
-      { label: "Active", href: "/projects/active" },
-      { label: "On Hold", href: "/projects/on-hold" },
-      { label: "Completed", href: "/projects/completed" },
-      { label: "Create Project", href: "/projects/create" },
-    ],
     setting: "projectsEnabled",
   },
 ];
@@ -227,7 +220,7 @@ function NavItems({ items, user, projectsEnabled, pathname, handleLinkClick }: {
                 variant="ghost"
                 className={cn(
                   "w-full justify-start gap-3 text-sm font-medium py-2 px-3 h-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10",
-                  pathname.startsWith(item.href!) && "bg-sidebar-accent"
+                  (item.href === '/projects' ? pathname.startsWith('/projects') : pathname === item.href) && "bg-sidebar-accent"
                 )}
               >
                 <item.icon className="h-5 w-5" />

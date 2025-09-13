@@ -103,12 +103,17 @@ function ProjectCard({ project, managerName }: { project: Project, managerName: 
 export function ProjectClient({ projects, users }: ProjectClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [statusFilter, setStatusFilter] = useState('all');
   
   const userMap = useMemo(() => new Map(users.map(u => [u.id, u.name])), [users]);
 
   const filteredAndSortedProjects = useMemo(() => {
     let displayProjects = projects ? [...projects] : [];
 
+    if (statusFilter !== 'all') {
+      displayProjects = displayProjects.filter(p => p.status === statusFilter);
+    }
+    
     if (searchTerm) {
       const lowercasedTerm = searchTerm.toLowerCase();
       displayProjects = displayProjects.filter(p => {
@@ -128,7 +133,7 @@ export function ProjectClient({ projects, users }: ProjectClientProps) {
     });
 
     return displayProjects;
-  }, [projects, searchTerm, sortBy, userMap]);
+  }, [projects, searchTerm, sortBy, statusFilter, userMap]);
 
   return (
     <>
@@ -143,6 +148,19 @@ export function ProjectClient({ projects, users }: ProjectClientProps) {
             />
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+                <ListFilter className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="New">New</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="On Hold">On Hold</SelectItem>
+                <SelectItem value="Completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-full sm:w-[180px]">
                 <ListFilter className="mr-2 h-4 w-4" />
