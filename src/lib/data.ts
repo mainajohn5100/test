@@ -54,6 +54,9 @@ export type Ticket = {
   slaPolicyId?: string;
   firstResponseDue?: string;
   resolutionDue?: string;
+  // CSAT Fields
+  csatScore?: 1 | 2 | 3 | 4 | 5;
+  csatStatus?: 'pending' | 'rated' | 'not_applicable';
 };
 
 export type User = {
@@ -128,6 +131,7 @@ export type EmailTemplate = {
   agentReplyToAdmin: string;
   slaAtRisk: string;
   slaBreached: string;
+  csatRequest: string;
 };
 
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
