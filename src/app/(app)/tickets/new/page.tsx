@@ -49,7 +49,8 @@ export default function NewTicketPage() {
   
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [isCreateUserOpen, setCreateUserOpen] = React.useState(false);
-  const [allUsers, setAllUsers] = React.useState<User[]>([]);
+  const [clientUsers, setClientUsers] = React.useState<User[]>([]);
+  const [assignableUsers, setAssignableUsers] = React.useState<User[]>([]);
   
   const initialProject = searchParams.get('project');
 
@@ -111,10 +112,13 @@ export default function NewTicketPage() {
             getProjects(user),
             getUsers(user)
           ]);
-          setAllUsers(usersData);
-          // Filter projects to only include those where tickets are enabled AND project is not 'Completed'
+
           const enabledProjects = projectsData.filter(p => p.ticketsEnabled !== false && p.status !== 'Completed');
           setProjects(enabledProjects);
+
+          setClientUsers(usersData.filter(u => u.role === 'Client'));
+          setAssignableUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
+
         } catch (error) {
           console.error("Failed to fetch projects or users", error);
           toast({
@@ -230,9 +234,6 @@ export default function NewTicketPage() {
   const currentTags = form.watch("tags") || [];
 
   const isAgentOrAdmin = user?.role === 'Agent' || user?.role === 'Admin';
-  const clientUsers = allUsers.filter(u => u.role === 'Client');
-  const assignableUsers = allUsers.filter(u => u.role === 'Agent' || u.role === 'Admin');
-
 
   return (
     <div className="flex flex-col gap-6">
