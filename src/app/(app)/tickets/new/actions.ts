@@ -6,9 +6,10 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { addTicket, getUserById } from '@/lib/firestore';
+import { addTicket, getOrganizationById, getUserById } from '@/lib/firestore';
 import { ticketSchema } from './schema';
 import type { Attachment } from '@/lib/data';
+import { addHours } from 'date-fns';
 
 export async function createTicketAction(formData: FormData) {
   const values = Object.fromEntries(formData.entries());
@@ -59,15 +60,30 @@ export async function createTicketAction(formData: FormData) {
             });
         }
     }
-
-    newTicketId = await addTicket({
+    
+    const finalTicketData = {
       ...ticketData,
       reporterId: user.id,
       reporterEmail: user.email,
       reporter: user.name,
       organizationId: user.organizationId,
       attachments: attachments,
-    });
+      source: ticketData.project && ticketData.project !== 'none' ? 'Project' : 'Client Inquiry',
+    };
+    
+    const org = await getOrganizationById(user.organizationId);
+    const slaPolicy = org?.settings?.slaPolicies?.[0];
+    if (slaPolicy) {
+      const target = slaPolicy.targets.find(t => t.priority === finalTicketData.priority);
+      if (target) {
+        const now = new Date();
+        (finalTicketData as any).slaPolicyId = slaPolicy.id;
+        (finalTicketData as any).firstResponseDue = addHours(now, target.firstResponseHours).toISOString();
+        (finalTicketData as any).resolutionDue = addHours(now, target.resolutionHours).toISOString();
+      }
+    }
+
+    newTicketId = await addTicket(finalTicketData);
     
   } catch (error: any) {
     console.error("Error creating ticket:", error);

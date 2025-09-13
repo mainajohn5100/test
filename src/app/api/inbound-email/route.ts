@@ -5,9 +5,10 @@ import { analyzeEmailForSource } from '@/ai/flows/analyze-email-for-source';
 import { analyzeEmailPriority } from '@/ai/flows/analyze-email-priority';
 import { suggestTags } from '@/ai/flows/suggest-tags';
 import { sendEmail } from '@/lib/email';
-import type { Ticket } from '@/lib/data';
+import type { Ticket, SLAPolicy } from '@/lib/data';
 import type { NextApiRequest } from 'next';
 import { Resend } from 'resend';
+import { addHours } from 'date-fns';
 
 // Helper to parse "Name <email@example.com>" into name and email
 function parseFromAddress(from: string): { name: string, email: string } {
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
         console.warn(`Webhook received for an unknown user: ${reporterEmail}. Ticket will not be created.`);
         return NextResponse.json({ message: `User with email ${reporterEmail} not found.` });
     }
+    
+    const org = await getOrganizationById(reporterUser.organizationId);
 
     // 3. Suggest tags based on content
     const tagSuggestions = await suggestTags({ ticketContent: textBody });
@@ -78,11 +81,22 @@ export async function POST(request: Request) {
       statusLastSetBy: 'System',
       priorityLastSetBy: 'System',
     };
+    
+    const slaPolicy = org?.settings?.slaPolicies?.[0];
+    if (slaPolicy) {
+      const target = slaPolicy.targets.find(t => t.priority === ticketData.priority);
+      if (target) {
+        const now = new Date();
+        ticketData.slaPolicyId = slaPolicy.id;
+        ticketData.firstResponseDue = addHours(now, target.firstResponseHours).toISOString();
+        ticketData.resolutionDue = addHours(now, target.resolutionHours).toISOString();
+      }
+    }
+
 
     const newTicketId = await addTicket(ticketData);
 
     // 5. Send auto-reply confirmation email
-    const org = await getOrganizationById(reporterUser.organizationId);
     if (org?.settings?.emailTemplates?.newTicketAutoReply) {
       await sendEmail({
         to: reporterEmail,
