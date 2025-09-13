@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, formatDistanceToNow, isValid } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail, Link as LinkIcon, KeyRound, Flag, NotebookText, MessageCircleQuestion, MessageSquarePlus, Paperclip } from "lucide-react";
+import { Sparkles, Trash2, ArrowLeft, Send, Loader, XCircle, File as FileIcon, Image as ImageIcon, MoreVertical, Mail, Link as LinkIcon, KeyRound, Flag, NotebookText, MessageCircleQuestion, MessageSquarePlus, Paperclip, ChevronRight, BookText } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -915,10 +915,7 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
 
                 {canReply && (
     <Card>
-        <CardHeader>
-            <CardTitle>Add a Reply</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
         <form action={formAction} className="space-y-4">
   <input type="hidden" name="ticketId" value={ticket.id} />
   <input type="hidden" name="authorId" value={currentUser.id} />
@@ -962,15 +959,33 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
   )}
 
   <div className="flex justify-between items-center">
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={() => fileInputRef.current?.click()}
-    >
-      <Paperclip className="mr-2 h-4 w-4" />
-      Attach File
-    </Button>
+    <div className="flex items-center gap-1">
+        <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-8 w-8"
+            >
+            <Paperclip className="h-4 w-4" />
+            <span className="sr-only">Attach File</span>
+        </Button>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <BookText className="h-4 w-4" />
+                    <span className="sr-only">Use Template</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+                {cannedResponses.map((res) => (
+                    <DropdownMenuItem key={res.title} onSelect={() => handleTemplateSelect(res.content)}>
+                    {res.title}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    </div>
 
     <SubmitButton reply={reply} files={files} isPending={isPending} />
   </div>
