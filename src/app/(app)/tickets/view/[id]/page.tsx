@@ -455,6 +455,7 @@ export default function ViewTicketPage() {
   const [confirmationConfig, setConfirmationConfig] = React.useState<Omit<ConfirmationDialogProps, 'open' | 'onOpenChange' | 'isPending'> | null>(null);
 
   const [isHeaderShrunk, setHeaderShrunk] = React.useState(false);
+  const [toolbarOpen, setToolbarOpen] = React.useState(false);
 
   const isMobile = useIsMobile();
 
@@ -925,6 +926,7 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
     content={reply}
     onChange={setReply}
     placeholder="Type your reply here..."
+    toolbarVisible={toolbarOpen}
   />
 
   {/* File selection input */}
@@ -960,6 +962,18 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
 
   <div className="flex justify-between items-center">
     <div className="flex items-center gap-1">
+        <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setToolbarOpen(!toolbarOpen)}
+            className={cn(
+                "h-8 w-8 transition-transform",
+                toolbarOpen && "rotate-90"
+            )}
+        >
+            <ChevronRight className="h-4 w-4" />
+        </Button>
         <Button
             type="button"
             variant="ghost"

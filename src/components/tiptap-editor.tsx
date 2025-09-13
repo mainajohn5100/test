@@ -17,21 +17,21 @@ import {
   Heading2,
   Quote,
   Link as LinkIcon,
-  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "./ui/button";
 
 type TiptapEditorProps = {
   content?: string;
   onChange: (content: string) => void;
   placeholder?: string;
+  toolbarVisible?: boolean;
 };
 
 const TiptapEditor: React.FC<TiptapEditorProps> = ({
   content = "",
   onChange,
   placeholder,
+  toolbarVisible = false,
 }) => {
 
   const editor = useEditor({
@@ -66,30 +66,14 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     }
   }, [content, editor]);
   
-  const [toolbarOpen, setToolbarOpen] = React.useState(false);
-
   if (!editor) return null;
 
   return (
     <div className="flex flex-col gap-2 w-full">
-       <div className="hidden">
-            <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setToolbarOpen(!toolbarOpen)}
-            className={cn(
-                "h-8 w-8 transition-transform",
-                toolbarOpen && "rotate-180"
-            )}
-        >
-            <ChevronRight className="h-4 w-4" />
-        </Button>
-       </div>
-      <div 
+       <div 
             className={cn(
                 "flex items-center gap-1 transition-all duration-300 ease-in-out overflow-hidden",
-                toolbarOpen ? "max-w-full opacity-100" : "max-w-0 opacity-0"
+                toolbarVisible ? "h-10 opacity-100" : "h-0 opacity-0"
             )}
         >
             <button
