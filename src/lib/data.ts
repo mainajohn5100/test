@@ -76,7 +76,7 @@ export type User = {
   organizationId: string;
   lastSeen?: string;
   createdByAdmin?: boolean;
-  createdAt?: string; // Added for sorting admins
+  createdAt: string;
 };
 
 export type Project = {
@@ -197,7 +197,8 @@ export const users: User[] = [
         dob: '1985-05-15',
         gender: 'Male',
         activityIsPublic: false,
-        organizationId: 'org_1'
+        organizationId: 'org_1',
+        createdAt: new Date().toISOString(),
     },
     { 
         id: 'usr_2', 
@@ -213,7 +214,8 @@ export const users: User[] = [
         dob: '1992-11-20',
         gender: 'Female',
         activityIsPublic: true,
-        organizationId: 'org_1'
+        organizationId: 'org_1',
+        createdAt: new Date().toISOString(),
     },
     { 
         id: 'usr_3', 
@@ -229,7 +231,8 @@ export const users: User[] = [
         dob: '1990-01-01',
         gender: 'Male',
         activityIsPublic: false,
-        organizationId: 'org_1' 
+        organizationId: 'org_1',
+        createdAt: new Date().toISOString(),
     },
     { 
         id: 'usr_4', 
@@ -245,7 +248,8 @@ export const users: User[] = [
         dob: '1995-08-25',
         gender: 'Female',
         activityIsPublic: false,
-        organizationId: 'org_1'
+        organizationId: 'org_1',
+        createdAt: new Date().toISOString(),
     },
 ];
 

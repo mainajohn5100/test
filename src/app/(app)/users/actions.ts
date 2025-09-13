@@ -59,7 +59,7 @@ export async function updateUserAction(userId: string, formData: FormData) {
       const filePath = `user-avatars/${userId}/${timestamp}-${sanitizedFileName}`;
       
       const storageRef = ref(storage, filePath);
-      await uploadBytes(storageRef, logoFile);
+      await uploadBytes(storageRef, avatarFile);
       const avatarUrl = await getDownloadURL(storageRef);
       updateData.avatar = avatarUrl;
     }

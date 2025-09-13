@@ -131,39 +131,41 @@ function UserProfilePage() {
                           {user.status}
                         </Badge>
                         <Badge variant="secondary">
-                           Joined {isValid(new Date(user.createdAt || '')) ? format(new Date(user.createdAt!), 'PP') : '...'}
+                           Joined {isValid(new Date(user.createdAt)) ? format(new Date(user.createdAt), 'PP') : '...'}
                         </Badge>
                     </div>
                 </CardContent>
                 <Separator />
-                <CardContent className="pt-6 space-y-3 text-sm">
-                     <div className="flex items-center gap-3">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <a href={`mailto:${user.email}`} className="text-primary hover:underline">{user.email}</a>
-                    </div>
-                     <div className="flex items-center gap-3">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{user.phone || 'Not provided'}</span>
+                <CardContent className="pt-6">
+                    <div className="flex justify-between items-start">
+                        <div className="space-y-3 text-sm">
+                            <div className="flex items-center gap-3">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <a href={`mailto:${user.email}`} className="text-primary hover:underline">{user.email}</a>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                <span>{user.phone || 'Not provided'}</span>
+                            </div>
+                        </div>
+                        {currentUser?.role === 'Admin' && currentUser.id !== user.id && (
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Change Role
+                                        {isPending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleRoleChange('Admin')} disabled={user.role === 'Admin' || isPending}>Admin</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleRoleChange('Agent')} disabled={user.role === 'Agent' || isPending}>Agent</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleRoleChange('Client')} disabled={user.role === 'Client' || isPending}>Client</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                     </div>
                 </CardContent>
-                 {currentUser?.role === 'Admin' && currentUser.id !== user.id && (
-                    <CardFooter>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="w-full">
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Change Role
-                                     {isPending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
-                                </Button>
-                            </DropdownMenuTrigger>
-                             <DropdownMenuContent>
-                                <DropdownMenuItem onClick={() => handleRoleChange('Admin')} disabled={user.role === 'Admin' || isPending}>Admin</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleRoleChange('Agent')} disabled={user.role === 'Agent' || isPending}>Agent</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleRoleChange('Client')} disabled={user.role === 'Client' || isPending}>Client</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </CardFooter>
-                )}
             </Card>
         </div>
 
