@@ -52,6 +52,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SlaStatus } from "@/components/tickets/sla-status";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const categories: Ticket['category'][] = ['General', 'Support', 'Advertising', 'Billing'];
 
@@ -961,45 +962,66 @@ function SubmitButton({ reply, files, isPending }: { reply: string; files: File[
   )}
 
   <div className="flex justify-between items-center">
-    <div className="flex items-center gap-1">
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setToolbarOpen(!toolbarOpen)}
-            className={cn(
-                "h-8 w-8 transition-transform",
-                toolbarOpen && "rotate-90"
-            )}
-        >
-            <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            className="h-8 w-8"
-            >
-            <Paperclip className="h-4 w-4" />
-            <span className="sr-only">Attach File</span>
-        </Button>
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <BookText className="h-4 w-4" />
-                    <span className="sr-only">Use Template</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-                {cannedResponses.map((res) => (
-                    <DropdownMenuItem key={res.title} onSelect={() => handleTemplateSelect(res.content)}>
-                    {res.title}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
-    </div>
+    <TooltipProvider>
+      <div className="flex items-center gap-1">
+          <Tooltip>
+              <TooltipTrigger asChild>
+                  <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setToolbarOpen(!toolbarOpen)}
+                      className={cn(
+                          "h-8 w-8 transition-transform",
+                          toolbarOpen && "rotate-90"
+                      )}
+                  >
+                      <ChevronRight className="h-4 w-4" />
+                  </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                  <p>Formatting options</p>
+              </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+              <TooltipTrigger asChild>
+                  <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-8 w-8"
+                      >
+                      <Paperclip className="h-4 w-4" />
+                  </Button>
+              </TooltipTrigger>
+               <TooltipContent>
+                  <p>Attach file</p>
+              </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+              <TooltipTrigger asChild>
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <BookText className="h-4 w-4" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                          {cannedResponses.map((res) => (
+                              <DropdownMenuItem key={res.title} onSelect={() => handleTemplateSelect(res.content)}>
+                              {res.title}
+                              </DropdownMenuItem>
+                          ))}
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+              </TooltipTrigger>
+               <TooltipContent>
+                  <p>Use a template</p>
+              </TooltipContent>
+          </Tooltip>
+      </div>
+    </TooltipProvider>
 
     <SubmitButton reply={reply} files={files} isPending={isPending} />
   </div>
