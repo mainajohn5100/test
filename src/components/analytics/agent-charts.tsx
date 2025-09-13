@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -15,6 +14,8 @@ import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { tooltipConfigs } from '../ui/chart-tooltip';
 
 function calculateAgentMetrics(agent: User, tickets: Ticket[]) {
     const agentTickets = tickets.filter(t => t.assignee === agent.name);
@@ -71,6 +72,36 @@ const StatCard = ({ title, value, subValue, icon: Icon, iconClass }: { title: st
         </CardContent>
     </Card>
 )
+
+function AgentWorkloadChart({ data }: { data: ReturnType<typeof calculateAgentMetrics>[] }) {
+    const chartData = data.map(agent => ({
+        name: agent.name.split(' ')[0], // Use first name for brevity
+        Open: agent.open,
+        Resolved: agent.resolved,
+    }));
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Ticket Distribution</CardTitle>
+                <CardDescription>Breakdown of open and resolved tickets per agent.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip {...tooltipConfigs.bar} />
+                        <Legend />
+                        <Bar dataKey="Open" stackId="a" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="Resolved" stackId="a" fill="hsl(var(--chart-2))" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
+    );
+}
 
 export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[], agents: User[] }) {
     const [hideAdmins, setHideAdmins] = React.useState(false);
@@ -211,6 +242,8 @@ export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[],
                     </Table>
                 </CardContent>
             </Card>
+
+            <AgentWorkloadChart data={agentMetrics} />
         </div>
     );
 }
