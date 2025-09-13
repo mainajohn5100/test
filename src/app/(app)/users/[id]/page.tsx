@@ -2,21 +2,24 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useTransition } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader, Mail, Phone, Briefcase, Ticket as TicketIcon } from 'lucide-react';
+import { ArrowLeft, Loader, Mail, Phone, Briefcase, Ticket as TicketIcon, MoreVertical, Edit } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { getUserById, getTicketsByReporter, getProjectsByManager } from '@/lib/firestore';
 import type { User, Ticket, Project } from '@/lib/data';
 import { notFound } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
+import { toast } from '@/hooks/use-toast';
+import { updateUserRoleAction } from '../actions';
 
 function UserProfilePage() {
   const { id } = useParams();
@@ -27,6 +30,7 @@ function UserProfilePage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!id || !currentUser) return;
@@ -61,6 +65,21 @@ function UserProfilePage() {
 
     fetchData();
   }, [id, currentUser]);
+  
+  const handleRoleChange = (newRole: 'Admin' | 'Agent' | 'Client') => {
+      if (!user || newRole === user.role) return;
+      startTransition(async () => {
+          const result = await updateUserRoleAction(user.id, newRole);
+           if (result.success) {
+              toast({ title: 'Role Updated', description: `${user.name}'s role has been changed to ${newRole}.` });
+              // Refetch user data to update the view
+              const updatedUser = await getUserById(user.id);
+              setUser(updatedUser);
+          } else {
+              toast({ title: 'Update Failed', description: result.error, variant: 'destructive' });
+          }
+      });
+  }
 
   if (loading) {
     return <div className="flex h-full items-center justify-center"><Loader className="h-8 w-8 animate-spin" /></div>;
@@ -97,7 +116,7 @@ function UserProfilePage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-6">
-            <Card>
+            <Card className="relative">
                 <CardContent className="pt-6 flex flex-col items-center gap-4">
                     <Avatar className="h-24 w-24 border-4 border-background shadow-md">
                         <AvatarImage src={user.avatar} alt={user.name} />
@@ -127,6 +146,24 @@ function UserProfilePage() {
                         <span>{user.phone || 'Not provided'}</span>
                     </div>
                 </CardContent>
+                 {currentUser?.role === 'Admin' && currentUser.id !== user.id && (
+                    <CardFooter>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="w-full">
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Change Role
+                                     {isPending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
+                                </Button>
+                            </DropdownMenuTrigger>
+                             <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleRoleChange('Admin')} disabled={user.role === 'Admin' || isPending}>Admin</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange('Agent')} disabled={user.role === 'Agent' || isPending}>Agent</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange('Client')} disabled={user.role === 'Client' || isPending}>Client</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </CardFooter>
+                )}
             </Card>
         </div>
 

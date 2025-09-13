@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -90,9 +91,11 @@ export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[],
         agentMetrics.length > 0 ? agentMetrics.reduce((fastest, current) => current.avgResponseTime < fastest.avgResponseTime ? current : fastest) : null
     , [agentMetrics]);
 
-    const highestCsat = React.useMemo(() => 
-        agentMetrics.length > 0 ? agentMetrics.reduce((best, current) => current.csat > best.csat ? current : best) : null
-    , [agentMetrics]);
+    const highestCsat = React.useMemo(() => {
+        const ratedAgents = agentMetrics.filter(agent => agent.csat > 0);
+        if (ratedAgents.length === 0) return null;
+        return ratedAgents.reduce((best, current) => current.csat > best.csat ? current : best);
+    }, [agentMetrics]);
 
     const sortedLeaderboard = [...agentMetrics].sort((a, b) => b.resolved - a.resolved);
 
