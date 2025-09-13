@@ -1,14 +1,16 @@
 
 'use client';
 
-import * as React from 'react';
+import React from 'react';
 import type { Ticket } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid } from 'recharts';
 import { tooltipConfigs } from '../ui/chart-tooltip';
-import { subDays, format } from 'date-fns';
+import { subDays, format, eachDayOfInterval, startOfHour, eachHourOfInterval, subHours } from 'date-fns';
+import { useSettings } from '@/contexts/settings-context';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 
-const STACK_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+const STACK_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))'];
 
 function TicketsByPriorityChart({ tickets }: { tickets: Ticket[] }) {
     const data = React.useMemo(() => {
@@ -81,37 +83,99 @@ function TicketsByCategoryChart({ tickets }: { tickets: Ticket[] }) {
     );
 }
 
-function TicketTrendChart({ tickets }: { tickets: Ticket[] }) {
+function TicketStatusTrendChart({ tickets }: { tickets: Ticket[] }) {
+    const [timeframe, setTimeframe] = React.useState<'1d' | '7d' | '30d'>('7d');
+    const { ticketStatuses } = useSettings();
+
     const data = React.useMemo(() => {
-        const dateMap: { [key: string]: number } = {};
-        for(let i = 29; i >= 0; i--) {
-            const date = subDays(new Date(), i);
-            const key = format(date, 'MMM d');
-            dateMap[key] = 0;
+        const now = new Date();
+        let interval;
+        let timeFormatter: (date: Date) => string;
+
+        if (timeframe === '1d') {
+            interval = eachHourOfInterval({ start: subHours(now, 23), end: now });
+            timeFormatter = (date) => format(date, 'ha');
+        } else if (timeframe === '7d') {
+            interval = eachDayOfInterval({ start: subDays(now, 6), end: now });
+            timeFormatter = (date) => format(date, 'EEE');
+        } else { // 30d
+            interval = eachDayOfInterval({ start: subDays(now, 29), end: now });
+            timeFormatter = (date) => format(date, 'MMM d');
         }
+
+        const initialCounts = ticketStatuses.reduce((acc, status) => ({ ...acc, [status]: 0 }), {});
+
+        const dateMap = interval.reduce((acc, date) => {
+            const key = timeFormatter(date);
+            acc[key] = { name: key, ...initialCounts };
+            return acc;
+        }, {} as Record<string, any>);
+
         tickets.forEach(ticket => {
-            const key = format(new Date(ticket.createdAt), 'MMM d');
-            if (key in dateMap) {
-                dateMap[key]++;
+            const createdAt = new Date(ticket.createdAt);
+            let key: string;
+
+            if (timeframe === '1d') {
+                if (createdAt < subHours(now, 23)) return;
+                key = timeFormatter(startOfHour(createdAt));
+            } else if (timeframe === '7d') {
+                if (createdAt < subDays(now, 6)) return;
+                key = timeFormatter(createdAt);
+            } else { // 30d
+                if (createdAt < subDays(now, 29)) return;
+                key = timeFormatter(createdAt);
+            }
+            
+            if (dateMap[key] && ticketStatuses.includes(ticket.status)) {
+                dateMap[key][ticket.status]++;
             }
         });
-        return Object.entries(dateMap).map(([name, value]) => ({ name, tickets: value }));
-    }, [tickets]);
+
+        return Object.values(dateMap);
+    }, [tickets, timeframe, ticketStatuses]);
 
     return (
         <Card className="col-span-full">
             <CardHeader>
-                <CardTitle>Ticket Volume Trend</CardTitle>
-                <CardDescription>New tickets created over the last 30 days.</CardDescription>
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                    <div>
+                        <CardTitle>Ticket Volume Trend</CardTitle>
+                        <CardDescription>Volume of tickets by status over time.</CardDescription>
+                    </div>
+                     <Tabs value={timeframe} onValueChange={(value) => setTimeframe(value as any)}>
+                        <TabsList>
+                            <TabsTrigger value="1d">24 Hours</TabsTrigger>
+                            <TabsTrigger value="7d">7 Days</TabsTrigger>
+                            <TabsTrigger value="30d">30 Days</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
             </CardHeader>
             <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} interval={4} />
+                        <XAxis 
+                            dataKey="name" 
+                            stroke="#888888" 
+                            fontSize={12} 
+                            tickLine={false} 
+                            axisLine={false}
+                            interval={timeframe === '30d' ? 4 : undefined}
+                        />
                         <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip {...tooltipConfigs.line} />
-                        <Line type="monotone" dataKey="tickets" name="New Tickets" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
+                        <Legend />
+                        {ticketStatuses.map((status, index) => (
+                            <Line 
+                                key={status}
+                                type="monotone" 
+                                dataKey={status} 
+                                stroke={STACK_COLORS[index % STACK_COLORS.length]}
+                                strokeWidth={2} 
+                                dot={false} 
+                            />
+                        ))}
                     </LineChart>
                 </ResponsiveContainer>
             </CardContent>
@@ -124,7 +188,7 @@ export function TicketAnalysisCharts({ tickets }: { tickets: Ticket[] }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <TicketsByPriorityChart tickets={tickets} />
             <TicketsByCategoryChart tickets={tickets} />
-            <TicketTrendChart tickets={tickets} />
+            <TicketStatusTrendChart tickets={tickets} />
         </div>
     );
 }
