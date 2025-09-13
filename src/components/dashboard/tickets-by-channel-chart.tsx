@@ -8,8 +8,6 @@ import type { Ticket } from "@/lib/data"
 
 const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
-const EMAIL_SOURCES: (Ticket['source'])[] = ['Client Inquiry', 'Partner', 'Vendor', 'Internal'];
-
 interface TicketsByChannelChartProps {
     tickets: Ticket[];
 }
@@ -35,7 +33,7 @@ export function TicketsByChannelChart({ tickets }: TicketsByChannelChartProps) {
           channel = 'Email';
           break;
         default:
-          channel = 'Other';
+          channel = 'Email'; // Default unknown sources to Email
       }
       acc[channel] = (acc[channel] || 0) + 1;
       return acc;

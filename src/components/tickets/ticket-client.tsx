@@ -61,7 +61,7 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
 
     if (channelFilter !== 'all') {
       if (channelFilter === 'email') {
-        displayTickets = displayTickets.filter(t => EMAIL_SOURCES.includes(t.source));
+        displayTickets = displayTickets.filter(t => EMAIL_SOURCES.includes(t.source!) || !t.source);
       } else if (channelFilter === 'whatsapp') {
         displayTickets = displayTickets.filter(t => t.source === 'WhatsApp');
       } else if (channelFilter === 'project') {
