@@ -31,8 +31,6 @@ const priorityOrder: { [key in Ticket['priority']]: number } = {
   'Urgent': 3 
 };
 
-const EMAIL_SOURCES: Ticket['source'][] = ['Client Inquiry', 'Partner', 'Vendor', 'Internal'];
-
 export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketClientProps) {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [sortBy, setSortBy] = useState('updatedAt_desc');
@@ -60,15 +58,21 @@ export function TicketClient({ tickets, users, initialSearchTerm = '' }: TicketC
     }
 
     if (channelFilter !== 'all') {
-      if (channelFilter === 'email') {
-        displayTickets = displayTickets.filter(t => EMAIL_SOURCES.includes(t.source!) || !t.source);
-      } else if (channelFilter === 'whatsapp') {
-        displayTickets = displayTickets.filter(t => t.source === 'WhatsApp');
-      } else if (channelFilter === 'project') {
-        displayTickets = displayTickets.filter(t => t.source === 'Project');
-      } else if (channelFilter === 'webform') {
-        displayTickets = displayTickets.filter(t => t.source === 'General Inquiry');
-      }
+      displayTickets = displayTickets.filter(ticket => {
+        if (channelFilter === 'email') {
+          return ticket.source !== 'Project' && ticket.source !== 'WhatsApp' && ticket.source !== 'General Inquiry';
+        }
+        if (channelFilter === 'project') {
+          return ticket.source === 'Project';
+        }
+        if (channelFilter === 'whatsapp') {
+          return ticket.source === 'WhatsApp';
+        }
+        if (channelFilter === 'webform') {
+            return ticket.source === 'General Inquiry';
+        }
+        return false;
+      });
     }
 
     if (searchTerm) {
