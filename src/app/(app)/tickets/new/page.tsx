@@ -48,7 +48,6 @@ export default function NewTicketPage() {
   const [files, setFiles] = useState<File[]>([]);
   
   const [projects, setProjects] = React.useState<Project[]>([]);
-  const [users, setUsers] = React.useState<User[]>([]);
   const [isCreateUserOpen, setCreateUserOpen] = React.useState(false);
   const [allUsers, setAllUsers] = React.useState<User[]>([]);
   
@@ -116,8 +115,6 @@ export default function NewTicketPage() {
           // Filter projects to only include those where tickets are enabled AND project is not 'Completed'
           const enabledProjects = projectsData.filter(p => p.ticketsEnabled !== false && p.status !== 'Completed');
           setProjects(enabledProjects);
-          // Users who can be assigned tickets
-          setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
         } catch (error) {
           console.error("Failed to fetch projects or users", error);
           toast({
@@ -234,6 +231,8 @@ export default function NewTicketPage() {
 
   const isAgentOrAdmin = user?.role === 'Agent' || user?.role === 'Admin';
   const clientUsers = allUsers.filter(u => u.role === 'Client');
+  const assignableUsers = allUsers.filter(u => u.role === 'Agent' || u.role === 'Admin');
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -447,7 +446,7 @@ export default function NewTicketPage() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>
-                            {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
+                            {assignableUsers.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
                           </SelectContent>
                         </Select>
                         <FormMessage />
