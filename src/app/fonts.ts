@@ -1,4 +1,4 @@
-import { Montserrat, Raleway, Inter } from 'next/font/google';
+import { Montserrat, Raleway, Inter, PT_Sans } from 'next/font/google';
 
 export const montserrat = Montserrat({
   subsets: ['latin'],
@@ -16,4 +16,11 @@ export const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
+});
+
+export const ptSans = PT_Sans({
+  subsets: ['latin'],
+  variable: '--font-pt-sans',
+  display: 'swap',
+  weight: ['400', '700'],
 });

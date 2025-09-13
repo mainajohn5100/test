@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
-import { montserrat, raleway } from './fonts';
+import { montserrat, raleway, ptSans } from './fonts';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("font-body antialiased", raleway.variable, montserrat.variable)}>
+      <body className={cn("font-body antialiased", raleway.variable, montserrat.variable, ptSans.variable)}>
         <AuthProvider>
           <ThemeProvider
             attribute="class"

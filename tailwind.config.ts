@@ -20,6 +20,7 @@ export default {
         sans: ['var(--font-raleway)', 'sans-serif'],
         body: ['var(--font-raleway)', 'sans-serif'],
         headline: ['var(--font-montserrat)', 'sans-serif'],
+        chat: ['var(--font-pt-sans)', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {

@@ -368,11 +368,11 @@ const TicketEvent = ({ event, userMapById }: { event: TicketConversation, userMa
             </Avatar>
             <div className="flex-1 space-y-1">
                 <div className="flex items-baseline gap-2">
-                    <p className="font-sans font-bold text-[14px]">{author?.name || event.authorName}</p>
-                    <p className="font-sans text-[12px] text-muted-foreground">{format(new Date(event.createdAt), "MMM d, yyyy 'at' p")}</p>
+                    <p className="font-chat font-bold text-[14px]">{author?.name || event.authorName}</p>
+                    <p className="font-chat text-[12px] text-muted-foreground">{format(new Date(event.createdAt), "MMM d, yyyy 'at' p")}</p>
                 </div>
                 {event.content && <div 
-                    className="font-sans text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none tiptap-content" 
+                    className="font-chat text-muted-foreground text-sm mt-1 prose prose-sm dark:prose-invert max-w-none tiptap-content" 
                     dangerouslySetInnerHTML={{ __html: event.content }}
                 />}
                 {event.attachments && event.attachments.length > 0 && (
