@@ -1,60 +1,24 @@
 
 'use client';
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { DateRange } from "react-day-picker";
-import {
-    AgentResolutionTimeChart,
-    AgentTicketStatusChart,
-    TicketPriorityTrendsChart,
-    TicketStatusTrendsChart,
-    TicketVolumePriorityChart,
-} from "@/components/analytics/charts";
-import type { Ticket, User } from "@/lib/data";
-import { addDays } from "date-fns";
-import { DateRangePicker } from "../ui/date-range-picker";
+// This file is deprecated and its contents have been moved to more specific chart components.
+// It is kept to prevent breaking imports, but can be removed in a future cleanup.
 
+import * as React from "react";
+import type { Ticket, User } from "@/lib/data";
 
 export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[], agents: User[] }) {
     return (
-        <div className="grid gap-6 md:grid-cols-2">
-            <AgentTicketStatusChart tickets={tickets} agents={agents} />
-            <AgentResolutionTimeChart tickets={tickets} agents={agents} />
+        <div className="text-center text-muted-foreground p-8">
+            Agent performance charts have been moved to their own component.
         </div>
     );
 }
 
 export function LongTermTrendsCharts({ tickets }: { tickets: Ticket[] }) {
-    const [chartType, setChartType] = React.useState<"status" | "priority">("status");
-    const [statusChartType, setStatusChartType] = React.useState<"bar" | "line">("bar");
-    const [priorityChartType, setPriorityChartType] = React.useState<"bar" | "line">("bar");
-    
-    const [date, setDate] = React.useState<DateRange | undefined>({
-      from: addDays(new Date(), -90),
-      to: new Date(),
-    });
-
     return (
-        <Card>
-            <CardContent className=" flex flex-col gap-6 space-y-6 pt-6">
-                <div className="flex justify-end">
-                    <DateRangePicker date={date} setDate={setDate} />
-                </div>
-                <TicketVolumePriorityChart tickets={tickets} dateRange={date} />
-                <TicketStatusTrendsChart
-                    tickets={tickets}
-                    chartType={statusChartType}
-                    setChartType={setStatusChartType}
-                    dateRange={date}
-                />
-                <TicketPriorityTrendsChart
-                    tickets={tickets}
-                    chartType={priorityChartType}
-                    setChartType={setPriorityChartType}
-                    dateRange={date}
-                />
-            </CardContent>
-        </Card>
+        <div className="text-center text-muted-foreground p-8">
+            Long-term trends charts have been moved to their own component.
+        </div>
     );
 }

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -11,8 +10,10 @@ import { Loader, ShieldAlert } from "lucide-react";
 import { useAuth } from '@/contexts/auth-context';
 import type { Ticket, Project, User } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AgentPerformanceCharts, LongTermTrendsCharts } from '@/components/analytics/legacy-charts';
-import { GeneralReportDashboard } from '@/components/analytics/general-charts';
+import { OverviewCharts } from '@/components/analytics/overview-charts';
+import { AgentPerformanceCharts } from '@/components/analytics/agent-charts';
+import { TicketAnalysisCharts } from '@/components/analytics/ticket-charts';
+import { ReportsTab } from '@/components/analytics/reports-tab';
 
 export default function AnalyticsPage() {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ export default function AnalyticsPage() {
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
-  const [activeTab, setActiveTab] = React.useState("general");
+  const [activeTab, setActiveTab] = React.useState("overview");
 
   React.useEffect(() => {
     if (user) {
@@ -71,25 +72,26 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Analytics" description="Analyze trends and performance across your helpdesk.">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="h-auto flex-wrap justify-start">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="agent-performance">Agent Performance</TabsTrigger>
-            <TabsTrigger value="long-term-trends">Long-Term Trends</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </PageHeader>
+      <PageHeader title="Analytics" description="Analyze trends and performance across your helpdesk." />
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsContent value="general">
-          <GeneralReportDashboard tickets={tickets} projects={projects} users={users} />
+        <TabsList className="h-auto flex-wrap justify-start">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="tickets">Tickets</TabsTrigger>
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="mt-6">
+          <OverviewCharts tickets={tickets} projects={projects} users={users} />
         </TabsContent>
-        <TabsContent value="agent-performance">
+        <TabsContent value="tickets" className="mt-6">
+          <TicketAnalysisCharts tickets={tickets} />
+        </TabsContent>
+        <TabsContent value="agents" className="mt-6">
           <AgentPerformanceCharts tickets={tickets} agents={users} />
         </TabsContent>
-        <TabsContent value="long-term-trends">
-          <LongTermTrendsCharts tickets={tickets} />
+        <TabsContent value="reports" className="mt-6">
+          <ReportsTab />
         </TabsContent>
       </Tabs>
     </div>
