@@ -29,6 +29,7 @@ export async function createTicketAction(formData: FormData) {
 
   const { reporterId, ...ticketData } = validatedFields.data;
   
+  let newTicketId: string;
   try {
     const user = await getUserById(reporterId);
     if (!user) {
@@ -59,7 +60,7 @@ export async function createTicketAction(formData: FormData) {
         }
     }
 
-    const newTicketId = await addTicket({
+    newTicketId = await addTicket({
       ...ticketData,
       reporterId: user.id,
       reporterEmail: user.email,
@@ -68,15 +69,13 @@ export async function createTicketAction(formData: FormData) {
       attachments: attachments,
     });
     
-    // Revalidate paths to show new data
-    revalidatePath('/tickets', 'layout');
-    revalidatePath('/dashboard');
-
-    // Redirect to the new ticket page
-    redirect(`/tickets/view/${newTicketId}`);
-    
   } catch (error: any) {
     console.error("Error creating ticket:", error);
     return { error: error.message || 'Failed to create ticket.' };
   }
+
+  // Revalidate paths and redirect outside the try/catch block
+  revalidatePath('/tickets', 'layout');
+  revalidatePath('/dashboard');
+  redirect(`/tickets/view/${newTicketId}`);
 }
