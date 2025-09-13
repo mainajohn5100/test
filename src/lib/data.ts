@@ -134,6 +134,11 @@ export type EmailTemplate = {
   csatRequest: string;
 };
 
+export type WhatsAppTemplate = {
+    newTicketConfirmation: string;
+    csatRequest: string;
+};
+
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
 export type CannedResponse = {
@@ -146,6 +151,7 @@ export type WhatsAppSettings = {
   accountSid: string;
   authToken: string;
   phoneNumber: string; // The Twilio WhatsApp-enabled number
+  templates?: Partial<WhatsAppTemplate>;
 };
 
 export type Organization = {

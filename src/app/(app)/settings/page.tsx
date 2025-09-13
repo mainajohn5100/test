@@ -16,6 +16,7 @@ import { Loader } from "lucide-react";
 import { StatusTagsForm } from "@/components/settings/status-tags-form";
 import { CannedResponsesForm } from "@/components/settings/canned-responses-form";
 import { SlaPoliciesForm } from "@/components/settings/sla-policies-form";
+import { WhatsAppTemplatesForm } from "@/components/settings/whatsapp-templates-form";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -47,7 +48,7 @@ export default function SettingsPage() {
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           {user?.role === 'Admin' && <TabsTrigger value="access">Access Control</TabsTrigger>}
           <TabsTrigger value="account">Account</TabsTrigger>
-          {user?.role === 'Admin' && <TabsTrigger value="templates">Email Templates</TabsTrigger>}
+          {user?.role === 'Admin' && <TabsTrigger value="templates">Templates</TabsTrigger>}
           {user?.role === 'Admin' && <TabsTrigger value="workflow">Workflow</TabsTrigger>}
         </TabsList>
 
@@ -198,7 +199,10 @@ export default function SettingsPage() {
         </TabsContent>
         {user?.role === 'Admin' && (
           <TabsContent value="templates">
-            <EmailTemplatesForm />
+            <div className="space-y-6">
+                <EmailTemplatesForm />
+                <WhatsAppTemplatesForm />
+            </div>
           </TabsContent>
         )}
         {user?.role === 'Admin' && (

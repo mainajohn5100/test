@@ -3,7 +3,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { Organization, WhatsAppSettings, CannedResponse, SLAPolicy } from '@/lib/data';
+import type { Organization, WhatsAppSettings, CannedResponse, SLAPolicy, WhatsAppTemplate } from '@/lib/data';
 import { useAuth } from './auth-context';
 import { getOrganizationById, updateOrganizationSettings } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +40,12 @@ const DEFAULT_SLA_POLICIES: SLAPolicy[] = [
         ]
     }
 ];
+
+const DEFAULT_WHATSAPP_TEMPLATES: WhatsAppTemplate = {
+    newTicketConfirmation: "Thanks for contacting us, {{user.name}}! We've received your message and created ticket #{{ticket.id}}. An agent will be with you shortly.",
+    csatRequest: "Thank you for contacting us! How would you rate the support you received? Please reply with a number from 1 (Poor) to 5 (Excellent).",
+};
+
 
 export type LoadingScreenStyle = 'spinner' | 'skeleton';
 
@@ -84,7 +90,9 @@ const defaultOrgSettings: Required<Organization>['settings'] = {
     inactivityTimeout: 15,
     supportEmail: '',
     emailTemplates: {},
-    whatsapp: {},
+    whatsapp: {
+        templates: DEFAULT_WHATSAPP_TEMPLATES
+    },
     excludeClosedTickets: false,
     ticketStatuses: DEFAULT_TICKET_STATUSES,
     cannedResponses: DEFAULT_CANNED_RESPONSES,

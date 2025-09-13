@@ -28,6 +28,7 @@ const defaultTemplates: EmailTemplate = {
   agentReplyToAdmin: `New reply from {{replier.name}}:\n\n{{content}}\n\nPlease visit the ticket page to respond: {{link}}\n- The Support Team`,
   slaAtRisk: `Hi {{user.name}},\n\nThis is a notification that your assigned ticket "{{ticket.title}}" is at risk of breaching its SLA.\n\nPlease take action to resolve it soon.\n\n- The Support Team`,
   slaBreached: `Hi {{user.name}},\n\nThis is a notification that your assigned ticket "{{ticket.title}}" has breached its SLA.\n\nPlease prioritize this ticket immediately.\n\n- The Support Team`,
+  csatRequest: `Hi {{user.name}},\n\nHow would you rate the support you received for your ticket "{{ticket.title}}"?\n\nPlease click a number below to rate your experience:\n\n1 (Poor) - 2 - 3 - 4 - 5 (Excellent)\n{{baseUrl}}/api/tickets/rate/{{ticket.id}}/1\n{{baseUrl}}/api/tickets/rate/{{ticket.id}}/2\n{{baseUrl}}/api/tickets/rate/{{ticket.id}}/3\n{{baseUrl}}/api/tickets/rate/{{ticket.id}}/4\n{{baseUrl}}/api/tickets/rate/{{ticket.id}}/5`,
 };
 
 export function EmailTemplatesForm() {
@@ -57,6 +58,7 @@ export function EmailTemplatesForm() {
           agentReplyToAdmin: currentTemplates.agentReplyToAdmin || defaultTemplates.agentReplyToAdmin,
           slaAtRisk: currentTemplates.slaAtRisk || defaultTemplates.slaAtRisk,
           slaBreached: currentTemplates.slaBreached || defaultTemplates.slaBreached,
+          csatRequest: currentTemplates.csatRequest || defaultTemplates.csatRequest,
         });
       });
     }
@@ -223,7 +225,7 @@ export function EmailTemplatesForm() {
               </AccordionContent>
             </AccordionItem>
              <AccordionItem value="item-4">
-              <AccordionTrigger className="hover:no-underline font-semibold">SLA Notifications</AccordionTrigger>
+              <AccordionTrigger className="hover:no-underline font-semibold">SLA & CSAT</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                  <div>
                   <h4 className="font-medium text-sm mb-1">SLA "At Risk" Warning</h4>
@@ -241,6 +243,17 @@ export function EmailTemplatesForm() {
                   <p className="text-sm text-muted-foreground pb-2">Sent to an agent when their assigned ticket has breached its SLA.</p>
                   <Controller
                     name="slaBreached"
+                    control={control}
+                    render={({ field }) => (
+                      <Textarea {...field} rows={6} className="font-mono text-xs"/>
+                    )}
+                  />
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm mb-1">Customer Satisfaction (CSAT) Request</h4>
+                  <p className="text-sm text-muted-foreground pb-2">Sent to a client when their ticket is closed.</p>
+                  <Controller
+                    name="csatRequest"
                     control={control}
                     render={({ field }) => (
                       <Textarea {...field} rows={6} className="font-mono text-xs"/>

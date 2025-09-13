@@ -211,10 +211,11 @@ export async function updateTicketAction(
             if (currentTicket.source === 'WhatsApp' && currentTicket.reporterPhone && org.settings?.whatsapp?.accountSid) {
                 // Send WhatsApp CSAT request
                  const twilioClient = new Twilio(org.settings.whatsapp.accountSid, org.settings.whatsapp.authToken);
+                 const csatTemplate = org.settings.whatsapp.templates?.csatRequest || "Thank you for contacting us! How would you rate the support you received? Please reply with a number from 1 (Poor) to 5 (Excellent).";
                  await twilioClient.messages.create({
                     from: `whatsapp:${org.settings.whatsapp.phoneNumber}`,
                     to: `whatsapp:${currentTicket.reporterPhone}`,
-                    body: "Thank you for contacting us! How would you rate the support you received? Please reply with a number from 1 (Poor) to 5 (Excellent)."
+                    body: csatTemplate
                  });
                  await updateTicket(ticketId, { csatStatus: 'pending' });
 
@@ -301,5 +302,3 @@ export async function deleteTicketAction(ticketId: string) {
 
   redirect('/tickets/all');
 }
-
-    
