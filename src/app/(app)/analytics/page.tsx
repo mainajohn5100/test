@@ -38,7 +38,8 @@ export default function AnalyticsPage() {
         ]);
         setTickets(ticketsData);
         setProjects(projectsData);
-        setUsers(usersData.filter(u => u.role === 'Agent' || u.role === 'Admin'));
+        // Correctly filter for both Admins and Agents
+        setUsers(usersData.filter(u => u.role === 'Admin' || u.role === 'Agent'));
         setLoading(false);
       };
       fetchData();
