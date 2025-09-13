@@ -33,7 +33,6 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   onChange,
   placeholder,
 }) => {
-  const [toolbarOpen, setToolbarOpen] = React.useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -66,13 +65,15 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         editor.commands.setContent(content, false);
     }
   }, [content, editor]);
+  
+  const [toolbarOpen, setToolbarOpen] = React.useState(false);
 
   if (!editor) return null;
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <div className="flex items-center gap-1">
-        <Button
+       <div className="hidden">
+            <Button
             type="button"
             variant="ghost"
             size="icon"
@@ -84,7 +85,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         >
             <ChevronRight className="h-4 w-4" />
         </Button>
-        <div 
+       </div>
+      <div 
             className={cn(
                 "flex items-center gap-1 transition-all duration-300 ease-in-out overflow-hidden",
                 toolbarOpen ? "max-w-full opacity-100" : "max-w-0 opacity-0"
@@ -168,7 +170,6 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
             <LinkIcon className="w-4 h-4" />
             </button>
         </div>
-      </div>
       <EditorContent editor={editor} />
     </div>
   );
