@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -111,7 +112,7 @@ function UserProfilePage() {
                           {user.status}
                         </Badge>
                         <Badge variant="secondary">
-                           Joined {isValid(new Date(user.createdAt || '')) ? format(new Date(user.createdAt!), 'MMM yyyy') : '...'}
+                           Joined {isValid(new Date(user.createdAt || '')) ? format(new Date(user.createdAt!), 'PP') : '...'}
                         </Badge>
                     </div>
                 </CardContent>

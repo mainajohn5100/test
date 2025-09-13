@@ -43,13 +43,11 @@ export async function updateUserAction(userId: string, formData: FormData) {
         return { success: false, error: 'Avatar file is too large (max 5MB).' };
       }
 
-      // If a previous avatar exists and it's a Firebase Storage URL, delete it.
       if (user.avatar && user.avatar.includes('firebasestorage.googleapis.com')) {
           try {
               const oldAvatarRef = ref(storage, user.avatar);
               await deleteObject(oldAvatarRef);
           } catch (error: any) {
-              // Ignore 'object-not-found' errors in case the file doesn't exist
               if (error.code !== 'storage/object-not-found') {
                   console.warn("Could not delete old avatar:", error);
               }
@@ -61,7 +59,7 @@ export async function updateUserAction(userId: string, formData: FormData) {
       const filePath = `user-avatars/${userId}/${timestamp}-${sanitizedFileName}`;
       
       const storageRef = ref(storage, filePath);
-      await uploadBytes(storageRef, avatarFile);
+      await uploadBytes(storageRef, logoFile);
       const avatarUrl = await getDownloadURL(storageRef);
       updateData.avatar = avatarUrl;
     }
@@ -70,7 +68,6 @@ export async function updateUserAction(userId: string, formData: FormData) {
       await updateUser(userId, updateData);
     }
     
-    // Also update Firebase Auth profile if name or avatar changed
     const authUser = auth.currentUser;
     if (authUser && authUser.uid === userId) {
         const authProfileUpdate: { displayName?: string, photoURL?: string } = {};
@@ -112,28 +109,26 @@ export async function updateUserStatusAction(userId: string, status: 'active' | 
     }
 }
 
+export async function updateUserRoleAction(userId: string, role: 'Admin' | 'Agent' | 'Client') {
+    try {
+        await updateUser(userId, { role });
+        // Also update custom claims for security rules enforcement
+        await setAuthUserClaims(userId, { role });
+        revalidatePath('/users');
+        revalidatePath(`/users/${userId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating user role:", error);
+        return { success: false, error: "Failed to update user role." };
+    }
+}
+
 export async function inviteUserToProjectAction(projectId: string, projectName: string, email: string) {
     try {
-        // This is a simplified version. A real implementation would involve generating a unique, secure token.
         const user = await getUserByEmail(email);
         if (user) {
-            // User exists, add them to the project directly.
-             await updateUser(user.id, {
-                // This assumes a 'projects' field on the user model, which we might not have.
-                // A better approach would be to update the project's 'team' array.
-                // For now, we'll just send a notification.
-            });
-            // await createNotification({
-            //     userId: user.id,
-            //     title: `You've been invited to ${projectName}`,
-            //     description: `You have been added to the project by an administrator.`,
-            //     link: `/projects/view/${projectId}`,
-            //     type: 'project_invite'
-            // });
             return { success: true };
         } else {
-            // User doesn't exist, send an invitation email to sign up.
-            // This would require a proper email sending service.
             console.log(`Sending invitation to new user: ${email} for project ${projectName}`);
             return { success: true, message: 'Invitation sent to new user.' };
         }
@@ -158,7 +153,6 @@ export async function createUserAction(values: z.infer<typeof userCreateSchema>,
     const { name, email, password, role, phone } = validatedFields.data;
 
     try {
-        // Check if user already exists in Firestore by email in the same organization
         const existingUser = await getUserByEmail(email);
         if (existingUser && existingUser.organizationId === creator.organizationId) {
             return { error: 'A user with this email already exists in your organization.' };
@@ -184,6 +178,7 @@ export async function createUserAction(values: z.infer<typeof userCreateSchema>,
             status: 'active',
             phone: phone || '',
             createdByAdmin: true,
+            createdAt: new Date().toISOString(),
         };
 
         await createUserInFirestore(newUserId, newUser);

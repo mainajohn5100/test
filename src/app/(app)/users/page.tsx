@@ -14,14 +14,14 @@ import { db } from "@/lib/firebase";
 import type { User } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
-import { Loader, ShieldAlert, PlusCircle, MoreVertical, ShieldCheck, ShieldClose, UserCheck } from "lucide-react";
+import { Loader, ShieldAlert, PlusCircle, MoreVertical, ShieldCheck, ShieldClose, UserCheck, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CreateUserForm } from "./create-user-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow, differenceInMinutes, isValid } from "date-fns";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast";
-import { updateUserStatusAction } from "@/app/(app)/users/actions";
+import { updateUserStatusAction, updateUserRoleAction } from "@/app/(app)/users/actions";
 import { cn } from "@/lib/utils";
 
 const UserTableRowActions = ({ user, currentUser }: { user: User, currentUser: User }) => {
@@ -48,7 +48,6 @@ const UserTableRowActions = ({ user, currentUser }: { user: User, currentUser: U
             const result = await updateUserStatusAction(user.id, newStatus);
             if (result.success) {
                 toast({ title: 'Status Updated', description: `User account has been ${newStatus}.` });
-                // The page will refetch data, so no need to update state here.
                 setConfirmOpen(false);
             } else {
                 toast({ title: 'Update Failed', description: result.error, variant: 'destructive' });
@@ -56,8 +55,20 @@ const UserTableRowActions = ({ user, currentUser }: { user: User, currentUser: U
         });
     }
 
+    const handleRoleChange = (newRole: 'Admin' | 'Agent' | 'Client') => {
+        if (newRole === user.role) return;
+        startTransition(async () => {
+            const result = await updateUserRoleAction(user.id, newRole);
+             if (result.success) {
+                toast({ title: 'Role Updated', description: `${user.name}'s role has been changed to ${newRole}.` });
+            } else {
+                toast({ title: 'Update Failed', description: result.error, variant: 'destructive' });
+            }
+        });
+    }
+
     if (user.id === currentUser.id) {
-        return null; // Don't show menu for the current user
+        return null;
     }
 
     return (
@@ -91,6 +102,19 @@ const UserTableRowActions = ({ user, currentUser }: { user: User, currentUser: U
                     <DropdownMenuItem onClick={() => router.push(`/users/${user.id}`)}>
                         View Profile
                     </DropdownMenuItem>
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Change Role
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuPortal>
+                             <DropdownMenuSubContent>
+                                <DropdownMenuItem onClick={() => handleRoleChange('Admin')} disabled={user.role === 'Admin'}>Admin</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange('Agent')} disabled={user.role === 'Agent'}>Agent</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange('Client')} disabled={user.role === 'Client'}>Client</DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuPortal>
+                    </DropdownMenuSub>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setConfirmOpen(true)} className={user.status === 'active' ? "text-destructive focus:bg-destructive/10" : ""}>
                         {user.status === 'active' ? (

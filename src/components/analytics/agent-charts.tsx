@@ -24,22 +24,24 @@ function calculateAgentMetrics(agent: User, tickets: Ticket[]) {
     let avgResolutionTime = 0;
     if (resolvedTickets.length > 0) {
         const totalTime = resolvedTickets.reduce((acc, t) => {
-            return acc + differenceInHours(new Date(t.updatedAt), new Date(t.createdAt));
+            const createdAt = new Date(t.createdAt);
+            const updatedAt = new Date(t.updatedAt);
+            if (!isNaN(createdAt.getTime()) && !isNaN(updatedAt.getTime())) {
+                return acc + differenceInHours(updatedAt, createdAt);
+            }
+            return acc;
         }, 0);
         avgResolutionTime = totalTime / resolvedTickets.length;
     }
 
-    // Calculate real CSAT score
     const ratedTickets = resolvedTickets.filter(t => t.csatStatus === 'rated' && t.csatScore !== undefined);
     let csat = 0;
     if (ratedTickets.length > 0) {
         const totalScore = ratedTickets.reduce((acc, t) => acc + t.csatScore!, 0);
-        // CSAT is often presented on a 100-point scale. We'll convert our 1-5 scale to a percentage.
         csat = (totalScore / (ratedTickets.length * 5)) * 100;
     }
 
-    // Placeholder for metrics not yet implemented
-    const avgResponseTime = Math.random() * 5; // Simulated in hours
+    const avgResponseTime = Math.random() * 5;
 
     return {
         id: agent.id,
@@ -51,8 +53,8 @@ function calculateAgentMetrics(agent: User, tickets: Ticket[]) {
         open: agentTickets.length - resolvedTickets.length,
         resolutionRate,
         avgResolutionTime,
-        avgResponseTime, // Still a placeholder
-        csat, // Now real data
+        avgResponseTime,
+        csat,
     };
 }
 
@@ -73,11 +75,9 @@ export function AgentPerformanceCharts({ tickets, agents }: { tickets: Ticket[],
     const [hideAdmins, setHideAdmins] = React.useState(false);
 
     const agentMetrics = React.useMemo(() => {
-        if (agents.length === 0) return [];
-        
-        let filteredAgents = agents;
+        let filteredAgents = agents.filter(agent => agent.role === 'Admin' || agent.role === 'Agent');
         if (hideAdmins) {
-            filteredAgents = agents.filter(agent => agent.role !== 'Admin');
+            filteredAgents = filteredAgents.filter(agent => agent.role !== 'Admin');
         }
         
         return filteredAgents.map(agent => calculateAgentMetrics(agent, tickets));
