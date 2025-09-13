@@ -123,7 +123,7 @@ function TicketStatusTrendChart({ tickets }: { tickets: Ticket[] }) {
         }, {} as Record<string, any>);
 
         tickets.forEach(ticket => {
-            const createdAt = new Date(ticket.createdAt);
+             const createdAt = new Date(ticket.createdAt);
              if (timeframe === '1d' && createdAt < subHours(now, 24)) return;
              if (timeframe === '7d' && createdAt < subDays(now, 7)) return;
              if (timeframe === '30d' && createdAt < subDays(now, 30)) return;
@@ -350,10 +350,10 @@ function TicketPriorityTrendChart({ tickets }: { tickets: Ticket[] }) {
 export function TicketAnalysisCharts({ tickets }: { tickets: Ticket[] }) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TicketChannelTrendChart tickets={tickets} />
-            <TicketPriorityTrendChart tickets={tickets} />
             <TicketsByPriorityChart tickets={tickets} />
             <TicketsByCategoryChart tickets={tickets} />
+            <TicketChannelTrendChart tickets={tickets} />
+            <TicketPriorityTrendChart tickets={tickets} />
             <TicketStatusTrendChart tickets={tickets} />
         </div>
     );
