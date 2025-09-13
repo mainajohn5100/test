@@ -208,7 +208,7 @@ export async function updateTicketAction(
         const reporter = await getUserByEmail(currentTicket.reporterEmail);
         
         if (org && reporter) {
-            if (currentTicket.source === 'WhatsApp' && currentTicket.reporterPhone && org.settings?.whatsapp?.accountSid) {
+            if (currentTicket.source === 'WhatsApp' && currentTicket.reporterPhone && org.settings?.whatsapp?.accountSid && org.settings.whatsapp.authToken) {
                 // Send WhatsApp CSAT request
                  const twilioClient = new Twilio(org.settings.whatsapp.accountSid, org.settings.whatsapp.authToken);
                  const csatTemplate = org.settings.whatsapp.templates?.csatRequest || "Thank you for contacting us! How would you rate the support you received? Please reply with a number from 1 (Poor) to 5 (Excellent).";
@@ -226,7 +226,7 @@ export async function updateTicketAction(
                     subject: `How did we do on your request: "${currentTicket.title}"?`,
                     template: org.settings.emailTemplates.csatRequest,
                     data: {
-                        ticket: currentTicket,
+                        ticket: { ...currentTicket, id: ticketId },
                         user: reporter,
                         baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
                     }
