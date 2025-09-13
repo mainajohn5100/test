@@ -213,7 +213,7 @@ export async function updateTicketAction(
       const reporter = await getUserByEmail(currentTicket.reporterEmail);
       
       if (org && reporter) {
-        if (currentTicket.source === 'WhatsApp' && currentTicket.reporterPhone && org.settings?.whatsapp?.accountSid && org.settings.whatsapp.authToken) {
+        if (currentTicket.source === 'WhatsApp' && currentTicket.reporterPhone && org.settings?.whatsapp?.accountSid && org.settings?.whatsapp?.authToken) {
           // Send WhatsApp CSAT request
           try {
             const twilioClient = new Twilio(org.settings.whatsapp.accountSid, org.settings.whatsapp.authToken);
